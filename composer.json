@@ -1,0 +1,38 @@
+{
+    "name": "magicpro/magicpro",
+    "description": "Magic application inside Laravel",
+    "version": "0.1.0",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "MagicProSrc\\": "src/",
+            "MagicProDatabaseModels\\": "database/Models/",
+            "MagicProAdminControllers\\": "admin/controller/",
+            "MagicProAdminMiddleware\\": "admin/middleware/",
+            "MagicProControllers\\": "../../../dataMagicPro/controller/"
+        }
+    },
+    "commentMy": {
+        "note": "⚠️ Если меняешь путь MagicProControllers — не забудь обновить MAGIC_CONTROLLER_DIR в MagicGlobals.php"
+    },
+    "require": {
+        "php": "^8.2",
+        "laravel/framework": "^12.0"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "MagicProSrc\\MagicServiceProvider"
+            ]
+        }
+    },
+    "scripts": {
+        "post-autoload-dump": [
+            "echo   Запускаю скрипт пост инсталл!"
+        ],
+        "post-update-cmd": [
+            "echo   Запускаю скрипт аедейт инсталл!"
+        ]
+    }
+}
