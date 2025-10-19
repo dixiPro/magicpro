@@ -1,114 +1,96 @@
-**Установить пакет**
+# MagicPro
 
-```
+![Laravel](https://img.shields.io/badge/Laravel-12-red?logo=laravel&logoColor=white)
+![Vue.js](https://img.shields.io/badge/Vue.js-3-42b883?logo=vue.js&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-green)
+
+**MagicPro — the speed of a CMS + the flexibility of Laravel 12 in one solution. Ultra-fast website development and modification.**
+
+## 🚀 Features
+
+- Manage controllers, views, routes, pages, menus, structure through a single model.
+- Support parameters for flexible behavior customization.
+
+## 🔑 Key Functions
+
+- **Articles**: hierarchical structure, content storage, routing, and menus.
+- **MagicProBuilder**: code generation (controllers, views, routes).
+- **Admin Editor**: manage articles, routes, and settings.
+- **Frontend**: integration with Vue 3, Bootstrap 5, PrimeVue.
+- **Editor**: integration with ACE Editor.
+
+## 🛠 Technologies
+
+- **Backend**: Laravel 12, Eloquent, MoonShine 2.x, Breeze.
+- **Frontend**: Vue 3, Bootstrap 5, PrimeVue.
+- **DevOps**: Ubuntu, Nginx, SQLite.
+
+#### 2025-19-10
+
+##### Added / Changed
+
+- Moved all sources to `packages/dixi/magicpro` to structure it as a package
+- Introduced dynamic route handler (`DynamicRouteHandler.php`)
+- Added installation command (`InstallMagicProCommand.php`)
+- Consolidated paths in `MagicGlobals.php`
+- Switched from Monaco to ACE editor
+- Implemented Blade and PHP formatters (Prettier)
+- Removed MoonShine admin panel from the package
+
+#### 2025-10-10
+
+##### Added
+
+- File manager
+- Transliteration of article names
+- LiveWire controllers and Blade integration
+
+#### 2025-05-10
+
+##### Added
+
+- Testing liveWire
+- MoonShine admin panel
+- Breeze authentication scaffolding
+- Blade syntax highlighting for Monaco Editor
+- Monaco Editor integration
+- Route, controller, and view generation from Article model
+- Core project foundation
+
+## Installation
+
+```bash
+# development directory where MagicPro will be placed
+mkdir -p packages/dixi/magicpro
+
+# clone the repository
+git clone https://github.com/dixiRu/magicpro
+
+# add to composer
 composer config repositories.magicpro path packages/dixi/magicpro
 
+# enable symlink option
 jq '.repositories.magicpro.options.symlink=true' composer.json > composer.tmp && mv composer.tmp composer.json
 
+# install dependencies
 composer require magicpro/magicpro:"^0.1.0"
 
+# run Laravel migrations — creates 'article' and 'userAdmin' tables
 php artisan migrate
 
+# create necessary folders
 php artisan magicpro:install
 ```
 
-** установить **
-composer require friendsofphp/php-cs-fixer
+**Vite build**
+Vite is configured to build outside the project root.
 
-**папки в Ларавеле**
+**Recommended Laravel**
 
-```
+```bash
 sudo chown -R $USER:www-data .
 sudo find . -type f -exec chmod 664 {} \;
 sudo find . -type d -exec chmod 775 {} \;
 ```
 
-**Альтернатива**
-
-```
-sudo chmod -R 777 ./storage
-sudo chmod -R 777 ./bootstrap/cache/
-```
-
-**помогает**
-
-```
-rm composer.lock
-composer install
-composer dump-autoload -o
-
-в composer.json (проекта дописать)
-
-    "repositories": [
-        {
-            "type": "path",
-            "url": "magicPro"
-        }
-    ]
-
-```
-
-php artisan optimize:clear
-php artisan package:discover
-
-composer dump-autoload
-composer clear-cache
-
-php artisan vendor:publish --tag=magic-source --force
-npm run build
-
-vite.config.js (в корне проекта, один общий Vite)
-import { defineConfig } from 'vite'
-import fs from 'node:fs'
-import laravel from 'laravel-vite-plugin'
-
-const devPath = 'packages/Vendor/Magic/admin/js/editor.js'
-const pubPath = 'resources/vendor/magic/admin/js/editor.js'
-
-const input = fs.existsSync(devPath) ? devPath : pubPath
-
-export default defineConfig({
-server: {
-// разрешаем читать из packages/ во время dev
-fs: { allow: ['.', 'packages'] },
-},
-plugins: [
-laravel({
-input: [input],
-refresh: true,
-}),
-],
-})
-
-Создать миграцию
-php artisan make:migration create_articles_table --path=packages/vendor/magicPro/database/migrations
-
-    "repositories": [
-        {
-            "type": "path",
-            "url": "packages/vendor/magicPro",
-            "options": {
-                "symlink": true
-            }
-        }
-    ]
-
-home-soln-myApp-public-index.php
-home root/root
-soln soln/soln
-myApp soln/soln  
-public soln/www-data
-
-index.php 777
-
-выполняется от группы www-data
-index.php не работает
-Но ведь
-
-но если ставим
-myApp myApp/www-data  
-Работает.
-
-Т.е.
-
-почему myApp должен иметь группу www-data? Без ларавела. Только линукс
+MIT © dixiRu
