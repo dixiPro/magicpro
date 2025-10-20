@@ -4,6 +4,13 @@ namespace MagicProAdminControllers;
 
 use Illuminate\Support\Facades\File;
 
+// 🧩 Контроллер по умолчанию
+define('DEFAULT_CONTROLLER', __DIR__ . '/default/defaultController.php');
+
+// ⚡ Livewire-контроллер по умолчанию
+define('DEFAULT_LIVEWIRE_CONTROLLER', __DIR__ . '/default/defaultControllerLivewire.php');
+
+
 /**
  * Создать/обновить ресурсы под статью.
  * Обязательные ключи: id, name, isRoute, controllerText, viewText

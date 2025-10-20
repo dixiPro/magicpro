@@ -12,11 +12,14 @@ class DynamicRouteHandler
         // 🔹 Получаем текущий путь
         $path = trim($request->path(), '/');
 
+        // заглавная
+        $articleName = $path === '' ? 'index' : $path;
+
         // 🔹 Для отладки
         $debug_path = $path;
 
         // 🔹 Ищем запись в базе
-        $row = DB::table('articles')->where('name', $path)->first();
+        $row = DB::table('articles')->where('name', $articleName)->first();
 
         // 🔹 Если запись не найдена — 404
         if (!$row) {
@@ -36,7 +39,6 @@ class DynamicRouteHandler
             abort(404);
         }
 
-
         // 
         $data = $request->all();
         $request->attributes->add(compact('name', 'title', 'artId', 'parentId', 'view'));
@@ -45,7 +47,5 @@ class DynamicRouteHandler
 
         // управление передается правильно
         return $controller->handle($request, $any);
-
-        abort(404);
     }
 }

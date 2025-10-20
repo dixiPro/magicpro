@@ -110,12 +110,12 @@ class MagicServiceProvider extends ServiceProvider
         ], 'magicpro-assets');
     }
 
-    // public function register(): void
-    // {
-    //     // Override Livewire's default ComponentRegistry with a custom implementation
-    //     // Example: register a Livewire component manually (currently commented out)
-    //     // <livewire:magic::articleName />
+    public function register(): void
+    {
+        // Override Livewire's default ComponentRegistry with a custom implementation
+        // Example: register a Livewire component manually (currently commented out)
+        // <livewire:magic::articleName />
 
-    //     $this->app->extend(ComponentRegistry::class, fn($r, $app) => new LivewireComponentRegistry($app));
-    // }
+        $this->app->extend(ComponentRegistry::class, fn($r, $app) => new LivewireComponentRegistry($app));
+    }
 }

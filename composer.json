@@ -10,7 +10,8 @@
             "MagicProDatabaseModels\\": "database/Models/",
             "MagicProAdminControllers\\": "admin/controller/",
             "MagicProAdminMiddleware\\": "admin/middleware/",
-            "MagicProControllers\\": "../../../dataMagicPro/controller/"
+            "MagicProControllers\\": "../../../dataMagicPro/controller/",
+            "Livewire\\": "src/"
         }
     },
     "commentMy": {

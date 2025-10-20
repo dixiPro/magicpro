@@ -23,13 +23,6 @@ class MagicGlobals
         // 📄 Каталог вьюх статей
         define('MAGIC_VIEW_DIR', MAGIC_DATA_DIR . '/view');
 
-
-        // 🧩 Контроллер по умолчанию
-        define('DEFAULT_CONTROLLER', __DIR__ . '/../admin/controller/default/defaultController.php');
-
-        // ⚡ Livewire-контроллер по умолчанию
-        define('DEFAULT_LIVEWIRE_CONTROLLER', __DIR__ . '/../admin/controller/default/defaultControllerLivewire.php');
-
         // 📦 Папка для загрузки изображений (относительный путь для JS)
         define('FILES_JS_UPLOAD', 'magicPro');
 

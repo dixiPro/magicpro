@@ -347,7 +347,7 @@ async function formatDocument() {
                     @click="splitStatusEditorObj.set('hideBlade')" class="fas fa-angle-right btn btn-success"></span>
             </div>
             <div class="col-auto align-self-center">
-                <button class="btn fas fa-magic btn-success" @click="formatDocument"></button>
+                <button class="btn fas fa-magic btn-success" @click="formatDocument">1</button>
             </div>
             <div class="col-auto">
                 <button @click="helpDialogShow = !helpDialogShow" class="fas fa-question btn btn-success"></button>

@@ -1,4 +1,6 @@
 **Установить пакет**
+tail -n 20 storage/logs/laravel.log
+
 
 ```
 composer config repositories.magicpro path packages/dixi/magicpro

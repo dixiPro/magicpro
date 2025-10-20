@@ -21,9 +21,56 @@
 
 ## 🛠 Technologies
 
-- **Backend**: Laravel 12, Eloquent, MoonShine 2.x, Breeze.
+- **Backend**: Laravel 12
 - **Frontend**: Vue 3, Bootstrap 5, PrimeVue.
 - **DevOps**: Ubuntu, Nginx, SQLite.
+
+## ⚙️ Installation
+
+```bash
+#install Laravel
+#see note
+
+
+#install livewire
+composer require livewire/livewire
+
+
+# from Laravel project root — create development directory for MagicPro
+mkdir -p packages
+cd packages
+
+# clone the repository
+git clone https://github.com/dixiRu/magicpro
+
+# add to composer
+composer config repositories.magicpro path packages/dixi/magicpro
+
+# enable symlink option
+jq '.repositories.magicpro.options.symlink=true' composer.json > composer.tmp && mv composer.tmp composer.json
+
+# install dependencies
+composer require magicpro/magicpro:"^0.1.0"
+
+# run Laravel migrations — creates 'article' and 'userAdmin' tables
+php artisan migrate
+
+# create necessary folders
+php artisan magicpro:install
+
+# шinstall fro development
+npm i
+```
+
+**Vite build**
+
+Vite is configured to build outside the project root.
+```bash
+cd packages/dixi/magicpro
+npm i
+npm run dev
+npm run bhuild
+```
 
 #### 2025-19-10
 
@@ -57,40 +104,61 @@
 - Route, controller, and view generation from Article model
 - Core project foundation
 
-## Installation
 
+## Note
+
+### Laravel installation
 ```bash
-# development directory where MagicPro will be placed
-mkdir -p packages/dixi/magicpro
+# Install Composer (if not installed)
+php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+php composer-setup.php --install-dir=/usr/local/bin --filename=composer
 
-# clone the repository
-git clone https://github.com/dixiRu/magicpro
+# Check version
+composer -V
 
-# add to composer
-composer config repositories.magicpro path packages/dixi/magicpro
+# Create a new Laravel project
+composer create-project laravel/laravel myapp
 
-# enable symlink option
-jq '.repositories.magicpro.options.symlink=true' composer.json > composer.tmp && mv composer.tmp composer.json
+# Go to the project folder
+cd myapp
 
-# install dependencies
-composer require magicpro/magicpro:"^0.1.0"
+# Configure database in .env if needed
 
-# run Laravel migrations — creates 'article' and 'userAdmin' tables
+#  Run migrations
 php artisan migrate
 
-# create necessary folders
-php artisan magicpro:install
-```
-
-**Vite build**
-Vite is configured to build outside the project root.
-
-**Recommended Laravel**
+# Set Laravel  permissions
 
 ```bash
 sudo chown -R $USER:www-data .
 sudo find . -type f -exec chmod 664 {} \;
 sudo find . -type d -exec chmod 775 {} \;
 ```
+
+### SQlite managment
+```bash
+# need RDP X-11
+
+sudo apt install sqlitebrowser
+sqlitebrowser
+
+```
+
+#### Setup RDP on Ubuntu Server
+```bash
+sudo apt update
+sudo apt install -y xrdp xfce4
+
+# Set XFCE as the default session
+echo xfce4-session > ~/.xsession
+
+# Restart RDP service
+sudo systemctl restart xrdp
+
+# On Windows:
+# Run "mstsc" (Remote Desktop Connection)
+# or use MobaXterm: https://mobaxterm.mobatek.net/download.html
+```
+
 
 MIT © dixiRu
