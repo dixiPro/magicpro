@@ -130,7 +130,7 @@ php artisan migrate
 # Set Laravel  permissions
 
 ```bash
-sudo chown -R $USER:www-data .
+sudo chown -R $(logname):www-data .
 sudo find . -type f -exec chmod 664 {} \;
 sudo find . -type d -exec chmod 775 {} \;
 ```

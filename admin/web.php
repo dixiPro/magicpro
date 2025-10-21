@@ -53,5 +53,9 @@ Route::post('/a_dmin/login', [AuthController::class, 'login'])->name('magic.logi
 Route::get('/a_dmin/logout', [AuthController::class, 'logout'])->name('magic.logout');
 
 //     
+//
+//
+use MagicProSrc\Routing\DynamicRouteHandler;
 
-// 
+Route::any('{any?}', [DynamicRouteHandler::class, 'handle'])
+    ->where('any', '.*');

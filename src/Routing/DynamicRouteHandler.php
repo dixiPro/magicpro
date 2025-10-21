@@ -15,9 +15,6 @@ class DynamicRouteHandler
         // заглавная
         $articleName = $path === '' ? 'index' : $path;
 
-        // 🔹 Для отладки
-        $debug_path = $path;
-
         // 🔹 Ищем запись в базе
         $row = DB::table('articles')->where('name', $articleName)->first();
 
@@ -37,12 +34,14 @@ class DynamicRouteHandler
 
         if (!$isRoute) {
             abort(404);
+            return null;
         }
 
         // 
         $data = $request->all();
         $request->attributes->add(compact('name', 'title', 'artId', 'parentId', 'view'));
         $data = $request->attributes->all();
+
         $controller = new $controllerName();
 
         // управление передается правильно

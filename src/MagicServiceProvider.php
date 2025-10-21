@@ -21,7 +21,6 @@ use Illuminate\Support\Facades\Config;
 use MagicProSrc\Console\InstallMagicProCommand; // Создание директорий при установке
 
 use MagicProSrc\Config\MagicGlobals; // Глобальные константы
-use MagicProSrc\Routing\DynamicRouteHandler; // Динамический роутер статей
 
 class MagicServiceProvider extends ServiceProvider
 {
@@ -29,10 +28,6 @@ class MagicServiceProvider extends ServiceProvider
     {
 
         MagicGlobals::register(); // Константы глобальные
-
-        Route::fallback( // динамические маршруты статей
-            fn(Request $request, $any = null) => (new DynamicRouteHandler)->handle($request, $any)
-        );
 
         // php artisan magicpro:install
         if ($this->app->runningInConsole()) {
@@ -42,20 +37,7 @@ class MagicServiceProvider extends ServiceProvider
         }
 
         // вьюхи
-        $a = 1;
         $this->loadViewsFrom(MAGIC_VIEW_DIR, 'magic');
-
-        // (function () {
-        //     $viewPath = MAGIC_VIEW_DIR;
-        //     $namespace = 'magic';
-
-        //     // точка для отладки
-        //     $_dbgViewPath = $viewPath;
-        //     $_dbgNamespace = $namespace;
-        //     // dump($_dbgViewPath, $_dbgNamespace); // или брейкпоинт тут
-
-        //     $this->loadViewsFrom($viewPath, $namespace);
-        // })();
 
         // Register Blade component namespace
         Blade::componentNamespace('magic', 'magic');
@@ -99,6 +81,7 @@ class MagicServiceProvider extends ServiceProvider
         // Регистрируем middleware под алиасом 'magic.auth'
         app('router')->aliasMiddleware('magic.auth', CheckMagicAuth::class);
 
+        // Vite скрипты
         // Laravel будет искать dev-сервер по нашему hot-файлу
         Vite::useHotFile(storage_path('magicpro.vite.hot'));
 
