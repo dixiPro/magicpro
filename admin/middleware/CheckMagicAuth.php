@@ -14,7 +14,7 @@ class CheckMagicAuth
         if (!$guard->check()) {
             return response()->json([
                 'status' => 'error',
-                'msg' => 'Требуется авторизация MagicPro'
+                'msg' => 'MagicPro authorization required'
             ], 401);
         }
 
@@ -23,7 +23,7 @@ class CheckMagicAuth
         if ($role && $user->role !== $role) {
             return response()->json([
                 'status' => 'error',
-                'msg' => 'Недостаточно прав (нужна роль: ' . $role . ')'
+                'msg' => 'Insufficient rights (requires role: ' . $role . ')'
             ], 403);
         }
 

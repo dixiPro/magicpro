@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use MagicProDatabaseModels\Article;
 use MagicProDatabaseModels\MagicProUser;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+use Illuminate\Support\Facades\DB;
 
 class AdminController extends Controller
 {
@@ -42,6 +44,27 @@ class AdminController extends Controller
         ]);
     }
 
+    // Проверка запись-чтение
+    public function testWrite()
+    {
+
+        $testArray = MAGIC_FILE_ROLES;
+
+        foreach ($testArray as &$item) {
+            $dir = $item['value'];
+            $timestamp = date("U");
+            $file = "{$dir}/{$timestamp}_testfile.txt";
+
+            if (file_put_contents($file, $timestamp)) {
+                $item['result'] = "ok";
+                unlink($file);
+            } else {
+                $item['result'] = "error";
+            }
+        }
+
+        return redirect()->back()->with('testWriteStatus', $testArray);;
+    }
 
     public function clearCache()
     {

@@ -21,71 +21,63 @@
 </head>
 
 <body>
-
-    {{-- @php
-        $guard = Auth::guard('magic');
-        $guard->setUser((object) ['id' => 1, 'name' => 'Magic']); // любой объект
-    @endphp --}}
-
-    <div class="d-flex flex-column">
-        <div class="bg-primary py-2">
-            <div class="d-flex flex-wrap justify-content-center m-0 p-0">
-                <div class="px-2"><a class="text-white" href="/">Сайт</a></div>
-                <div class="px-2"><a class="text-white" href="/a_dmin/">Админка</a></div>
-                <div class="px-2"><a class="text-white" href="/a_dmin/artEditor#1">Рут</a></div>
-                <div class="px-2"><a class="text-white" href="/a_dmin/artList">Статьи</a></div>
-                <div class="px-2"><a class="text-white" href="/a_dmin/adminList">Админы</a></div>
-                <div class="px-2"><a class="text-white" href="/a_dminMunShine">Таблицы</a></div>
-                <div class="px-2">
-                    <a href="{{ route('magic.logout') }}" type="submit" class="btn btn-sm btn-success">Выйти</a>
+    @mproauth
+        <div class="d-flex flex-column">
+            <div class="bg-primary py-2">
+                <div class="d-flex flex-wrap justify-content-center m-0 p-0">
+                    <div class="px-2"><a class="text-white" href="/">Сайт</a></div>
+                    <div class="px-2"><a class="text-white" href="/a_dmin/">Админка</a></div>
+                    <div class="px-2"><a class="text-white" href="/a_dmin/artEditor#1">Рут</a></div>
+                    <div class="px-2"><a class="text-white" href="/a_dmin/artList">Статьи</a></div>
+                    <div class="px-2"><a class="text-white" href="/a_dmin/adminList">Админы</a></div>
+                    <div class="px-2"><a class="text-white" href="/a_dminMunShine">Таблицы</a></div>
+                    <div class="px-2">
+                        <a href="{{ route('magic.logout') }}" type="submit" class="btn btn-sm btn-success">Выйти</a>
+                    </div>
                 </div>
+            </div>
+
+            <!-- Второй див, растягивается до конца страницы -->
+            <div class="d-flex flex-column flex-grow-1" id='admin-content'>
+                @if ($GLOBALS['wide'] ?? '' == 'middle')
+                    <div class="container">
+                        @yield('body')
+                    </div>
+                @else
+                    @yield('body')
+                @endif
             </div>
         </div>
 
-        @if (Auth::guard('magic')->check())
+        @hasSection('script')
+            @yield('script')
+        @endif
+
+        {{-- @if (Auth::guard('magic')->check())
             Пользователь: {{ Auth::guard('magic')->user()->name }}
         @else
             Не авторизован
-        @endif
+        @endif --}}
 
-        <!-- Второй див, растягивается до конца страницы -->
-        <div class="d-flex flex-column flex-grow-1" id='admin-content'>
-            @if ($GLOBALS['wide'] ?? '' == 'middle')
-                <div class="container">
-                    @yield('body')
-                </div>
-            @else
-                @yield('body')
-            @endif
-        </div>
-    </div>
-
-    @hasSection('script')
-        @yield('script')
-    @endif
-
-    {{-- не админ --}}
-
-    <div class="container my-5">
-        @if (session('mpro_error'))
-            <div style="color:red">{{ session('mpro_error') }}</div>
-        @endif
-        войти
-        <form method="POST" action="{{ route('magic.login') }}">
-            @csrf
-            <input type="email" name="email" placeholder="Email" required value="a@a.a">
-            <input type="password" name="password" placeholder="Пароль" required value="magic">
-            <label>
-                <input type="checkbox" name="remember"> Запомнить меня
-            </label>
-            <button type="submit">Войти</button>
-        </form>
-    </div>
-
-
-    {{-- @mproauth
+        {{-- не админ --}}
     @else
-    @endmproauth --}}
+        <div class="container my-5">
+            <h1>MagicPro</h1>
+            @if (session('mpro_error'))
+                <div style="color:red">{{ session('mpro_error') }}</div>
+            @endif
+
+            <form method="POST" action="{{ route('magic.login') }}">
+                @csrf
+                <input type="email" name="email" placeholder="Email" required value="a@a.a">
+                <input type="password" name="password" placeholder="Пароль" required value="magic">
+                <label>
+                    <input type="checkbox" name="remember"> Запомнить меня
+                </label>
+                <button type="submit">Войти</button>
+            </form>
+        </div>
+    @endmproauth
 
 
     {{-- @vite(['resources/js/adminCommon.js']) --}}

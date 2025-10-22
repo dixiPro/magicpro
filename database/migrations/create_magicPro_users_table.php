@@ -20,15 +20,23 @@ return new class extends Migration
             $table->timestamps();
         });
 
+        $email = 't@t.t';
+        $password = 'mmagic';
+
         // создаём администратора
         DB::table('magicPro_users')->insert([
             'name'       => 'Admin',
-            'email'      => 'a@a.a',
-            'password'   => Hash::make('magic'),
+            'email'      => $email,
+            'password'   => Hash::make($password),
             'role'       => 'admin',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+
+        echo "Table magicPro_users was created:\n";
+        echo "Admin  created:\n";
+        echo "-----> Email: " . $email . "\n";
+        echo "-----> Password:" . $password . "\n";
     }
 
     public function down(): void

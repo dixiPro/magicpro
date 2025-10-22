@@ -7,47 +7,13 @@
 @section('title', 'Админка')
 
 @section('body')
-    <h1>Админка1</h1>
-    <pre>
-    @php
-        DumpHelper::dump($MAGIC_FILE_ROLES);
-        print_r(json_encode($MAGIC_FILE_ROLES));
-    @endphp
-</pre>
-
-    @php
-        print_r($user);
-
-    @endphp
-
-
-    <table class="table table-bordered table-sm table-striped">
-        <thead>
-            <tr>
-                <th>Путь</th>
-                <th>Описание</th>
-                <th>Существует</th>
-                <th>Чтение</th>
-                <th>Запись</th>
-                <th>Выполнение</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach ($MAGIC_FILE_ROLES as $item)
-                <tr>
-                    <td nowrap>{{ $item['value'] }}</td>
-                    <td>{{ $item['desc'] ?? '' }}</td>
-                    <td>{{ print_r($item['stat'], true) }}</td>
-
-                    {{-- <td>{{ $item['exists'] ? '✅' : '❌' }}</td>
-                    <td>{{ $item['readable'] ? '✅' : '❌' }}</td>
-                    <td>{{ $item['writable'] ? '✅' : '❌' }}</td>
-                    <td>{{ $item['executable'] ? '✅' : '❌' }}</td> --}}
-                </tr>
-            @endforeach
-        </tbody>
-    </table>
-
+    <h1>Админка</h1>
+    <div class="m2">
+        {{ now() }} {{ now()->timezoneName }}
+    </div>
+    <div>
+        <a href="{{ route('magic.cleatCahe') }}">Очистить кеш</a>
+    </div>
     {{-- Чистим кеш --}}
     @if (session('clearCacheStatus'))
         <div class="alert alert-info">
@@ -63,12 +29,64 @@
     @endif
 
     <div>
-        <a href="{{ route('magic.cleatCahe') }}">Очистить кеш</a>
+        <a href="{{ route('magic.testWrite') }}">Права на запись</a>
+    </div>
+    @if (session('testWriteStatus'))
+        <div class="alert alert-info">
+
+            @foreach (session('testWriteStatus', []) as $item)
+                <div>
+                    <b>{{ $item['desc'] }}</b>: {{ $item['value'] }} — {{ $item['result'] }}
+                </div>
+            @endforeach
+
+
+        </div>
+    @endif
+
+    <div>
+        <a href="{{ route('magic.exportArticle') }}">Экспорт табицы Article</a>
     </div>
 
+    <div class="my-3">
+        <div class="my-2"><strong>Импорт</strong></div>
+        <form action="/a_dmin/importArticle" method="POST" enctype="multipart/form-data">
+            @csrf
+            <div class="mb-2">
+                <label for="file">Выберите файл JSON:</label>
+                <input type="file" name="file" id="file" accept=".json" required>
+            </div>
+            <div class="mb-2">
+                <label>
+                    <input type="checkbox" name="writeBase" value="1">
+                    Записать изменения в базу данных
+                </label>
+                <small style="display:block; color:gray;">Если не отмечено — будет только проверка, без сохранения.</small>
+            </div>
+            <button type="submit">Импортировать</button>
+        </form>
+    </div>
 
-    <h3>Текущий пользователь</h3>
-    <pre>{{ json_encode(Auth::guard('magic')->user(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
+    {{-- Вывод результата импорта --}}
+    @if (session('importResult'))
+        <div class="alert alert-info mt-3">
+            @foreach (session('importResult', []) as $item)
+                <div>
+                    <b>{{ $item['name'] }}</b>: {{ $item['msg'] }}
+                </div>
+            @endforeach
+        </div>
+    @endif
+
+    <div><a href="/a_dmin/phpinfo">phpinfo</a></div>
+
+
+    <div class="mt-4">Текущий пользователь</div>
+
+    @php
+        DumpHelper::dump(Auth::guard('magic')->user());
+    @endphp
+
 
     {{-- @php phpinfo(); @endphp --}}
 
