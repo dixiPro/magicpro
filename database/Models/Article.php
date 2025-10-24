@@ -45,11 +45,17 @@ class Article extends Model
     protected static function booted(): void
     {
         static::saving(function (self $m) {
-            // Нормализуем parentId
-            $m->parentId = (int)($m->parentId ?? 0);
-
             // Корень всегда parentId = 0
-            if ((int)($m->id ?? 0) === 1 && $m->parentId !== 0) {
+            if ($m->id == 1) {
+
+                // Запрещаем менять name если запись рут
+                if ($m->name !== 'root') {
+                    throw ValidationException::withMessages([
+                        'parentId' => 'Имя записи с id=1 должно быть "root" и не может быть изменено.',
+                    ]);
+                }
+                // Принудительно фиксируем имя
+                $m->name = 'root';
                 $m->parentId = 0;
             }
 
@@ -92,11 +98,6 @@ class Article extends Model
     {
         $this->attributes['body'] = (string)($v ?? '');
     }
-
-    // public function setRouteParamsAttribute($v): void
-    // {
-    //     $this->attributes['routeParams'] = is_string($v) ? (json_decode($v, true) ?? []) : ($v ?? []);
-    // }
 
     // === связи для MoonShine и Eloquent ===
     public function parent()

@@ -38,7 +38,6 @@ Route::get('/a_dmin/api/exportArticle', [ImportExportController::class, 'exportA
     ->middleware('magic.auth')
     ->withoutMiddleware([Csrf::class])->name('magic.exportArticle');
 
-
 // Апи Артикл
 use MagicProAdminControllers\API_ArticlesPostController;
 

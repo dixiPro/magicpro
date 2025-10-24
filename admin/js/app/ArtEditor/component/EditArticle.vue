@@ -7,6 +7,7 @@ import {
     watch,
     reactive,
     nextTick,
+    toRaw
 } from "vue";
 
 import AceEditor from "./AceEditor.vue";
@@ -14,6 +15,7 @@ import FileManager from "./FileManager.vue";
 import TreeArticle from "./TreeArticle.vue";
 import { formatBlade } from './formatBlade.js';
 import { formatPhp } from './formatPhp.js';
+
 
 const articleId = defineModel("articleId", 1);
 const article = ref({ routeParams: {} });
@@ -75,19 +77,42 @@ onUnmounted(() => {
     window.removeEventListener("keydown", handleKeydown);
 });
 
+function updateRouteParams() {
+    // из за старого кода
+
+    let routeParams = toRaw(article.value.routeParams);
+    if (Array.isArray(routeParams)) {
+        routeParams = {}
+    }
+    if (typeof routeParams !== 'object') {
+        routeParams = {}
+    }
+    console.log(routeParams);
+    const { paramsEnable = false,
+        utmParamsEnable = true,
+        onlySegmentPath = false,
+        validParameters = false,
+        validNames = ['test', 'test2'],
+        lastName = '',
+
+    } = routeParams;
+
+    article.value.routeParams = { paramsEnable, utmParamsEnable, onlySegmentPath, validParameters, validNames }
+}
+
 async function loadRec(id) {
     article.value = await apiArt({
         command: "getById",
         id: id,
     });
+    updateRouteParams();
+
     history.pushState(id, null, "#" + id);
+
+
 }
 
 async function saveRec() {
-    const jsStr = JSON.parse(
-        routeParamsString.value ? routeParamsString.value : "{}"
-    );
-    article.value.routeParams = jsStr;
     article.value = await apiArt({
         command: "saveById",
         article: article.value,
@@ -404,17 +429,76 @@ async function formatDocument() {
     </Dialog>
     <Drawer v-model:visible="addPannel" header="Параметры" position="right">
         <div class="">
-            <div class="my-2">
-                <input type="checkbox" class="form-check-input" v-model="article.isRoute" />
-                route
+            <div class="my-2 d-flex">
+                <div class="nowrap">
+                    <ToggleSwitch v-model="article.menuOn" />
+                </div>
+                <div class="ms-2"> menu</div>
+            </div>
+            <div class="my-2 d-flex">
+                <div class="nowrap">
+                    <ToggleSwitch v-model="article.isRoute" />
+                </div>
+                <div class="ms-2">
+                    route
+                </div>
             </div>
 
-            <div class="my-2">
-                <input type="checkbox" class="form-check-input" v-model="article.menuOn" />
-                menu
+            <div v-if="article.isRoute">
+                <div class="d-flex my-2">
+                    <div class="nowrap">
+                        <ToggleSwitch v-model="article.routeParams.paramsEnable" />
+                    </div>
+                    <div class="ms-2">Параметры</div>
+                </div>
+                <div v-if="article.routeParams.paramsEnable">
+                    <div class="d-flex my-2">
+                        <div class="nowrap">
+                            <ToggleSwitch v-model="article.routeParams.onlySegmentPath" />
+                        </div>
+                        <div class="ms-2">Только сегменты пути (параметры только через /)</div>
+                    </div>
+                    <div v-if="article.routeParams.onlySegmentPath">
+                        <div class="d-flex my-2">
+                            <div class="nowrap">
+                                <ToggleSwitch v-model="article.routeParams.utmParamsEnable" />
+                            </div>
+                            <div class="ms-2">Разрешить Utm ?=utm...</div>
+                        </div>
+                        <div class="d-flex my-2">
+                            <div class="nowrap">
+                                <ToggleSwitch v-model="article.routeParams.validParameters" />
+                            </div>
+                            <div class="ms-2">Только допустимые параметры</div>
+                        </div>
+                        <div v-if="article.routeParams.validParameters">
+                            <div v-for="(value, index) in article.routeParams.validNames" class="row my-1">
+                                <div class="col"><input class="form-control form-control-sm" type="text"
+                                        v-model="article.routeParams.validNames[index]">
+                                </div>
+                                <div class="col-auto">del</div>
+                            </div>
+
+                            <div class="row my-1">
+                                <div class="col"><input class="form-control form-control-sm" type="text"
+                                        v-model="article.routeParams.lastName">
+                                </div>
+                                <div class="col-auto"
+                                    @click="article.routeParams.validNames.push(article.routeParams.lastName); article.routeParams.lastName = ''">
+                                    add</div>
+                            </div>
+
+                        </div>
+
+                    </div>
+                </div>
+                <!--  -->
+
+
+
             </div>
 
-            <div class="my-2">
+            <div class="mt-5">
                 <button class="btn btn-success btn-sm" @click="getController()">
                     Обычный контроллер
                 </button>
@@ -424,6 +508,14 @@ async function formatDocument() {
                     LiveWare контроллер
                 </button>
             </div>
+
+            <div class="my-2">
+                <a :href="'http://mpro2.test/a_dmin/api/exportArticle?id=' + article.id" class="btn btn-success btn-sm">
+                    Экспорт
+                </a>
+            </div>
+
+
         </div>
 
         <pre>

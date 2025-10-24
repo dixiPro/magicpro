@@ -45,26 +45,49 @@
     @endif
 
     <div>
-        <a href="{{ route('magic.exportArticle') }}">Экспорт табицы Article</a>
+        <a href="{{ route('magic.exportArticle', ['id' => 1]) }}">Экспорт табицы Article</a>
     </div>
 
     <div class="my-3">
         <div class="my-2"><strong>Импорт</strong></div>
-        <form action="/a_dmin/importArticle" method="POST" enctype="multipart/form-data">
+        <form action="/a_dmin/importArticle" method="POST" enctype="multipart/form-data" class="p-3 border rounded bg-light">
             @csrf
-            <div class="mb-2">
-                <label for="file">Выберите файл JSON:</label>
-                <input type="file" name="file" id="file" accept=".json" required>
+
+            <div class="mb-3">
+                <label for="file" class="form-label fw-bold">Выберите файл JSON</label>
+                <input type="file" name="file" id="file" accept=".json, .xml" class="form-control" required>
             </div>
-            <div class="mb-2">
-                <label>
-                    <input type="checkbox" name="writeBase" value="1">
+
+            <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" name="writeBase" value="1" id="writeBase">
+                <label class="form-check-label" for="writeBase">
                     Записать изменения в базу данных
                 </label>
-                <small style="display:block; color:gray;">Если не отмечено — будет только проверка, без сохранения.</small>
+                <div class="form-text">Если не отмечено — будет только проверка, без сохранения.</div>
             </div>
-            <button type="submit">Импортировать</button>
+
+            <div class="mb-3">
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="typeFile" checked id="typeFileJson" value="json"
+                        required>
+                    <label class="form-check-label" for="typeFileJson">
+                        из JSON файла
+                    </label>
+                </div>
+
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="typeFile" id="typeFileXml" value="xml">
+                    <label class="form-check-label" for="typeFileXml">
+                        из XML файла
+                    </label>
+                </div>
+            </div>
+
+
+
+            <button type="submit" class="btn btn-primary">Импортировать</button>
         </form>
+
     </div>
 
     {{-- Вывод результата импорта --}}

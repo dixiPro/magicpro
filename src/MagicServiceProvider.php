@@ -43,7 +43,7 @@ class MagicServiceProvider extends ServiceProvider
         Blade::componentNamespace('magic', 'magic');
 
         // Register anonymous Blade components from the given path
-        Blade::anonymousComponentPath(base_path(MAGIC_VIEW_DIR), 'magic');
+        Blade::anonymousComponentPath(MAGIC_VIEW_DIR, 'magic');
 
         // Include helper functions
         require_once __DIR__ . '/TreeHelper.php';

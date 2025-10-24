@@ -53,6 +53,31 @@ class MagicGlobals
                 'desc'  => 'Файлы на сервере'
             ],
         ]);
+
+        define('ENABLE_URL_PARAMS', [
+            // Стандартные UTM
+            'utm_source',
+            'utm_medium',
+            'utm_campaign',
+            'utm_term',
+            'utm_content',
+
+            // Рекламные идентификаторы
+            'gclid',     // Google Ads
+            'fbclid',    // Facebook / Instagram
+            'yclid',     // Яндекс.Директ
+            'ttclid',    // TikTok Ads
+            'msclkid',   // Microsoft Ads (Bing)
+
+            // Альтернативные трекинги
+            '_openstat', // Яндекс, Mail.ru
+            'aff_id',    // Партнёрские ID
+            // 'ref',
+            // 'partner_id',
+            // 'click_id',
+            // 'cid',
+            // 'track_id',
+        ]);
     }
 
     /**

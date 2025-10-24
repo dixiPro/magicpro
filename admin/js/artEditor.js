@@ -14,37 +14,39 @@ import SplitterPanel from "primevue/splitterpanel";
 import ContextMenu from "primevue/contextmenu";
 import Drawer from "primevue/drawer";
 import FileUpload from "primevue/fileupload";
+import ToggleSwitch from "primevue/toggleswitch";
 
 // локальные компоненты
 import ArtEditor from "./app/ArtEditor/ArtEditor.vue";
 
 const components = [
-    //
-    ToastService,
-    Toast,
-    ConfirmDialog,
-    Dialog,
-    Splitter,
-    SplitterPanel,
-    ContextMenu,
-    Drawer,
-    FileUpload,
+  //
+  ToastService,
+  Toast,
+  ConfirmDialog,
+  Dialog,
+  Splitter,
+  SplitterPanel,
+  ContextMenu,
+  Drawer,
+  FileUpload,
+  ToggleSwitch,
 ];
 
 const app = createApp(ArtEditor);
 
 // регистрац компонентов
 components.forEach((component) => {
-    app.component(component.name, component);
+  app.component(component.name, component);
 });
 
 app.use(PrimeVue, {
-    theme: {
-        preset: Aura,
-        options: {
-            cssLayer: { name: "primevue", order: "theme, base, primevue" },
-        },
+  theme: {
+    preset: Aura,
+    options: {
+      cssLayer: { name: "primevue", order: "theme, base, primevue" },
     },
+  },
 });
 
 app.use(ConfirmationService);

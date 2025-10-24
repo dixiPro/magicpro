@@ -2,97 +2,151 @@
 
 namespace MagicProAdminControllers;
 
+
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use PhpParser\Node\Stmt\TryCatch;
+use Illuminate\Support\Str;
+
 use MagicProDatabaseModels\Article;
+
 
 require_once __DIR__ . '/MagicProBuilder.php';
 
 class API_ArticlesPostController extends Controller
 {
     public function handle(Request $request): JsonResponse
+    // command = getById / createNew / deleteById / saveById / getParents    //    
     {
         try {
-            $methods = [
-                'getDefaultController'         => ['name' => 'getDefaultController'],
-                'getDefaultLiveWareController' => ['name' => 'getDefaultLiveWareController'],
-                'getParents'                   => ['name' => 'getParents'],
-                'getChildrens'                 => ['name' => 'getChildrens'],
-                'getBrothers'                  => ['name' => 'getBrothers'],
-                'makeHeTree'                   => ['name' => 'makeHeTree'],
-                'getById'                      => ['name' => 'getArticle'],
-                'createNew'                    => ['name' => 'createNew'],
-                'deleteById'                   => ['name' => 'deleteRec'],
-                'articleByName'                => ['name' => 'getArticleByName'],
-                'move'                         => ['name' => 'move'],
-                'copyRec'                      => ['name' => 'copyRec'],
-                'saveById'                     => ['name' => 'saveById'],
-            ];
 
-            $command = $request->string('command')->toString();
-
-            if (!array_key_exists($command, $methods)) {
-                throw new \InvalidArgumentException("Unknown command '{$command}'");
-            }
-
-            $methodName = $methods[$command]['name'];
-            if (!method_exists($this, $methodName)) {
-                throw new \BadMethodCallException("Method {$methodName} not found");
-            }
-
-            $data = $this->{$methodName}($request);
-
+            $data = $this->handleApi($request);
             return response()->json([
-                'status'  => true,
-                'data'    => $data,
+                'status' => true,
+                'data' => $data,
                 'request' => $request->all(),
             ]);
         } catch (\Throwable $th) {
             $msg = $th->getMessage();
-            if ($th->getFile()) $msg .=  "\n" . 'in ' . $th->getFile();
-            if ($th->getLine()) $msg .= "\n" .  'on line ' . $th->getLine();
+            if ($th->getFile()) {
+                $msg .= ' in ' . $th->getFile() . "\n";
+            }
+            if ($th->getLine()) {
+                $msg .= ' on line ' . $th->getLine() . "\n";
+            }
+            if ($request->all()) {
+                $msg .= ' | request: ' . json_encode($request->all(), JSON_UNESCAPED_UNICODE) . "\n";
+            }
 
             return response()->json([
-                'status'   => false,
+                'status' => false,
                 'errorMsg' => $msg,
-                'request'  => $request->all(),
+                'request' => $request->all()
             ]);
         }
     }
 
-    // ==================================================================
-    //                     ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ
-    // ==================================================================
-
-    private function saveById(Request $request): array
+    public function handleApi(Request $request): array
+    // command = getById / createNew / deleteById / saveById / getParents
+    //    
     {
+        $command = $request->string('command')->toString();
 
-        $article = $request->input('article', []);
-        $id = $article['id'] ?? 0;
-
-        if ($id == 1) {
-            $article['parentId'] = 0;
+        if ($command == 'getDefaultController') {
+            return $this->getDefaultController();
         }
 
-        $record = Article::find($id);
-        if (!$record) {
-            throw new \InvalidArgumentException("id=$id not found");
+        if ($command == 'getDefaultLiveWareController') {
+            return $this->getDefaultLiveWareController();
         }
 
-        deleteMpro($record->toArray());
+        if ($command == 'getParents') {
+            return $this->getParents($request->integer('id'));
+        }
 
-        $record->update($article);
-        createMpro($record->toArray());
+        if ($command == 'getChildrens') {
+            return $this->getChildrens($request->integer('id'));
+        }
 
-        return $record->toArray();
+        if ($command == 'getBrothers') {
+            return $this->getBrothers($request->integer('id'));
+        }
+
+        if ($command == 'makeHeTree') {
+            return $this->makeHeTree($request->integer('id'));
+        }
+
+        // запрос статьи 
+        if ($command == 'getById') {
+            return $this->getArticle($request->integer('id'));
+        }
+
+        // создать  новую
+        if ($command == 'createNew') {
+            return $this->createNew($request->integer('id'));
+        }
+
+        // удалить
+        if ($command == 'deleteById') {
+            return $this->deleteRec($request->integer('id'));
+        }
+
+        if ($command == 'articleByName') {
+            return $this->getArticleByName($request);
+        }
+
+        // переместить
+        if ($command == 'move') {
+            return $this->move(
+                $request->integer('id'),
+                $request->integer('newParentId'),
+                $request->integer('idBrotherUp')
+            )->toArray();
+        }
+
+        // копировать
+        if ($command == 'copyRec') {
+            return $this->copyRec($request->integer('id'));
+        }
+
+        // сохранить заменить
+        if ($command == 'saveById') {
+
+            $article = $request->input('article', []);
+            $id = $article['id'];
+            // root
+            if ($id == 1) {
+                $article['parentId'] = 0;
+            }
+
+            $record = Article::find($id);
+            if (!$record) {
+                throw new \InvalidArgumentException("id=$id not found");
+            }
+
+            // delete old controller
+            deleteMpro($record->toArray());
+
+            $record->update($article);
+
+            createMpro($record->toArray());
+
+            return $record->toArray();
+        }
+
+
+        throw new \InvalidArgumentException("Unkonown command " . $command);
     }
+
+    // ================================
 
     private function getArticleByName(Request $request): array
     {
-        $name = $request->input('name');
+        $name = $request->input('name'); // строка, не integer
         $article = Article::where('name', $name)->first();
+
         if (!$article) {
             throw new \InvalidArgumentException("Статья с name='{$name}' не найдена");
         }
@@ -101,20 +155,23 @@ class API_ArticlesPostController extends Controller
 
     private function getDefaultController(): array
     {
-        return ['controller' => readDefaultController()];
+        $article = ['controller' => readDefaultController()];
+        return $article;
     }
 
     private function getDefaultLiveWareController(): array
     {
-        return ['controller' => readDefaultLiveWareController()];
+        $article = ['controller' => readDefaultLiveWareController()];
+        return $article;
     }
 
-    private function copyRec(Request $request): array
+    private function copyRec(int $id): array
     {
-        $id = $request->integer('id');
         return DB::transaction(function () use ($id) {
+            /** @var Article $src */
             $src = Article::lockForUpdate()->findOrFail($id);
 
+            // Сдвигаем справа: все, у кого npp > текущего — +1
             Article::where('parentId', $src->parentId)
                 ->where('npp', '>', $src->npp)
                 ->lockForUpdate()
@@ -122,53 +179,52 @@ class API_ArticlesPostController extends Controller
 
             $ts = (string) round(microtime(true) * 1000);
 
+            // Копируем все поля
+            /** @var Article $copy */
             $copy = $src->replicate();
             $copy->name  = $src->name  . '_' . $ts;
             $copy->title = $src->title . ' ' . $ts;
             $copy->npp   = $src->npp + 1;
-            $copy->directory = false;
+            $copy->directory  = false;
             $copy->save();
 
             createMpro($copy->toArray());
-            $copy->children = [];
+
+            $copy->children   = [];
 
             return $copy->toArray();
         });
     }
 
-    private function move(Request $request): array
+    private  function move(int $id, int $newParentId, int $idBrotherUp): Article
     {
-        $id = $request->integer('id');
-        $newParentId = $request->integer('newParentId');
-        $idBrotherUp = $request->integer('idBrotherUp');
-
-        $result = DB::transaction(function () use ($id, $newParentId, $idBrotherUp) {
+        return DB::transaction(function () use ($id, $newParentId, $idBrotherUp) {
+            /** @var Article $a */
             $a = Article::lockForUpdate()->findOrFail($id);
             return ($a->parentId === $newParentId)
                 ? self::moveWithinParent($a, $idBrotherUp)
                 : self::moveToAnotherParent($a, $newParentId, $idBrotherUp);
         });
-
-        return $result->toArray();
     }
 
     private static function moveWithinParent(Article $a, int $idBrotherUp): Article
     {
-        $parentId = (int) $a->parentId;
-        $oldNpp   = (int) $a->npp;
+        $parentId = (int)$a->parentId;
+        $oldNpp   = (int)$a->npp;
 
+        // целевая позиция
         $pos = ($idBrotherUp === 0)
             ? 1
             : (function () use ($idBrotherUp, $parentId) {
                 $bro = Article::lockForUpdate()->findOrFail($idBrotherUp);
-                if ((int) $bro->parentId !== $parentId) {
+                if ((int)$bro->parentId !== $parentId) {
                     throw new \InvalidArgumentException('idBrotherUp не из того же parentId');
                 }
-                return (int) $bro->npp + 1;
+                return (int)$bro->npp + 1;
             })();
 
         if ($pos === $oldNpp) {
-            return $a;
+            return $a; // уже на месте
         }
 
         if ($pos > $oldNpp) {
@@ -196,16 +252,18 @@ class API_ArticlesPostController extends Controller
         return DB::transaction(function () use ($a, $newParentId, $idBrotherUp) {
             $oldParentId = (int) $a->parentId;
             if ($newParentId === $oldParentId) {
-                throw new \InvalidArgumentException('newParentId равен текущему parentId');
+                throw new \InvalidArgumentException('newParentId равен текущему parentId; используйте функцию перестановки внутри родителя');
             }
 
             $oldNpp = (int) $a->npp;
 
+            // 1) закрыть "дыру" у старого родителя
             Article::where('parentId', $oldParentId)
                 ->where('npp', '>', $oldNpp)
                 ->lockForUpdate()
                 ->decrement('npp');
 
+            // 2) вычислить позицию у нового родителя
             $pos = 1;
             if ($idBrotherUp !== 0) {
                 $bro = Article::lockForUpdate()->findOrFail($idBrotherUp);
@@ -215,15 +273,18 @@ class API_ArticlesPostController extends Controller
                 $pos = (int) $bro->npp + 1;
             }
 
+            // 3) освободить место у нового родителя
             Article::where('parentId', $newParentId)
                 ->where('npp', '>=', $pos)
                 ->lockForUpdate()
                 ->increment('npp');
 
+            // 4) переместить узел
             $a->parentId = $newParentId;
-            $a->npp = $pos;
+            $a->npp      = $pos;
             $a->save();
 
+            // 5) старый родитель: если детей не осталось — снять флаг directory
             $hasChildrenOld = Article::where('parentId', $oldParentId)
                 ->lockForUpdate()
                 ->exists();
@@ -237,6 +298,7 @@ class API_ArticlesPostController extends Controller
                 }
             }
 
+            // 6) новый родитель — точно директория
             if ($parent = Article::lockForUpdate()->find($newParentId)) {
                 if (!$parent->directory) {
                     $parent->directory = true;
@@ -248,9 +310,9 @@ class API_ArticlesPostController extends Controller
         });
     }
 
-    private function getArticle(Request $request): array
+
+    private function getArticle(int $id): array
     {
-        $id = $request->integer('id');
         $article = Article::find($id);
         if ($article) {
             return $article->toArray();
@@ -258,28 +320,33 @@ class API_ArticlesPostController extends Controller
         throw new \InvalidArgumentException("id=$id not found");
     }
 
-    private function createNew(Request $request): array
+    // добавить запись. Определяет макс. номер по порядку и добовляет в конец.
+    private function createNew(int $id): array
     {
-        $id = $request->integer('id');
         return DB::transaction(function () use ($id) {
-            $parent = $this->getArticle(new Request(['id' => $id]));
+            // Родитель обязателен
+            $parent = $this->getArticle($id); // бросает, если не найден
+
+            // Блокируем ряд для согласованной нумерации (борьба с гонками)
             $maxNpp = DB::table('articles')
                 ->where('parentId', $id)
                 ->lockForUpdate()
                 ->max('npp') ?? 0;
 
+            // Создаём запись в конце
             $article = new Article();
             $article->name     = 'art_' . (int) round(microtime(true) * 1000);
             $article->title    = $article->name;
             $article->parentId = $id;
             $article->npp      = $maxNpp + 1;
-            $article->directory = false;
+            $article->directory      = false;
             $article->controller = readDefaultController();
 
             if (!$article->save()) {
                 throw new \InvalidArgumentException("Error: creation failed");
             }
 
+            // Обновляем флаг директории у родителя
             if (empty($parent['directory'])) {
                 Article::where('id', $id)->update(['directory' => true]);
             }
@@ -288,11 +355,13 @@ class API_ArticlesPostController extends Controller
         });
     }
 
-    private function deleteRec(Request $request): array
+
+    // Удаляет. Удаляет детей. У оставшихся братьев пересчитывает номер по порядку. 
+    // если у родителя не осталось детей parent-directory = 0
+    public function deleteRec(int $id): array
     {
-        $id = $request->integer('id');
         if ($id === 1) {
-            throw new \InvalidArgumentException('Удалять рут нельзя');
+            throw new \InvalidArgumentException('Удалять рут нельзя ' . $id .   "\n");
         }
 
         return DB::transaction(function () use ($id) {
@@ -307,41 +376,48 @@ class API_ArticlesPostController extends Controller
             throw new \InvalidArgumentException("Удаление: id={$id} не найден");
         }
 
+        // Родитель до удаления (может быть null)
         $parent = Article::find($article->parentId);
-        $childIds = Article::where('parentId', $id)->pluck('id');
 
+        // Рекурсивно удаляем детей
+        $childIds = Article::where('parentId', $id)->pluck('id');
         foreach ($childIds as $childId) {
-            $this->deleteRecNoTx((int) $childId);
+            $this->deleteRecNoTx((int)$childId);
         }
 
+        // Сдвигаем npp у братьев после текущего
         Article::where('parentId', $article->parentId)
             ->where('npp', '>', $article->npp)
             ->decrement('npp');
 
+        // Удаляем текущую запись
         deleteMpro($article->toArray());
         $article->delete();
 
+        // Если у родителя не осталось детей — снимаем флаг directory
         if ($parent && Article::where('parentId', $parent->id)->doesntExist()) {
-            $parent->directory = false;
+            $parent->directory = false; // cast boolean в модели
             $parent->save();
         }
 
         return $parent ? $parent->toArray() : [];
     }
 
-    private function makeHeTree(Request $request): array
+    private function makeHeTree(int $id): array
     {
-        $id = $request->integer('id');
-        $tree = [];
+        $tree  = [];
         $curId = $id;
+
+        // максимально допустимая глубина = количество статей
         $maxDepth = Article::count();
-        $i = 0;
+        $i        = 0;
 
         while (true) {
             if (++$i > $maxDepth) {
                 throw new \InvalidArgumentException("Слишком глубокая или зацикленная иерархия (id={$id})");
             }
 
+            // текущий узел
             $article = Article::where('id', $curId)
                 ->first(['id', 'title as text', 'npp', 'parentId', 'menuOn', 'isRoute', 'directory']);
 
@@ -350,6 +426,8 @@ class API_ArticlesPostController extends Controller
             }
 
             $node = $article->toArray();
+
+            // дети
             $node['children'] = Article::where('parentId', $curId)
                 ->orderBy('npp')
                 ->orderBy('id')
@@ -360,7 +438,7 @@ class API_ArticlesPostController extends Controller
                 $tree = $node;
             } else {
                 foreach ($node['children'] as $key => $val) {
-                    if ((int) $val['id'] === (int) $tree['id']) {
+                    if ((int)$val['id'] === (int)$tree['id']) {
                         $node['children'][$key] = $tree;
                         break;
                     }
@@ -368,29 +446,31 @@ class API_ArticlesPostController extends Controller
                 $tree = $node;
             }
 
-            $curId = (int) $node['parentId'];
+            $curId = (int)$node['parentId'];
             if ($curId === 0) {
-                break;
+                break; // дошли до корня
             }
         }
 
         return [$tree];
     }
 
-    private function getParents(Request $request): array
+
+    private function getParents(int $id): array
     {
-        $id = $request->integer('id');
         if ($id == 1) {
             return [];
         }
 
         $parents = [];
+
         $article = Article::find($id);
+
         if (!$article) {
             throw new \InvalidArgumentException("id={$id} не найден");
         }
-
-        while (true) {
+        $repeat = true;
+        while ($repeat) {
             $parent = Article::find($article->parentId);
             if (!$parent) {
                 throw new \InvalidArgumentException("Родитель id={$article->parentId} не найден");
@@ -400,31 +480,31 @@ class API_ArticlesPostController extends Controller
                 'id'    => $parent->id,
                 'name'  => $parent->name,
                 'title' => $parent->title,
-                'npp'   => $parent->npp,
+                'npp' => $parent->npp,
             ];
             $article = $parent;
-            if ($article->id == 1) break;
+            $repeat = $article->id != 1;
         }
 
         return $parents;
     }
 
-    private function getChildrens(Request $request): array
+    private function getChildrens(int $id): array
     {
-        $id = $request->integer('id');
+        // убеждаемся, что родитель существует
         if (!Article::find($id)) {
             throw new \InvalidArgumentException("id={$id} не найден");
         }
 
+        // берём только нужные поля и сортируем по npp 
         return Article::where('parentId', $id)
             ->orderBy('npp')
             ->get(['id', 'title as text', 'npp', 'parentId', 'menuOn', 'isRoute', 'directory'])
             ->toArray();
     }
 
-    private function getBrothers(Request $request): array
+    private function getBrothers(int $id): array
     {
-        $id = $request->integer('id');
         $article = Article::find($id);
         if (!$article) {
             throw new \InvalidArgumentException("id={$id} не найден");

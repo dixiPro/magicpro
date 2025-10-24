@@ -5,6 +5,7 @@ import { BaseTree, Draggable, pro, OpenIcon } from "@he-tree/vue";
 import "@he-tree/vue/style/default.css";
 import "@he-tree/vue/style/material-design.css";
 import { dragContext } from "@he-tree/vue";
+import { bodyCell } from "@primeuix/themes/aura/datatable";
 
 const props = defineProps({
     idArticle: { type: Number, default: 1 },
@@ -283,58 +284,32 @@ function rollback(dragNode) {
 <template>
     <!-- <pre>{{ JSON.stringify(treeData, null, 2) }} </pre> -->
     <div class="ms-2 tree-pannel">
-        <Draggable
-            class="mtl-tree my-2"
-            v-model="treeData"
-            :key="version"
-            @after-drop="onAfterDrop"
-            :ondragstart="onDragStart"
-            treeLine
-        >
+        <Draggable class="mtl-tree my-2" v-model="treeData" :key="version" @after-drop="onAfterDrop"
+            :ondragstart="onDragStart" treeLine>
             <template #default="{ node, stat, tree }">
-                <div
-                    class="d-flex pointer"
-                    @dragover.stop.prevent="
-                        node.lazy ? onFolderClick(node, stat, tree) : ''
-                    "
-                >
+                <div class="d-flex pointer" @dragover.stop.prevent="
+                    node.lazy ? onFolderClick(node, stat, tree) : ''
+                    ">
                     <div>
-                        <OpenIcon
-                            v-if="stat.children.length"
-                            :open="stat.open"
-                            class="mtl-mr"
-                            @click.native="stat.open = !stat.open"
-                        />
+                        <OpenIcon v-if="stat.children.length" :open="stat.open" class="m-0 p-0"
+                            @click.native="stat.open = !stat.open" />
                     </div>
 
-                    <div
-                        v-if="node.lazy"
-                        @click.native="onFolderClick(node, stat, tree)"
-                    >
+                    <div v-if="node.lazy" @click.native="onFolderClick(node, stat, tree)">
                         <i class="fas fa-chevron-right me-1"></i>
                     </div>
 
-                    <div
-                        @contextmenu.prevent="
-                            onRightClick($event, node, stat, tree)
-                        "
-                        :class="{
+                    <div @contextmenu.prevent="
+                        onRightClick($event, node, stat, tree)
+                        " :class="{
                             active: node.id == currentNodeId,
                             notroute: !node.isRoute,
                             route: node.isRoute,
-                        }"
-                        @click="onTextClick(node, stat)"
-                    >
-                        {{ node.text }}
+                        }" @click="onTextClick(node, stat)">
+                        <span :style="node.directory ? 'margin-left:-3px' : 'margin-left:3px'"></span>{{ node.text }}
 
-                        <i
-                            v-if="node.isRoute"
-                            class="icon-small fa-link fas mx-1"
-                        ></i>
-                        <i
-                            v-if="node.menuOn"
-                            class="icon-small fas fa-eye mx-1"
-                        ></i>
+                        <i v-if="node.isRoute" class="icon-small fa-link fas mx-1"></i>
+                        <i v-if="node.menuOn" class="icon-small fas fa-eye mx-1"></i>
                     </div>
                 </div>
             </template>
@@ -363,6 +338,11 @@ function rollback(dragNode) {
 .he-tree__open-icon svg {
     width: 20px;
     height: 20px;
+}
+
+.he-tree {
+    --he-tree-indent: 34px;
+    /* стандартно около 16px */
 }
 
 .p-contextmenu ul {
