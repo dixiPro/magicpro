@@ -9,18 +9,23 @@ use Illuminate\Http\Request;
 abstract class MagicController extends Controller
 {
     // Универсальный метод handle для роутов
-    public function handle(Request $request)
+    public function handle(...$args)
     {
-        $attr = $request->attributes->all();
+        [$request, $getParams] = $args;
+
+        // $attr = $request->attributes->all();
+
         $view = $request->attributes->get('view');
 
         view()->share('Env', $request->attributes->all());
+        view()->share('Get', $getParams);
 
-        $data = $this->process($request);
+        $data = $this->process($request, $getParams);
 
         return view($view, $data);
     }
 
     // Обязателен в наследниках — возвращает данные для вьюхи
-    abstract protected function process(Request $request): array;
+    //  а тут прут ошибки
+    abstract protected function process(...$args): array;
 }

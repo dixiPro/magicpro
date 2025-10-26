@@ -77,6 +77,10 @@ onUnmounted(() => {
     window.removeEventListener("keydown", handleKeydown);
 });
 
+// 
+const newValidName = ref('');
+const swapForName = ref('');
+
 function updateRouteParams() {
     // из за старого кода
 
@@ -88,16 +92,23 @@ function updateRouteParams() {
         routeParams = {}
     }
     console.log(routeParams);
-    const { paramsEnable = false,
+    const {
+        adminOnly = false,
+        getEnable = false,
         utmParamsEnable = true,
-        onlySegmentPath = false,
-        validParameters = false,
-        validNames = ['test', 'test2'],
-        lastName = '',
+        bindKeys = false,
+        keysArr = [],
 
     } = routeParams;
 
-    article.value.routeParams = { paramsEnable, utmParamsEnable, onlySegmentPath, validParameters, validNames }
+    article.value.routeParams = {
+        // 
+        adminOnly,
+        getEnable,
+        utmParamsEnable,
+        bindKeys,
+        keysArr
+    }
 }
 
 async function loadRec(id) {
@@ -427,7 +438,7 @@ async function formatDocument() {
             <li><kbd>Alt+3</kbd> — скрыть/отобразить панель дерева</li>
         </ul>
     </Dialog>
-    <Drawer v-model:visible="addPannel" header="Параметры" position="right">
+    <Drawer v-model:visible="addPannel" header="Параметры" position="right" style="width: 600px;">
         <div class="">
             <div class="my-2 d-flex">
                 <div class="nowrap">
@@ -447,51 +458,107 @@ async function formatDocument() {
             <div v-if="article.isRoute">
                 <div class="d-flex my-2">
                     <div class="nowrap">
-                        <ToggleSwitch v-model="article.routeParams.paramsEnable" />
+                        <ToggleSwitch v-model="article.routeParams.adminOnly" />
                     </div>
-                    <div class="ms-2">Параметры</div>
+                    <div class="ms-2">Только Админ (для отладки)</div>
                 </div>
-                <div v-if="article.routeParams.paramsEnable">
+
+                <div class="d-flex my-2">
+                    <div class="nowrap">
+                        <ToggleSwitch v-model="article.routeParams.utmParamsEnable" />
+                    </div>
+                    <div class="ms-2">Разрешить Utm ?=utm...</div>
+                </div>
+
+                <div class="d-flex my-2">
+                    <div class="nowrap">
+                        <ToggleSwitch v-model="article.routeParams.getEnable" />
+                    </div>
+                    <div class="ms-2">
+                        <div>Использовать GET параметры</div>
+                        <div v-if="article.routeParams.getEnable">
+
+                            <div class="mt-2">Допустимые параметры</div>
+                            <div class="small">Если пусто то все</div>
+                            <div class="d-table">
+                                <div class="d-table-row " v-for="(value, index) in article.routeParams.keysArr"
+                                    :key="index">
+                                    <div class="d-table-cell px-1 py-1 align-middle" style="min-width: 300px;">
+                                        <input class="form-control form-control-sm" type="text"
+                                            v-model="article.routeParams.keysArr[index]">
+                                    </div>
+                                    <div class="d-table-cell px-1 py-1 ">
+                                        <i class="fas fa-arrow-circle-down"
+                                            v-show="article.routeParams.keysArr.length - 1 > index && article.routeParams.bindKeys"
+                                            @click="
+                                                article.routeParams.swap = article.routeParams.keysArr[index + 1];
+                                            article.routeParams.keysArr[index + 1] = article.routeParams.keysArr[index];
+                                            article.routeParams.keysArr[index] = article.routeParams.swap;
+                                            delete article.routeParams.swap;
+                                            "></i>
+                                    </div>
+                                    <div class="d-table-cell px-1 py-1 ">
+                                        <i class="fas fa-arrow-circle-up"
+                                            v-if="index > 0 && article.routeParams.bindKeys" @click="
+                                                swapForName = article.routeParams.keysArr[index - 1];
+                                            article.routeParams.keysArr[index - 1] = article.routeParams.keysArr[index];
+                                            article.routeParams.keysArr[index] = swapForName;
+                                            "></i>
+                                    </div>
+
+                                    <div class="d-table-cell px-1 py-1 ">
+                                        <i class="fas fa-trash"
+                                            @click="article.routeParams.keysArr.splice(index, 1)"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row my-2">
+
+                                <div class="col-9">
+                                    <input class="form-control form-control-sm" type="text" v-model="newValidName">
+                                </div>
+                                <div class="col-1">
+                                    <span v-if="newValidName.trim() != ''" class="fas fa-plus"
+                                        @click="article.routeParams.keysArr.push(newValidName); newValidName = '';"></span>
+                                    <span v-else class="fas fa-plus"></span>
+                                </div>
+                            </div>
+
+
+                            <div class="d-flex my-2" v-if="article.routeParams.keysArr.length > 0">
+                                <div class="nowrap">
+                                    <ToggleSwitch v-model="article.routeParams.bindKeys" />
+                                </div>
+                                <div class="ms-2">
+                                    <div>Привязывать параметры</div>
+                                    <div class="small">Только для параметорв в / /</div>
+                                </div>
+                            </div>
+                        </div>
+
+
+                    </div>
+                </div>
+
+
+
+
+                <!-- <div v-if="article.routeParams.onlySegmentPath">
+
                     <div class="d-flex my-2">
                         <div class="nowrap">
-                            <ToggleSwitch v-model="article.routeParams.onlySegmentPath" />
+                            <ToggleSwitch v-model="article.routeParams.bindKeys" />
                         </div>
-                        <div class="ms-2">Только сегменты пути (параметры только через /)</div>
+                        <div class="ms-2">Только допустимые параметры</div>
                     </div>
-                    <div v-if="article.routeParams.onlySegmentPath">
-                        <div class="d-flex my-2">
-                            <div class="nowrap">
-                                <ToggleSwitch v-model="article.routeParams.utmParamsEnable" />
-                            </div>
-                            <div class="ms-2">Разрешить Utm ?=utm...</div>
-                        </div>
-                        <div class="d-flex my-2">
-                            <div class="nowrap">
-                                <ToggleSwitch v-model="article.routeParams.validParameters" />
-                            </div>
-                            <div class="ms-2">Только допустимые параметры</div>
-                        </div>
-                        <div v-if="article.routeParams.validParameters">
-                            <div v-for="(value, index) in article.routeParams.validNames" class="row my-1">
-                                <div class="col"><input class="form-control form-control-sm" type="text"
-                                        v-model="article.routeParams.validNames[index]">
-                                </div>
-                                <div class="col-auto">del</div>
-                            </div>
-
-                            <div class="row my-1">
-                                <div class="col"><input class="form-control form-control-sm" type="text"
-                                        v-model="article.routeParams.lastName">
-                                </div>
-                                <div class="col-auto"
-                                    @click="article.routeParams.validNames.push(article.routeParams.lastName); article.routeParams.lastName = ''">
-                                    add</div>
-                            </div>
+                    <div v-if="article.routeParams.bindKeys">
+                        <div>
+                            ййцц
 
                         </div>
 
                     </div>
-                </div>
+                </div> -->
                 <!--  -->
 
 
@@ -519,18 +586,22 @@ async function formatDocument() {
         </div>
 
         <pre>
-                    {{ article }}          
-        </pre>
+        {{ article }}
+    </pre>
     </Drawer>
 </template>
-<style>
+<style scoped>
 :root {
     --p-dialog-header-padding: 0.2rem 1rem;
     /* новое значение */
 }
 
-.p-dialog ul li {
-    margin-bottom: 0.5rem;
-    /* или 0.75rem */
+.fas,
+.far {
+    cursor: pointer;
+}
+
+.small {
+    font-size: 0.8em;
 }
 </style>

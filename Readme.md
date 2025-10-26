@@ -65,17 +65,29 @@ npm i
 **Vite build**
 
 Vite is configured to build outside the project root.
+
 ```bash
 cd packages/dixi/magicpro
 npm i
 npm run dev
 npm run bhuild
 ```
+
+#### 2025-27-10
+
+##### Added / Change
+
+- Dynamic Routing
+- Setup Dynamic Routing: binding parametrs
+- 404 error handling
+- Admin testing page: attr for writing atrr
+- import foem MagicPro Xml
+
 #### 2025-23-10
 
 ##### Added / Change
- - Export-import 
 
+- Export-import JSON
 
 #### 2025-19-10
 
@@ -109,11 +121,11 @@ npm run bhuild
 - Route, controller, and view generation from Article model
 - Core project foundation
 
-
 ## Note
 
 ### Laravel installation
-```bash
+
+````bash
 # Install Composer (if not installed)
 php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
 php composer-setup.php --install-dir=/usr/local/bin --filename=composer
@@ -138,9 +150,10 @@ php artisan migrate
 sudo chown -R $(logname):www-data .
 sudo find . -type f -exec chmod 664 {} \;
 sudo find . -type d -exec chmod 775 {} \;
-```
+````
 
 ### SQlite managment
+
 ```bash
 # need RDP X-11
 
@@ -150,6 +163,7 @@ sqlitebrowser
 ```
 
 #### Setup RDP on Ubuntu Server
+
 ```bash
 sudo apt update
 sudo apt install -y xrdp xfce4
@@ -164,6 +178,5 @@ sudo systemctl restart xrdp
 # Run "mstsc" (Remote Desktop Connection)
 # or use MobaXterm: https://mobaxterm.mobatek.net/download.html
 ```
-
 
 MIT © dixiRu

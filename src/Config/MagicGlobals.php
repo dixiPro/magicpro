@@ -54,6 +54,8 @@ class MagicGlobals
             ],
         ]);
 
+        define('ART_NAME_404', 'error404');
+
         define('ENABLE_URL_PARAMS', [
             // Стандартные UTM
             'utm_source',
@@ -71,7 +73,7 @@ class MagicGlobals
 
             // Альтернативные трекинги
             '_openstat', // Яндекс, Mail.ru
-            'aff_id',    // Партнёрские ID
+            // 'aff_id',    // Партнёрские ID
             // 'ref',
             // 'partner_id',
             // 'click_id',

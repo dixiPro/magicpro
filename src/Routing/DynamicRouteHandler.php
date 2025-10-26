@@ -5,12 +5,109 @@ namespace MagicProSrc\Routing;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use MagicProDatabaseModels\Article;
+use Illuminate\Support\Facades\Auth;
 
 
 class DynamicRouteHandler
 {
-    public function handle(Request $request, $any = null)
+
+    private function checkRout(Request $request, $routeParams, $segments)
     {
+        // только для админа
+        if ($routeParams['adminOnly'] && ! Auth::guard('magic')->check()) {
+            throw new \Exception('Только админам запрещен');
+        }
+        // 
+        // парсим все данные в один массив = сегмент + квери
+        // выбрасываем разрешенные
+        // если ничего не осталось, значит запрос валиден
+        // 
+
+        // достаем все параметры из сегмента
+        $segmentParams = []; // параметры из сегмента
+
+        // есть ли привязанные параметры
+        $bindKeys = !empty($routeParams['keysArr']) && $routeParams['bindKeys'] && $routeParams['getEnable'];
+
+        if ($bindKeys) {
+            // ключи в $routeParams['keysArr']
+            // значения в   $segments
+
+            // количество ключей не совпадает
+            if (count($segmentParams) !== count($routeParams['keysArr'])) {
+                throw new \Exception('количество ключей не совпадает');
+            }
+            // ключи из $routeParams['keysArr'] значения из  $segments
+            $segmentParams = array_combine($routeParams['keysArr'], $segments);
+            // проверка
+            $valid = $segmentParams && !in_array(null, $segmentParams, true);
+            if (!$valid) {
+                throw new \Exception('неверные данные в ключе');
+            }
+        } else {
+            // параметны  не привязаны к сегменту
+            // ключи в один массив
+            $keys = array_values(array_filter($segments, fn($v, $i) => $i % 2 == 0, ARRAY_FILTER_USE_BOTH));
+            // значения в другой
+            $values = array_values(array_filter($segments, fn($v, $i) => $i % 2 == 1, ARRAY_FILTER_USE_BOTH));
+            // 
+            if (count($keys) !== count($values)) {
+                throw new \Exception('параметры segment нечетные');
+            }
+            $segmentParams = array_combine($keys, $values);
+        }
+
+        // все параметры в  виде ключ-значение
+        $allQuery = array_merge($segmentParams, $request->query());
+        // если все проверки пройдут ок этот массив вернется в виде результата
+
+        // все ключи
+        $allQueryKeys = array_keys($allQuery);
+
+        // дальше работаем только с ключами
+
+
+        // Оставшиеся ключи
+        $remainingKeys = $allQueryKeys;
+
+
+        // Удаляем утм ключи, если УТМ   разрешен
+        if ($routeParams["utmParamsEnable"]) {
+            $remainingKeys = array_diff($remainingKeys, ENABLE_URL_PARAMS);
+        }
+
+        // гет запрещены 
+        // 
+        if (!$routeParams['getEnable']) {
+            // УТМ мы уже вычистили если они разрешены
+            // поэтому в параметрах должно быть пусто
+            if (empty($remainingKeys)) {
+                return  $allQuery;
+            } else {
+                throw new \Exception('Гет запрещено, но параметры есть');
+            }
+        }
+        // гет параметры разрешены
+        // нет привязанных параметров
+        if (empty($routeParams['keysArr'])) {
+            return $allQuery;
+        }
+
+        // есть привязанные параметры
+        // Удаляем привязаные параметры 
+        $remainingKeys = array_diff($remainingKeys, $routeParams['keysArr']);
+
+        // в ключах ничего нет
+        // запрос ок
+        if (empty($remainingKeys)) {
+            return $allQuery;
+        }
+        throw new \Exception('Ошибка в checkRout');
+    }
+
+    private function checkFirts(Request $request)
+    {
+
         // 🔹 Получаем текущий путь
         $segments = $request->segments(); // ['testPage', 'param1', 'param2']  
         // заглавная
@@ -22,59 +119,54 @@ class DynamicRouteHandler
         }
 
         // 🔹 Ищем запись в базе
-        $article = Article::where('name', $page)->first()->toArray();
-
-        // 🔹 Если запись не найдена — 404
-        if (empty($article)) {
-            abort(404);
+        $page = trim($page);
+        // могут быть только буквы, цифры и - _
+        if (!preg_match('/^[A-Za-z0-9_-]+$/', $page)) {
+            throw new \Exception('невалидная статья');
         }
+        $article = Article::where('name', $page)->first();
+        if (!$article) {
+            throw new \Exception('статья не найдена');
+        }
+        $article = $article->toArray();
+
+        // нет раута
+        if (! ($article['isRoute'] ?? null)) {
+            throw new \Exception('раут запрещен');
+        }
+
+        $routeParams = $article['routeParams'];
+
+        $res = $this->checkRout($request, $article['routeParams'], $segments);
 
         // Тут все верно
         $name      = $article['name'];
         $title     = $article['title'];
         $artId     = $article['id'];
-        $parentId  = $article['parentId'] ?? null;
-        $isRoute  = $article['isRoute'] ?? null;
+        $parentId  = $article['parentId'];
+        $isRoute  = $article['isRoute'];
         $view      = 'magic::' . $article['name'];
         $controllerName = '\\MagicProControllers\\' . $name;
-
-        $routeParams = $article['routeParams'];
-
-        if (!$isRoute) {
-            abort(404);
-            return null;
-        }
-
-        // параметры запрещены
-        if (!$routeParams['paramsEnable']) {
-            // есть еще в сегменте 
-            if (!empty($segments)) {
-                abort(404);
-                return null;
-            }
-            // если есть не разрешенные квери 404
-            $queryKeys = array_keys(request()->query());
-            $matched = array_diff($queryKeys, ENABLE_URL_PARAMS);
-            if (!empty($matched)) {
-                abort(404);
-                return null;
-            }
-        }
-
         // 
-        // $data = $request->all();для дебага
-        // 
+        // добавляем атрибуты
         $request->attributes->add(compact('name', 'title', 'artId', 'parentId', 'view'));
-        // 
-        // $data = $request->attributes->all(); для дебага
-        // 
 
         $controller = new $controllerName();
 
-        $segments = $request->segments(); // ['testPage', 'param1', 'param2']
-        $query  = $request->query();
+        return $controller->handle($request,  $res);
+    }
 
-        // управление передается правильно
-        return $controller->handle($request, $any);
+    public function handle(Request $request)
+    {
+        try {
+            $controller = $this->checkFirts($request);
+            return $controller;
+        } catch (\Throwable $th) {
+            return response()->view('magic::' . ART_NAME_404, [
+                'message' => $th->getMessage(),
+                'file'    => $th->getFile(),
+                'line'    => $th->getLine(),
+            ], 404);
+        }
     }
 }
