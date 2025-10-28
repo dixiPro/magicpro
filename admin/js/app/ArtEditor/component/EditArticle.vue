@@ -42,9 +42,7 @@ onMounted(() => {
   ready.value.y = window.innerHeight - rect.top; // расстояние до нижнего края экрана
   ready.value.x = window.innerWidth; // Ширина окна
   ready.value.show = true;
-  // setTimeout(() => {
-  //     ready.value.show = true;
-  // }, 500);
+
 
   loadRec(articleId.value);
 

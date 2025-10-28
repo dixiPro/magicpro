@@ -30,10 +30,20 @@
     },
     "scripts": {
         "post-autoload-dump": [
-            "echo   Запускаю скрипт пост инсталл!"
+            "@php artisan optimize:clear",
+            "@php artisan view:clear",
+            "@php artisan cache:clear",
+            "@php artisan config:clear",
+            "@php artisan route:clear",
+            "@php artisan event:clear",
+            "@php artisan clear-compiled",
+            "echo ✅ Laravel кэш, конфиг и руты успешно очищены!"
+        ],
+        "post-install-cmd": [
+            "MagicProSrc\\Installer::postInstall"
         ],
         "post-update-cmd": [
-            "echo   Запускаю скрипт аедейт инсталл!"
+            "MagicProSrc\\Installer::postInstall"
         ]
     }
 }

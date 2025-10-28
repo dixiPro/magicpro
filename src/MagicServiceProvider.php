@@ -18,8 +18,6 @@ use MagicProAdminMiddleware\CheckMagicAuth; // миддлваре авториз
 
 use Illuminate\Support\Facades\Config;
 
-use MagicProSrc\Console\InstallMagicProCommand; // Создание директорий при установке
-
 use MagicProSrc\Config\MagicGlobals; // Глобальные константы
 
 class MagicServiceProvider extends ServiceProvider
@@ -28,13 +26,6 @@ class MagicServiceProvider extends ServiceProvider
     {
 
         MagicGlobals::register(); // Константы глобальные
-
-        // php artisan magicpro:install
-        if ($this->app->runningInConsole()) {
-            $this->commands([
-                InstallMagicProCommand::class,
-            ]);
-        }
 
         // вьюхи
         $this->loadViewsFrom(MAGIC_VIEW_DIR, 'magic');
