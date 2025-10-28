@@ -11,8 +11,6 @@ class InstallMagicProCommand extends Command
 
     public function handle(): int
     {
-
-
         $this->info("Начинаем установку MagicPro...\n");
 
         foreach (MAGIC_DIRECTORIES  as $path) {
@@ -26,8 +24,8 @@ class InstallMagicProCommand extends Command
 
         $this->info("\n✅ Установка MagicPro завершена.\n");
         $this->warn("После установки выполните:");
-        $this->warn("sudo chown -R \$USER:www-data " . MAGIC_DATA_DIR . "\n");
-        $this->warn("sudo chown -R \$USER:www-data " . FILES_UPLOAD_DIRECTORY . "\n");
+        $this->warn('sudo chown -R $(logname):www-data ' . MAGIC_DATA_DIR . "\n");
+        $this->warn('sudo chown -R $(logname):www-data ' . FILES_UPLOAD_DIRECTORY . "\n");
 
         return self::SUCCESS;
     }

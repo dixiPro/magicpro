@@ -76,12 +76,8 @@ class ImportExportController extends Controller
             $xmlText = substr($xmlText, 0, $pos + strlen('</article-list>'));
         }
         // оборачиваем art_body
-        $xmlText = str_replace('<art_body>', '<art_body><![CDATA[  ', $xmlText);
-        $xmlText = str_replace('</art_body>', '  ]]></art_body>', $xmlText);
-
-        // Убираем art_addfield1
-        $xmlText = preg_replace('/<art_addfield1>.*?<\/art_addfield1>/s', '', $xmlText);
-        $xmlText = preg_replace('/<art_parseError>.*?<\/art_parseError>/s', '', $xmlText);
+        $xmlText = str_replace('<art_body>', '<art_body><![CDATA[', $xmlText);
+        $xmlText = str_replace('</art_body>', ']]></art_body>', $xmlText);
 
         try {
             $xml = simplexml_load_string($xmlText, 'SimpleXMLElement', LIBXML_NOCDATA);

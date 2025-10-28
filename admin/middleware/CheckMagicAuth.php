@@ -19,8 +19,8 @@ class CheckMagicAuth
         }
 
         $user = $guard->user();
-
-        if ($role && $user->role !== $role) {
+        $roles = ['admin', 'editor'];
+        if (!in_array($user->role, $roles)) {
             return response()->json([
                 'status' => 'error',
                 'msg' => 'Insufficient rights (requires role: ' . $role . ')'

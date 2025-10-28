@@ -3,12 +3,28 @@
 namespace MagicProSrc;
 // общий контроллер для статей
 
-use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+// use App\Http\Controllers\Controller;
+use Illuminate\View\Component;
 
-abstract class MagicController extends Controller
+abstract class MagicController // extends Component
 {
-    // Универсальный метод handle для роутов
+
+    // public function __construct(?string $nameArt = null)
+    // {
+    //     $a = 1;
+    //     $this->nameArt = $nameArt; // ключевой момент
+
+    // }
+
+    // public function render() // : \Illuminate\View\View
+    // {
+    //     $b = 1;
+    //     return view('magic::' . class_basename(static::class), [
+    //         // любые данные
+    //     ]);
+    // }
+
+    // handle для роутов
     public function handle(...$args)
     {
         [$request, $getParams] = $args;

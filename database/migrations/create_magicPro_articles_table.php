@@ -40,6 +40,19 @@ return new class extends Migration
                     'isRoute'      => false,
                     'routeParams'  => '{}',
                 ]);
+
+                DB::table('articles')->insert([
+                    'parentId'     => 1,
+                    'name'         => ART_NAME_404,
+                    'title'        => ART_NAME_404,
+                    'controller'   => '',
+                    'body'         => '<p>Ошибка 404</p><p>{{ $message }}</p><p>{{ $file }} : {{ $line }}</p>',
+                    'templateName' => '',
+                    'directory'    => false,
+                    'menuOn'       => false,
+                    'isRoute'      => false,
+                    'routeParams'  => '{}',
+                ]);
             }
         });
     }

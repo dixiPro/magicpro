@@ -4,6 +4,7 @@ namespace MagicProDatabaseModels; // в композере прописывае�
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Auth;
 
 class Article extends Model
 {
@@ -45,6 +46,22 @@ class Article extends Model
     protected static function booted(): void
     {
         static::saving(function (self $m) {
+            // проверка прав
+
+            $guard = Auth::guard('magic');
+            if (!$guard->check()) {
+                throw ValidationException::withMessages([
+                    'parentId' => 'Авторизация пффф....',
+                ]);
+            }
+            $user = $guard->user();
+            $roles = ['admin', 'editor'];
+            if (!in_array($user->role, $roles)) {
+                throw ValidationException::withMessages([
+                    'parentId' => 'Недостаточно прав',
+                ]);
+            }
+
             // Корень всегда parentId = 0
             if ($m->id == 1) {
 
@@ -74,6 +91,24 @@ class Article extends Model
                         'parentId' => "Родитель id={$m->parentId} не найден.",
                     ]);
                 }
+            }
+
+            // Проверка допустимых символов в name
+            if (!preg_match('/^[a-zA-Z0-9_-]+$/', $m->name)) {
+                throw ValidationException::withMessages([
+                    'name' => 'Имя статьи может содержать только латинские буквы, цифры, дефис и подчёркивание.',
+                ]);
+            }
+
+            // Проверка уникальности name
+            $exists = self::where('name', $m->name)
+                ->when($m->exists, fn($q) => $q->where('id', '!=', $m->id))
+                ->exists();
+
+            if ($exists) {
+                throw ValidationException::withMessages([
+                    'name' => "Статья с именем '{$m->name}' уже существует.",
+                ]);
             }
         });
     }

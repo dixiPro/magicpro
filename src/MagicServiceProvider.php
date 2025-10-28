@@ -39,11 +39,6 @@ class MagicServiceProvider extends ServiceProvider
         // вьюхи
         $this->loadViewsFrom(MAGIC_VIEW_DIR, 'magic');
 
-        // Register Blade component namespace
-        Blade::componentNamespace('magic', 'magic');
-
-        // Register anonymous Blade components from the given path
-        Blade::anonymousComponentPath(MAGIC_VIEW_DIR, 'magic');
 
         // Include helper functions
         require_once __DIR__ . '/TreeHelper.php';
@@ -91,6 +86,13 @@ class MagicServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__ . '/../public' => public_path('vendor/magicpro'),
         ], 'magicpro-assets');
+        // 
+
+
+        // Register anonymous Blade components from the given path
+        Blade::anonymousComponentPath(MAGIC_VIEW_DIR, 'magic');
+        // //
+        Blade::componentNamespace('MagicProControllers', 'magic');
     }
 
     public function register(): void

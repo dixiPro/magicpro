@@ -31,18 +31,48 @@
     <div>
         <a href="{{ route('magic.testWrite') }}">Права на запись</a>
     </div>
+
     @if (session('testWriteStatus'))
         <div class="alert alert-info">
-
             @foreach (session('testWriteStatus', []) as $item)
                 <div>
                     <b>{{ $item['desc'] }}</b>: {{ $item['value'] }} — {{ $item['result'] }}
                 </div>
             @endforeach
-
-
         </div>
     @endif
+
+    <div>
+
+        <a href="#"
+            onclick="fetch('/a_dmin/api/articles', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({command: 'regenerateAll'})
+})
+.then(r => r.json())
+.then(data => document.getElementById('result').textContent = JSON.stringify(data, null, 2))">
+            Перегенирация статей
+        </a>
+
+        <pre id="result"></pre>
+
+
+
+
+    </div>
+
+    @if (session('regenerateArticles'))
+        <div class="alert alert-info">
+            @foreach (session('regenerateArticles', []) as $item)
+                <div>
+
+                </div>
+            @endforeach
+        </div>
+    @endif
+
+    <div><a href="/a_dmin/phpinfo">phpinfo</a></div>
 
     <div>
         <a href="{{ route('magic.exportArticle', ['id' => 1]) }}">Экспорт табицы Article</a>
@@ -50,7 +80,8 @@
 
     <div class="my-3">
         <div class="my-2"><strong>Импорт</strong></div>
-        <form action="/a_dmin/importArticle" method="POST" enctype="multipart/form-data" class="p-3 border rounded bg-light">
+        <form action="/a_dmin/importArticle" method="POST" enctype="multipart/form-data"
+            class="p-3 border rounded bg-light">
             @csrf
 
             <div class="mb-3">
@@ -100,8 +131,6 @@
             @endforeach
         </div>
     @endif
-
-    <div><a href="/a_dmin/phpinfo">phpinfo</a></div>
 
 
     <div class="mt-4">Текущий пользователь</div>

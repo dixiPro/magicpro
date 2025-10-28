@@ -29,6 +29,7 @@ class API_ArticlesPostController extends Controller
                 'move'                         => ['name' => 'move'],
                 'copyRec'                      => ['name' => 'copyRec'],
                 'saveById'                     => ['name' => 'saveById'],
+                'regenerateAll'                => ['name' => 'regenerateAll'],
             ];
 
             $command = $request->string('command')->toString();
@@ -65,6 +66,20 @@ class API_ArticlesPostController extends Controller
     // ==================================================================
     //                     ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ
     // ==================================================================
+
+    private function regenerateAll(Request $request): array
+    {
+
+        $records = Article::orderBy('name', 'asc')->get()->toArray();
+        $saved = [];
+
+        foreach ($records as $article) {
+            deleteMpro($article);
+            createMpro($article);
+            $saved[] =  $article['name'];
+        }
+        return $saved;
+    }
 
     private function saveById(Request $request): array
     {
