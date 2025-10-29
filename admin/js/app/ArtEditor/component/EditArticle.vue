@@ -43,7 +43,6 @@ onMounted(() => {
   ready.value.x = window.innerWidth; // Ширина окна
   ready.value.show = true;
 
-
   loadRec(articleId.value);
 
   watch(articleId, () => {
@@ -78,7 +77,6 @@ function updateRouteParams() {
   if (routeParams === null || typeof routeParams !== 'object') {
     routeParams = {};
   }
-  console.log(routeParams);
   const { adminOnly = false, getEnable = false, utmParamsEnable = true, bindKeys = false, keysArr = [] } = routeParams;
 
   article.value.routeParams = {
@@ -286,13 +284,13 @@ function translit() {
 }
 
 async function formatDocument() {
-  try {
-    const result = await formatBlade(article.value.body, 4);
-    article.value.body = result;
+  const result = await formatBlade(article.value.body, 4);
+  article.value.body = result;
 
-    const result1 = await formatPhp(article.value.controller, 4);
-    article.value.controller = result1;
-    document.showToast('Отформатировано');
+  const result1 = await formatPhp(article.value.controller, 4);
+  article.value.controller = result1;
+  document.showToast('Отформатировано');
+  try {
   } catch (error) {
     document.showToast('Ошибка форматирования: ' + error.message, 'error');
   }

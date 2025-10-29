@@ -26,7 +26,7 @@ export default defineConfig({
         const buildDirectory = '../../../public/vendor/magicpro/';
         const publicDirectory = 'public/vendor/magicpro/';
 
-        fs.emptyDirSync( publicDirectory ); // 🔥 очищает папку
+        fs.emptyDirSync(publicDirectory); // 🔥 очищает папку
         // что копируем, куда копируем
         fs.copySync(
           buildDirectory + 'assets', //
@@ -38,8 +38,6 @@ export default defineConfig({
           publicDirectory + 'manifest.json'
         );
 
-
-
         console.log('✅ MagicPro assets copied to public/vendor/magicpro');
       },
     },
@@ -49,5 +47,16 @@ export default defineConfig({
     // port: 5174,
     strictPort: true,
     fs: { allow: [path.resolve(__dirname, '../../..')] },
+    watch: {
+      ignored: [
+        '**/admin/controller**', //
+        '**/admin/middleware/**',
+        '**/admin/views/**',
+        '**/data/**',
+        '**/database/**',
+        '**/public/**',
+        '**/src/**',
+      ],
+    },
   },
 });

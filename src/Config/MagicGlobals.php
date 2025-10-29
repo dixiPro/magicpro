@@ -27,7 +27,7 @@ class MagicGlobals
         define('FILES_JS_UPLOAD', 'magicPro');
 
         // 💾 Абсолютный путь к папке загрузок на сервере
-        define('FILES_UPLOAD_DIRECTORY', base_path('public' . FILES_JS_UPLOAD));
+        define('FILES_UPLOAD_DIRECTORY', base_path('public') . '/' . FILES_JS_UPLOAD);
 
         // 📚 Список директорий, которые должны существовать
         define('MAGIC_DIRECTORIES', [

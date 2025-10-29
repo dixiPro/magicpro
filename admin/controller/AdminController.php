@@ -14,34 +14,7 @@ class AdminController extends Controller
 {
     public function index()
     {
-        $user = [
-            'get_current_user' => get_current_user(),
-            'whoami' => exec('whoami')
-        ];
-        $MAGIC_FILE_ROLES = [];
-
-
-        foreach (MAGIC_FILE_ROLES as $item) {
-            $path = $item['value'];
-            $exists = file_exists($path);
-
-            $stat = $exists ? stat($path) : null;
-
-            $MAGIC_FILE_ROLES[] = [
-                'value' => $item['value'],
-                'desc'  => $item['desc'] ?? '',
-                'stat'  => $exists ? [
-                    'owner' => posix_getpwuid($stat['uid'])['name'] ?? $stat['uid'],
-                    'group' => posix_getgrgid($stat['gid'])['name'] ?? $stat['gid'],
-                    'perms' => substr(sprintf('%o', $stat['mode']), -4),
-                ] : null,
-            ];
-        }
-
-        return view('magicAdmin::index', [
-            'MAGIC_FILE_ROLES' => $MAGIC_FILE_ROLES,
-            'user' => $user
-        ]);
+        return view('magicAdmin::index', []);
     }
 
     // Проверка запись-чтение
