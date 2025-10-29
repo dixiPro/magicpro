@@ -3,34 +3,33 @@ import { formatPhp } from './formatPhp.js';
 
 export async function formatBlade(code, textIdend = 2) {
   let phpBlocks = [];
-  let newCode = code.replace(/@php([\s\S]*?)@endphp/g, (match, code) => {
+  let formatted = code.replace(/@php([\s\S]*?)@endphp/g, (match, code) => {
     const index = phpBlocks.length;
     phpBlocks.push(match); // сохраняем весь блок
     return `<!--___PHP____${index}-->`; // подставляем маркер
   });
 
+  // форматируем пхп
+  phpBlocks = await Promise.all(phpBlocks.map((b) => formattPhpLoacal(b)));
+
   // форматируем
-  const formatted = await prettier.format(newCode, {
+  formatted = await prettier.format(formatted, {
     parser: 'html',
     plugins: [prettierPlugins.html],
     tabWidth: textIdend,
     printWidth: 160,
   });
 
-  phpBlocks = await Promise.all(phpBlocks.map((b) => formattPhpLoacal(b)));
+  formatted = afterPrettier(formatted, textIdend);
 
-  newCode = formatted.replace(/<!--___PHP____(\d+)-->/g, (_, i) => phpBlocks[i]);
+  formatted = formatted.replace(/<!--___PHP____(\d+)-->/g, (_, i) => phpBlocks[i]);
 
-  return newCode;
-  // try {
-  // } catch (e) {
-  //   console.error('Ошибка при форматировании Blade:', e);
-  //   throw new Error('Ошибка при форматировании Blade');
-  // }
+  return formatted;
 }
 
 async function formattPhpLoacal(line) {
   // убираем @php и @endphp
+  console.log('>', line);
   line = line.replace(/@php\s*/g, '').replace(/\s*@endphp/g, '');
 
   // добавляем <?php
@@ -56,13 +55,17 @@ function afterPrettier(code, textIdend = 2) {
     let splitLines = splitBladeDirectivesWithIndent(some);
 
     for (let rawLine of splitLines) {
-      if (rawLine.includes('<!--___PHP____')) line = rawLine.replace(/^\s+/, '');
-
       let directiveAttr = getBladeDirectiveAttr(rawLine);
 
-      indent = indent + directiveAttr.ident;
-      result.push(' '.repeat(indent * textIdend) + directiveAttr.line);
-      indent = indent + directiveAttr.after;
+      // пробелы в  начале
+      if (rawLine.includes('<!--___PHP____')) {
+        rawLine = rawLine.replace(/^\s+/, '');
+        result.push(rawLine);
+      } else {
+        indent = indent + directiveAttr.ident;
+        result.push(' '.repeat(indent * textIdend) + directiveAttr.line);
+        indent = indent + directiveAttr.after;
+      }
     }
   }
 
