@@ -25,7 +25,11 @@
 - **Frontend**: Vue 3, Bootstrap 5, PrimeVue.
 - **DevOps**: Ubuntu, Nginx, SQLite.
 
-## ⚙️ Installation
+## ⚙️ Installation for use
+
+composer require dixiRu/magicpro:dev-main
+
+## ⚙️ Installation for dev
 
 ```bash
 #install Laravel

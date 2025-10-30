@@ -1,49 +1,55 @@
 {
-    "name": "magicpro/magicpro",
-    "description": "Magic application inside Laravel",
-    "version": "0.1.0",
-    "type": "library",
-    "license": "MIT",
-    "autoload": {
-        "psr-4": {
-            "MagicProSrc\\": "src/",
-            "MagicProDatabaseModels\\": "database/Models/",
-            "MagicProAdminControllers\\": "admin/controller/",
-            "MagicProAdminMiddleware\\": "admin/middleware/",
-            "MagicProControllers\\": "../../../dataMagicPro/controller/",
-            "Livewire\\": "src/"
-        }
-    },
-    "commentMy": {
-        "note": "⚠️ Если меняешь путь MagicProControllers — не забудь обновить MAGIC_CONTROLLER_DIR в MagicGlobals.php"
-    },
-    "require": {
-        "php": "^8.2",
-        "laravel/framework": "^12.0"
-    },
-    "extra": {
-        "laravel": {
-            "providers": [
-                "MagicProSrc\\MagicServiceProvider"
-            ]
-        }
-    },
-    "scripts": {
-        "post-autoload-dump": [
-            "@php artisan optimize:clear",
-            "@php artisan view:clear",
-            "@php artisan cache:clear",
-            "@php artisan config:clear",
-            "@php artisan route:clear",
-            "@php artisan event:clear",
-            "@php artisan clear-compiled",
-            "echo ✅ Laravel кэш, конфиг и руты успешно очищены!"
-        ],
-        "post-install-cmd": [
-            "MagicProSrc\\Installer::postInstall"
-        ],
-        "post-update-cmd": [
-            "MagicProSrc\\Installer::postInstall"
-        ]
+  "name": "magicpro/magicpro",
+  "description": "Magic application inside Laravel",
+  "version": "0.1.0",
+  "type": "library",
+  "license": "MIT",
+  "autoload": {
+    "psr-4": {
+      "MagicProSrc\\": "src/",
+      "MagicProDatabaseModels\\": "database/Models/",
+      "MagicProAdminControllers\\": "admin/controller/",
+      "MagicProAdminMiddleware\\": "admin/middleware/",
+      "MagicProControllers\\": "../../../dataMagicPro/controller/",
+      "Livewire\\": "src/"
     }
+  },
+  "commentMy": {
+    "note": "⚠️ Если меняешь путь MagicProControllers — не забудь обновить MAGIC_CONTROLLER_DIR в MagicGlobals.php"
+  },
+  "require": {
+    "php": "^8.2",
+    "laravel/framework": "^12.0"
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "MagicProSrc\\MagicServiceProvider"
+      ]
+    }
+  },
+  "scripts": {
+    "post-autoload-dump": [
+      "@php artisan optimize:clear",
+      "@php artisan view:clear",
+      "@php artisan cache:clear",
+      "@php artisan config:clear",
+      "@php artisan route:clear",
+      "@php artisan event:clear",
+      "@php artisan clear-compiled",
+      "echo ✅ Laravel кэш, конфиг и руты успешно очищены!"
+    ],
+    "post-install-cmd": [
+      "MagicProSrc\\Installer::postInstall"
+    ],
+    "post-update-cmd": [
+      "MagicProSrc\\Installer::postInstall"
+    ]
+  },
+  "repositories": [
+    {
+      "type": "vcs",
+      "url": "https://github.com/dixiRu/magicpro.git"
+    }
+  ]
 }
