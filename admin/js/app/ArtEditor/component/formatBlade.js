@@ -3,14 +3,37 @@ import { formatPhp } from './formatPhp.js';
 
 export async function formatBlade(code, textIdend = 2) {
   let phpBlocks = [];
+
+  // находим заменяем PHP
   let formatted = code.replace(/@php([\s\S]*?)@endphp/g, (match, code) => {
     const index = phpBlocks.length;
     phpBlocks.push(match); // сохраняем весь блок
     return `<!--___PHP____${index}-->`; // подставляем маркер
   });
 
+  let propsBlocks = [];
+
+  // находим заменяем props
+  formatted = formatted.replace(/@props\s*\(\s*\[[\s\S]*?\]\s*\)/g, (match) => {
+    const index = propsBlocks.length;
+    propsBlocks.push(match);
+    return `<!--___PROPS____${index}-->`;
+  });
+
+  let commentBlocks = [];
+  formatted = formatted.replace(/{{--([\s\S]*?)--}}/g, (match, comment) => {
+    const index = commentBlocks.length;
+    commentBlocks.push(match); // сохраняем весь блок
+    return `<!--___COMMENT____${index}-->`; // подставляем маркер
+  });
+
   // форматируем пхп
-  phpBlocks = await Promise.all(phpBlocks.map((b) => formattPhpLoacal(b)));
+  if (phpBlocks.length > 0) {
+    phpBlocks = await Promise.all(phpBlocks.map((b) => formatPhpLocal(b, textIdend)));
+  }
+  // if (propsBlocks.length > 0) {
+  //   propsBlocks = await Promise.all(propsBlocks.map((b) => formatProps(b, textIdend)));
+  // }
 
   // форматируем
   formatted = await prettier.format(formatted, {
@@ -24,25 +47,43 @@ export async function formatBlade(code, textIdend = 2) {
 
   formatted = formatted.replace(/<!--___PHP____(\d+)-->/g, (_, i) => phpBlocks[i]);
 
+  formatted = formatted.replace(/<!--___PROPS____(\d+)-->/g, (_, i) => propsBlocks[i]);
+
+  // восстанавливаем Blade-комментарии из commentBlocks
+  formatted = formatted.replace(/<!--___COMMENT____(\d+)-->/g, (_, i) => commentBlocks[i]);
+
   return formatted;
 }
 
-async function formattPhpLoacal(line) {
+async function formatPhpLocal(line, textIdend) {
   // убираем @php и @endphp
-  console.log('>', line);
   line = line.replace(/@php\s*/g, '').replace(/\s*@endphp/g, '');
-
   // добавляем <?php
   let code = `<?php\n${line}`;
+  // вызываем внешний форматтер
 
+  let formatted = await formatPhp(code, textIdend);
+  // убираем <?php
+  formatted = formatted.replace(/^<\?php\s*/, '').trim();
+  formatted = formatted
+    .split('\n')
+    .map((s) => ' '.repeat(textIdend) + s)
+    .join('\n');
+  formatted = `@php\n${formatted}\n@endphp`;
+  return formatted;
+}
+
+async function formatProps(line) {
+  // убираем @php и @endphp
+  line = line.replace(/@/, '');
+  // добавляем <?php
+  let code = `<?php\n${line}`;
   // вызываем внешний форматтер
   let formatted = await formatPhp(code, 4);
-
   // убираем <?php
   formatted = formatted.replace(/^<\?php\s*/, '');
-
   // возвращаем с оберткой
-  return `@php\n${formatted.trim()}\n@endphp`;
+  return `@${formatted.trim()}\n`;
 }
 
 function afterPrettier(code, textIdend = 2) {
@@ -135,7 +176,7 @@ function getBladeDirectiveAttr(line) {
     slot: { ident: 0, after: 1 },
     endslot: { ident: -1, after: 0 },
 
-    props: { ident: 0, after: 1 },
+    props: { ident: 0, after: 0 },
 
     error: { ident: 0, after: 1 },
     enderror: { ident: -1, after: 0 },
@@ -176,8 +217,8 @@ function getBladeDirectiveAttr(line) {
     return { ident: 0, after: 0, line: line };
   }
 
-  // убираем пробелы после директивы
-  let tmpLine = line.replace(new RegExp(`${directive}\\s+`, 'g'), directive);
+  // убираем пробелы после директивы и перед скобкой
+  let tmpLine = line.replace(new RegExp(`${directive}\\s*\\(`, 'g'), `${directive}(`);
 
   let dirAttr = directives[directive];
   dirAttr.line = tmpLine;

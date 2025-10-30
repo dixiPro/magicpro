@@ -147,12 +147,20 @@ class DynamicRouteHandler
         $isRoute  = $article['isRoute'];
         $view      = 'magic::' . $article['name'];
         $controllerName = '\\MagicProControllers\\' . $name;
-        // 
+
+        $env = compact('name', 'title', 'artId', 'parentId', 'view');
+
+        // ключ есть и равен false
+        if (array_key_exists('useController', $article['routeParams']) &&  !$article['routeParams']['useController']) {
+            return view($view, [
+                'Env' => $env,
+                'Get' => $res
+            ]);
+        }
+
         // добавляем атрибуты
-        $request->attributes->add(compact('name', 'title', 'artId', 'parentId', 'view'));
-
+        $request->attributes->add($env);
         $controller = new $controllerName();
-
         return $controller->handle($request,  $res);
     }
 

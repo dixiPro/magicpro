@@ -1,23 +1,23 @@
-import { createApp } from "vue";
+import { createApp } from 'vue';
 
-import PrimeVue from "primevue/config";
-import Aura from "@primeuix/themes/aura";
-import "primeicons/primeicons.css";
+import PrimeVue from 'primevue/config';
+import Aura from '@primeuix/themes/aura';
+import 'primeicons/primeicons.css';
 
-import ToastService from "primevue/toastservice";
-import Toast from "primevue/toast";
-import ConfirmDialog from "primevue/confirmdialog";
-import ConfirmationService from "primevue/confirmationservice";
-import Dialog from "primevue/dialog";
-import Splitter from "primevue/splitter";
-import SplitterPanel from "primevue/splitterpanel";
-import ContextMenu from "primevue/contextmenu";
-import Drawer from "primevue/drawer";
-import FileUpload from "primevue/fileupload";
-import ToggleSwitch from "primevue/toggleswitch";
+import ToastService from 'primevue/toastservice';
+import Toast from 'primevue/toast';
+import ConfirmDialog from 'primevue/confirmdialog';
+import ConfirmationService from 'primevue/confirmationservice';
+import Dialog from 'primevue/dialog';
+import Splitter from 'primevue/splitter';
+import SplitterPanel from 'primevue/splitterpanel';
+import ContextMenu from 'primevue/contextmenu';
+import Drawer from 'primevue/drawer';
+import FileUpload from 'primevue/fileupload';
+import ToggleSwitch from 'primevue/toggleswitch';
 
 // локальные компоненты
-import ArtEditor from "./app/ArtEditor/ArtEditor.vue";
+import ArtEditor from './app/ArtEditor/ArtEditor.vue';
 
 const components = [
   //
@@ -44,7 +44,7 @@ app.use(PrimeVue, {
   theme: {
     preset: Aura,
     options: {
-      cssLayer: { name: "primevue", order: "theme, base, primevue" },
+      cssLayer: { name: 'primevue', order: 'theme, base, primevue' },
     },
   },
 });
@@ -52,7 +52,7 @@ app.use(PrimeVue, {
 app.use(ConfirmationService);
 app.use(ToastService);
 
-app.mount("#art_editor");
+app.mount('#art_editor');
 
-import * as ApiCallFunctions from "./app/apiCall.js";
+import * as ApiCallFunctions from './app/apiCall.js';
 Object.assign(globalThis, ApiCallFunctions);

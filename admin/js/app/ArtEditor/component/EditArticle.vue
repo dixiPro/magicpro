@@ -77,10 +77,19 @@ function updateRouteParams() {
   if (routeParams === null || typeof routeParams !== 'object') {
     routeParams = {};
   }
-  const { adminOnly = false, getEnable = false, utmParamsEnable = true, bindKeys = false, keysArr = [] } = routeParams;
+  const {
+    //
+    adminOnly = false,
+    useController = true,
+    getEnable = false,
+    utmParamsEnable = true,
+    bindKeys = false,
+    keysArr = [],
+  } = routeParams;
 
   article.value.routeParams = {
     //
+    useController,
     adminOnly,
     getEnable,
     utmParamsEnable,
@@ -147,13 +156,13 @@ const handleKeydown = (event) => {
     return;
   }
   // блейд 99%
-  if (event.altKey && event.code === 'Digit1') {
+  if (event.altKey && event.code === 'Digit6') {
     splitStatusEditorObj.value.set('hideController');
     event.preventDefault(); // Prevent browser's default save action
     return;
   }
   // контроллер 99%
-  if (event.altKey && event.code === 'Digit2') {
+  if (event.altKey && event.code === 'Digit5') {
     splitStatusEditorObj.value.set('hideBlade');
     event.preventDefault(); // Prevent browser's default save action
     return;
@@ -284,10 +293,10 @@ function translit() {
 }
 
 async function formatDocument() {
-  const result = await formatBlade(article.value.body, 4);
+  const result = await formatBlade(article.value.body, 2);
   article.value.body = result;
 
-  const result1 = await formatPhp(article.value.controller, 4);
+  const result1 = await formatPhp(article.value.controller, 2);
   article.value.controller = result1;
   document.showToast('Отформатировано');
   try {
@@ -391,10 +400,12 @@ async function formatDocument() {
   <Dialog v-model:visible="helpDialogShow" header="Справка" modal class="w-50">
     <ul class="list-unstyled m-0">
       <li><kbd>Ctrl+S</kbd> — сохранить</li>
-      <li><kbd>Alt+0</kbd> — перейти в статье по выбранному слову</li>
-      <li><kbd>Alt+1</kbd> — скрыть/отобразить панель блейда</li>
-      <li><kbd>Alt+2</kbd> — скрыть/отобразить панель контроллера</li>
-      <li><kbd>Alt+3</kbd> — скрыть/отобразить панель дерева</li>
+      <li><kbd>Alt+1</kbd> — перейти в статье по выбранному слову</li>
+      <li><kbd>Alt+2</kbd> — снипеты блейда</li>
+      <li><kbd>Alt+3</kbd> — панель дерева</li>
+      <li><kbd>Alt+4</kbd> — боковое меню</li>
+      <li><kbd>Alt+5</kbd> — панель контроллера</li>
+      <li><kbd>Alt+6</kbd> — скрыть/отобразить панель блейда</li>
     </ul>
   </Dialog>
   <Drawer v-model:visible="addPannel" header="Параметры" position="right" style="width: 600px">
@@ -413,6 +424,15 @@ async function formatDocument() {
       </div>
 
       <div v-if="article.isRoute">
+        <div class="d-flex my-2">
+          <div class="nowrap">
+            <ToggleSwitch v-model="article.routeParams.useController" />
+          </div>
+          <div class="ms-2">
+            Испольовать контроллер
+            <div class="small">Если нет, то будет вызываться просто вьюха</div>
+          </div>
+        </div>
         <div class="d-flex my-2">
           <div class="nowrap">
             <ToggleSwitch v-model="article.routeParams.adminOnly" />
@@ -499,24 +519,6 @@ async function formatDocument() {
             </div>
           </div>
         </div>
-
-        <!-- <div v-if="article.routeParams.onlySegmentPath">
-
-                    <div class="d-flex my-2">
-                        <div class="nowrap">
-                            <ToggleSwitch v-model="article.routeParams.bindKeys" />
-                        </div>
-                        <div class="ms-2">Только допустимые параметры</div>
-                    </div>
-                    <div v-if="article.routeParams.bindKeys">
-                        <div>
-                            ййцц
-
-                        </div>
-
-                    </div>
-                </div> -->
-        <!--  -->
       </div>
 
       <div class="mt-5">

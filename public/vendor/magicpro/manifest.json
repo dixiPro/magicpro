@@ -4,7 +4,7 @@
     "name": "apiCall"
   },
   "admin/js/artEditor.js": {
-    "file": "assets/artEditor-D-tVzBXy.js",
+    "file": "assets/artEditor-Dsy5dUKY.js",
     "name": "artEditor",
     "src": "admin/js/artEditor.js",
     "isEntry": true,
@@ -12,7 +12,7 @@
       "_apiCall-C3NjpUMz.js"
     ],
     "css": [
-      "assets/artEditor-B_LPgxL-.css"
+      "assets/artEditor-BUI70r5p.css"
     ],
     "assets": [
       "assets/primeicons-DMOk5skT.eot",
