@@ -13,21 +13,7 @@ const routeParamsString = ref('{}');
 
 const aceTheme = ref('chrome'); // "monokai";
 
-const aceThemes = [
-  'chrome',
-  'github',
-  'xcode',
-  'solarized_light',
-  'textmate',
-  'tomorrow',
-  'kuroir',
-  'eclipse',
-  'monokai',
-  'dracula',
-  'twilight',
-  'solarized_dark',
-  'merbivore_soft',
-];
+const aceThemes = ['chrome', 'monokai', 'dracula', 'twilight'];
 
 const ready = ref({
   show: false,
