@@ -1,5 +1,5 @@
 {
-  "name": "magicpro/magicpro",
+  "name": "dixiru/magicpro",
   "description": "Magic application inside Laravel",
   "version": "0.1.0",
   "type": "library",
@@ -13,9 +13,6 @@
       "MagicProControllers\\": "../../../dataMagicPro/controller/",
       "Livewire\\": "src/"
     }
-  },
-  "commentMy": {
-    "note": "⚠️ Если меняешь путь MagicProControllers — не забудь обновить MAGIC_CONTROLLER_DIR в MagicGlobals.php"
   },
   "require": {
     "php": "^8.2",
@@ -51,5 +48,7 @@
       "type": "vcs",
       "url": "https://github.com/dixiRu/magicpro.git"
     }
-  ]
+  ],
+  "minimum-stability": "dev",
+  "prefer-stable": true
 }
