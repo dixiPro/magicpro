@@ -20,8 +20,8 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        $email = 't@t.t';
-        $password = 'mmagic';
+        $email = readline('Введите email администратора: ');
+        $password = readline('Введите пароль администратора: ');
 
         // создаём администратора
         DB::table('magicPro_users')->insert([
