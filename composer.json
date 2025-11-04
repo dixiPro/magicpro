@@ -3,7 +3,7 @@
   "description": "Magic application inside Laravel",
   "type": "laravel-package",
   "license": "MIT",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "require": {
     "php": "^8.2",
     "laravel/framework": "^12.0",
