@@ -1,31 +1,15 @@
 {
   "name": "dixipro/magicpro",
-  "description": "Magic application inside Laravel",
-  "type": "laravel-package",
+  "description": "MagicPro — pure PHP magic without any framework",
+  "type": "library",
   "license": "MIT",
   "version": "1.0.0",
   "require": {
     "php": "^8.2"
   },
-  "_____require": {
-    "php": "^8.2",
-    "laravel/framework": "^12.0"
-  },
-  "_____autoload": {
+  "autoload": {
     "psr-4": {
-      "MagicProSrc\\": "src/",
-      "MagicProDatabaseModels\\": "database/Models/",
-      "MagicProAdminControllers\\": "admin/controller/",
-      "MagicProAdminMiddleware\\": "admin/middleware/",
-      "MagicProControllers\\": "../../../dataMagicPro/controller/",
-      "Livewire\\": "src/"
-    }
-  },
-  "_____extra": {
-    "laravel": {
-      "providers": [
-        "MagicProSrc\\MagicServiceProvider"
-      ]
+      "MagicPro\\": "src/"
     }
   },
   "minimum-stability": "stable",
