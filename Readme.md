@@ -38,7 +38,7 @@ insert in MAIN composer.json
   }
    ],
 
-composer require dixiru/magicpro
+composer require dixipro/magicpro
 php artisan magicpro:install
 
 ```

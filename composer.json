@@ -3,8 +3,12 @@
   "description": "Magic application inside Laravel",
   "type": "laravel-package",
   "license": "MIT",
-  "version": "dev-main",
-  "autoload": {
+  "version": "1.0.0",
+  "_____require": {
+    "php": "^8.2",
+    "laravel/framework": "^12.0"
+  },
+  "_____autoload": {
     "psr-4": {
       "MagicProSrc\\": "src/",
       "MagicProDatabaseModels\\": "database/Models/",
@@ -14,11 +18,13 @@
       "Livewire\\": "src/"
     }
   },
-  "extra": {
+  "_____extra": {
     "laravel": {
       "providers": [
         "MagicProSrc\\MagicServiceProvider"
       ]
     }
-  }
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true
 }
