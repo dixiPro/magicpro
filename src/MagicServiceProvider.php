@@ -19,21 +19,32 @@ use MagicProAdminMiddleware\CheckMagicAuth; // миддлваре авториз
 use Illuminate\Support\Facades\Config;
 
 use MagicProSrc\Config\MagicGlobals; // Глобальные константы
+use MagicProSrc\Installer\InstallCommand;
+
 
 class MagicServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
-
         MagicGlobals::register(); // Константы глобальные
+
+
+        // Регистрируем artisan-команду
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                // подключаем файл в котором команда
+                InstallCommand::class,
+            ]);
+        }
+
 
         // вьюхи
         $this->loadViewsFrom(MAGIC_VIEW_DIR, 'magic');
 
 
         // Include helper functions
-        require_once __DIR__ . '/TreeHelper.php';
-        require_once __DIR__ . '/DumpHelper.php';
+        require_once __DIR__ . '/Helpers/TreeHelper.php';
+        require_once __DIR__ . '/Helpers//DumpHelper.php';
 
         // админка
         // Load admin routes with "web" middleware

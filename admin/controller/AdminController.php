@@ -5,38 +5,50 @@ namespace MagicProAdminControllers;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\File;
 use MagicProDatabaseModels\Article;
 use MagicProDatabaseModels\MagicProUser;
-use Symfony\Component\HttpFoundation\StreamedResponse;
-use Illuminate\Support\Facades\DB;
 
 class AdminController extends Controller
 {
     public function index()
     {
-        return view('magicAdmin::index', []);
+        return view('magicAdmin::index');
     }
 
-    // Проверка запись-чтение
     public function testWrite()
     {
-
         $testArray = MAGIC_FILE_ROLES;
+        $operation = '';
 
-        foreach ($testArray as &$item) {
-            $dir = $item['value'];
-            $timestamp = date("U");
-            $file = "{$dir}/{$timestamp}_testfile.txt";
+        try {
+            foreach ($testArray as &$item) {
+                $dir = $item['value'];
 
-            if (file_put_contents($file, $timestamp)) {
-                $item['result'] = "ok";
-                unlink($file);
-            } else {
-                $item['result'] = "error";
+                // создание директории
+                if (!File::isDirectory($dir)) {
+                    $operation = "create directory $dir";
+                    File::ensureDirectoryExists($dir, 0775, true);
+                }
+
+                $timestamp = time();
+                $file = $dir . DIRECTORY_SEPARATOR . "{$timestamp}_testfile.txt";
+
+                // запись
+                $operation = "write to file $file";
+                File::put($file, $timestamp);
+
+                // удаление
+                $operation = "delete file $file";
+                File::delete($file);
+
+                $item['result'] = 'ok';
             }
+        } catch (\Throwable $th) {
+            $item['result'] = "$operation — " . $th->getMessage();
         }
 
-        return redirect()->back()->with('testWriteStatus', $testArray);;
+        return redirect()->back()->with('testWriteStatus', $testArray);
     }
 
     public function clearCache()
@@ -49,24 +61,18 @@ class AdminController extends Controller
             'event'  => Artisan::call('event:clear'),
         ];
 
-        return redirect()->back()->with('clearCacheStatus', $clearCacheStatus);;
+        return redirect()->back()->with('clearCacheStatus', $clearCacheStatus);
     }
-
 
     public function artList()
     {
-        // при необходимости упорядочим: сначала npp, потом date по убыванию
         $articles = Article::orderBy('parentId')->orderBy('npp')->get();
-
         return view('magicAdmin::artList', compact('articles'));
     }
 
-
     public function adminList()
     {
-        // при необходимости упорядочим: сначала npp, потом date по убыванию
         $users = MagicProUser::orderBy('email')->get();
-
         return view('magicAdmin::adminList', compact('users'));
     }
 }

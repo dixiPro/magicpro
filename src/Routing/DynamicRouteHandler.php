@@ -15,7 +15,7 @@ class DynamicRouteHandler
     {
         // только для админа
         if ($routeParams['adminOnly'] && ! Auth::guard('magic')->check()) {
-            throw new \Exception('Только админам запрещен');
+            throw new \Exception('Только админам');
         }
         // 
         // парсим все данные в один массив = сегмент + квери

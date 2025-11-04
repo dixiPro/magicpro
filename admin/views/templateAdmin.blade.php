@@ -69,9 +69,6 @@
 
             <form method="POST" action="{{ route('magic.login') }}">
                 @csrf
-                {{-- <input type="email" name="email" placeholder="Email" required value="a@a.a">
-                <input type="password" name="password" placeholder="Пароль" required value="magic"> --}}
-
                 <input type="email" name="email" placeholder="Email" required value="">
                 <input type="password" name="password" placeholder="Пароль" required value="">
 

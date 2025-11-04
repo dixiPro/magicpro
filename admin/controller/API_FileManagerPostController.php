@@ -8,9 +8,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 
-use MagicProAdminControllers\PhpFixerFormatter;
-
-
 // use SplTempFileObject;
 
 class API_FileManagerPostController extends Controller
@@ -97,16 +94,6 @@ class API_FileManagerPostController extends Controller
         }
     }
 
-    // ==================================
-    // Форматирует текст
-    private function format(Request $request): array
-    {
-        $code = $request->string('code')->toString();
-        $formatter = app(PhpFixerFormatter::class);
-        $result = $formatter->format($code);
-
-        return ['code' => $result];
-    }
 
     // ==================================
     // Старт возвращает стартовую директорию

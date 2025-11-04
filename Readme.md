@@ -25,19 +25,39 @@
 - **Frontend**: Vue 3, Bootstrap 5, PrimeVue.
 - **DevOps**: Ubuntu, Nginx, SQLite.
 
-## ⚙️ Installation for use
+## ⚙️ Installation for run local
 
-composer require dixiRu/magicpro:dev-main
+```bash
+insert in MAIN composer.json
+  "repositories": [
+  {
+    "type": "path",
+    "url": "/home/m/mpro2.test/packages/dixi/magicpro/",
+    "options": {
+      "copy": true
+  }
+   ],
+
+composer require dixiru/magicpro
+php artisan magicpro:install
+
+```
+
+## ⚙️ Installation from Githib
+
+mkdir -p vendor/dixi/magicpro
+
+cd vendor/dixi/magicpro
+git clone https://github.com/dixiRu/magicpro
+or
+git clone git@github.com:dixiRu/magicpro.git
 
 ## ⚙️ Installation for dev
 
 ```bash
-#install Laravel
+#install Laravel + liveware
 #see note
 
-
-#install livewire
-composer require livewire/livewire
 
 
 # from Laravel project root — create development directory for MagicPro
@@ -171,9 +191,15 @@ sudo find . -type f -exec chmod 664 {} \;
 sudo find . -type d -exec chmod 775 {} \;
 ````
 
-### .env
+# install livewire
 
+```bash
+composer require livewire/livewire
 ```
+
+### chamge .env
+
+```bash
 APP_URL=mpro2.test
 
 LOG_CHANNEL=daily
@@ -240,6 +266,18 @@ cd /etc/nginx/ites-enabled - ссылки
 sudo ln -s /etc/nginx/sites-available/example.com /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl reload nginx
+```
+
+### setudDev
+
+```bash
+composer remove dixipro/magicpro
+rm -rf vendor/dixipro composer.lock
+composer clear-cache
+composer require dixipro/magicpro:dev-main
+composer require dixipro/magicpro
+
+ls -la vendor/dixipro/magicpro
 ```
 
 MIT © dixiRu

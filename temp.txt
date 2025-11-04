@@ -1,0 +1,182 @@
+
+композер пакета
+{
+    "name": "dixipro/magicpro",
+    "description": "Magic application inside Laravel",
+    "type": "laravel-package",
+    "license": "MIT",
+    "version": "1.0.0",
+    "branch-alias": {
+        "dev-main": "0.1.x-dev"
+    },
+    "autoload": {
+        "psr-4": {
+            "MagicProSrc\\": "src/",
+            "MagicProDatabaseModels\\": "database/Models/",
+            "MagicProAdminControllers\\": "admin/controller/",
+            "MagicProAdminMiddleware\\": "admin/middleware/",
+            "MagicProControllers\\": "../../../dataMagicPro/controller/",
+            "Livewire\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "MagicProSrc\\MagicServiceProvider"
+            ]
+        }
+    }
+}
+
+
+Композер дева
+{
+    "$schema": "https://getcomposer.org/schema.json",
+    "name": "laravel/laravel",
+    "type": "project",
+    "description": "The skeleton application for the Laravel framework.",
+    "keywords": [
+        "laravel",
+        "framework"
+    ],
+    "license": "MIT",
+    "require": {
+        "php": "^8.2",
+        "laravel/framework": "^12.0",
+        "laravel/tinker": "^2.10.1",
+        "livewire/livewire": "^3.6"
+    },
+    "require-dev": {
+        "fakerphp/faker": "^1.23",
+        "laravel/pail": "^1.2.2",
+        "laravel/pint": "^1.24",
+        "laravel/sail": "^1.41",
+        "mockery/mockery": "^1.6",
+        "nunomaduro/collision": "^8.6",
+        "phpunit/phpunit": "^11.5.3"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/",
+            "Database\\Factories\\": "database/factories/",
+            "Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "setup": [
+            "composer install",
+            "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
+            "@php artisan key:generate",
+            "@php artisan migrate --force",
+            "npm install",
+            "npm run build"
+        ],
+        "dev": [
+            "Composer\\Config::disableProcessTimeout",
+            "npx concurrently -c \"#93c5fd,#c4b5fd,#fb7185,#fdba74\" \"php artisan serve\" \"php artisan queue:listen --tries=1\" \"php artisan pail --timeout=0\" \"npm run dev\" --names=server,queue,logs,vite --kill-others"
+        ],
+        "test": [
+            "@php artisan config:clear --ansi",
+            "@php artisan test"
+        ],
+        "post-autoload-dump": [
+            "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
+            "@php artisan package:discover --ansi"
+        ],
+        "post-update-cmd": [
+            "@php artisan vendor:publish --tag=laravel-assets --ansi --force"
+        ],
+        "post-root-package-install": [
+            "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
+        ],
+        "post-create-project-cmd": [
+            "@php artisan key:generate --ansi",
+            "@php -r \"file_exists('database/database.sqlite') || touch('database/database.sqlite');\"",
+            "@php artisan migrate --graceful --ansi"
+        ],
+        "pre-package-uninstall": [
+            "Illuminate\\Foundation\\ComposerScripts::prePackageUninstall"
+        ]
+    },
+    "extra": {
+        "laravel": {
+            "dont-discover": []
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true,
+            "php-http/discovery": true
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "repositories": [
+        {
+            "type": "path",
+            "url": "packages/dixipro/magicpro",
+            "options": {
+                "symlink": true
+            }
+        }
+    ]
+}
+
+Композер теста
+{
+    "name": "test/app",
+    "type": "project",
+    "require": {
+        "php": "^8.2"
+    },
+    "repositories": [
+        {
+            "type": "path",
+            "url": "/home/m/mpro2.test/packages/dixipro/magicpro/",
+            "options": {
+                "symlink": false
+            }
+        }
+    ],
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
+
+
+========
+на тесте 
+composer require dixipro/magicpro
+все ок
+========
+на деве
+composer require dixipro/magicpro:dev-main
+Xdebug: [Step Debug
+] Could not connect to debugging client. Tried: 127.0.0.1: 9003 (through xdebug.client_host/xdebug.client_port).
+./composer.json has been updated
+Running composer update dixipro/magicpro
+Loading composer repositories with package information
+Updating dependencies
+Your requirements could not be resolved to an installable set of packages.
+
+  Problem 1
+    - Root composer.json requires dixipro/magicpro dev-main, found dixipro/magicpro[
+    1.0.0
+] but it does not match the constraint.
+
+
+Installation failed, reverting ./composer.json to its original content.
+===========
+
+ЗАДАНИЕ.
+
+ПОДУМАЙ хорошенько. и дай краткий ответ что изменить
+в композере пакета что бы и там и там работало!
+Краткий ответ.

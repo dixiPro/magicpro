@@ -77,5 +77,18 @@ Route::get('/a_dmin/logout', [AuthController::class, 'logout'])->name('magic.log
 // Динамический раут
 use MagicProSrc\Routing\DynamicRouteHandler;
 
+// 🚫 Сегменты, которые не должны попадать в динамический роутинг
+$excluded = [
+    'livewire',
+    'telescope',
+    'horizon',
+    'nova',
+    'debugbar',
+];
+
+// 🧩 Формируем регулярку: отрицательное совпадение (всё, кроме этих)
+$pattern = '^(?!(' . implode('|', array_map('preg_quote', $excluded)) . ')).*$';
+
+// ⚙️ Динамический маршрут
 Route::any('{any?}', [DynamicRouteHandler::class, 'handle'])
-    ->where('any', '.*');
+    ->where('any', $pattern);

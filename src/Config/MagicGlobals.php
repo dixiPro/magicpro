@@ -24,18 +24,25 @@ class MagicGlobals
         define('MAGIC_VIEW_DIR', MAGIC_DATA_DIR . '/view');
 
         // 📦 Папка для загрузки изображений (относительный путь для JS)
-        define('FILES_JS_UPLOAD', 'magicPro');
+        define('FILES_JS_UPLOAD', 'design');
 
         // 💾 Абсолютный путь к папке загрузок на сервере
         define('FILES_UPLOAD_DIRECTORY', base_path('public') . '/' . FILES_JS_UPLOAD);
 
         // 📚 Список директорий, которые должны существовать
-        define('MAGIC_DIRECTORIES', [
-            MAGIC_DATA_DIR,
-            MAGIC_VIEW_DIR,
-            MAGIC_CONTROLLER_DIR,
-            FILES_UPLOAD_DIRECTORY,
-        ]);
+        // define('MAGIC_DIRECTORIES', [
+        //     MAGIC_DATA_DIR,
+        //     MAGIC_VIEW_DIR,
+        //     MAGIC_CONTROLLER_DIR,
+        //     FILES_UPLOAD_DIRECTORY,
+        // ]);
+
+        // 💾 Абсолютный путь к папке вендор где лежить мпро
+        define('VENDOR_FROM', base_path('vendor/dixipro/magicpro/public/vendor/magicpro'));
+
+        // 💾 Абсолютный путь к папке вендор где лежить мпро
+        define('VENDOR_PUBLIC', base_path('public/vendor/magicpro/'));
+
 
 
         // 🔐 Описание директорий и их прав (для проверки и отладки)
@@ -80,18 +87,5 @@ class MagicGlobals
             // 'cid',
             // 'track_id',
         ]);
-    }
-
-    /**
-     * Безопасно определяет константу, если она ещё не существует.
-     *
-     * @param string $name  Имя константы.
-     * @param mixed  $value Значение константы.
-     */
-    private static function defineOnce(string $name, mixed $value): void
-    {
-        if (!defined($name)) {
-            define($name, $value);
-        }
     }
 }

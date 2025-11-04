@@ -1,9 +1,9 @@
 {
-  "name": "dixiru/magicpro",
+  "name": "dixipro/magicpro",
   "description": "Magic application inside Laravel",
-  "version": "0.1.0",
-  "type": "library",
+  "type": "laravel-package",
   "license": "MIT",
+  "version": "dev-main",
   "autoload": {
     "psr-4": {
       "MagicProSrc\\": "src/",
@@ -14,41 +14,11 @@
       "Livewire\\": "src/"
     }
   },
-  "require": {
-    "php": "^8.2",
-    "laravel/framework": "^12.0"
-  },
   "extra": {
     "laravel": {
       "providers": [
         "MagicProSrc\\MagicServiceProvider"
       ]
     }
-  },
-  "scripts": {
-    "post-autoload-dump": [
-      "@php artisan optimize:clear",
-      "@php artisan view:clear",
-      "@php artisan cache:clear",
-      "@php artisan config:clear",
-      "@php artisan route:clear",
-      "@php artisan event:clear",
-      "@php artisan clear-compiled",
-      "echo ✅ Laravel кэш, конфиг и руты успешно очищены!"
-    ],
-    "post-install-cmd": [
-      "MagicProSrc\\Installer::postInstall"
-    ],
-    "post-update-cmd": [
-      "MagicProSrc\\Installer::postInstall"
-    ]
-  },
-  "repositories": [
-    {
-      "type": "vcs",
-      "url": "https://github.com/dixiRu/magicpro.git"
-    }
-  ],
-  "minimum-stability": "dev",
-  "prefer-stable": true
+  }
 }
