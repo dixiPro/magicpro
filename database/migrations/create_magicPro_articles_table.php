@@ -46,12 +46,32 @@ return new class extends Migration
                     'name'         => ART_NAME_404,
                     'title'        => ART_NAME_404,
                     'controller'   => '',
-                    'body'         => '<p>Ошибка 404</p><p>{{ $message }}</p><p>{{ $file }} : {{ $line }}</p>',
+                    'body'         => '<p>Ошибка 404</p>',
                     'templateName' => '',
                     'directory'    => false,
                     'menuOn'       => false,
                     'isRoute'      => false,
                     'routeParams'  => '{}',
+                ]);
+
+                DB::table('articles')->insert([
+                    'parentId'     => 1,
+                    'name'         => 'index',
+                    'title'        => 'index',
+                    'controller'   => '',
+                    'body'         => '<p>Index page</p>',
+                    'templateName' => '',
+                    'directory'    => false,
+                    'menuOn'       => false,
+                    'isRoute'      => true,
+                    'routeParams'  => '{
+                                "useController": false,
+                                "adminOnly": false,
+                                "getEnable": false,
+                                "utmParamsEnable": true,
+                                "bindKeys": false,
+                                "keysArr": []
+                            }',
                 ]);
             }
         });

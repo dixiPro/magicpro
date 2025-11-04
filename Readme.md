@@ -25,74 +25,68 @@
 - **Frontend**: Vue 3, Bootstrap 5, PrimeVue.
 - **DevOps**: Ubuntu, Nginx, SQLite.
 
-## ⚙️ Installation for run local
+### ⚙️ Installation (1)
 
 ```bash
-insert in MAIN composer.json
-  "repositories": [
-  {
-    "type": "path",
-    "url": "/home/m/mpro2.test/packages/dixi/magicpro/",
-    "options": {
-      "copy": true
-  }
-   ],
-
+# in project root
 composer require dixipro/magicpro
 php artisan magicpro:install
-
+sudo chown -R :www-data dataMagicPro
+php artisan migrate
 ```
 
-## ⚙️ Installation from Githib
+### ⚙️ OR! installation from git (2)
 
-mkdir -p vendor/dixi/magicpro
+в основной композер добавить
 
-cd vendor/dixi/magicpro
-git clone https://github.com/dixiRu/magicpro
-or
-git clone git@github.com:dixiRu/magicpro.git
+```json
+"repositories": [
+  {
+    "type": "path",
+    "url": "packages/dixipro/magicpro",
+    "options":{
+      "copy": true
+   }
+  }
+]
+```
+
+```bash
+# install magicpro
+git clone https://github.com/dixiRu/magicpro packages/dixipro/magicpro
+composer require dixipro/magicpro
+php artisan magicpro:install
+sudo chown -R :www-data dataMagicPro
+php artisan migrate
+
+##
+```
 
 ## ⚙️ Installation for dev
 
+в основной композер добавить
+
+```json
+"repositories": [
+  {
+    "type": "path",
+    "url": "packages/dixipro/magicpro",
+    "options":{
+      "symlink": true
+   }
+  }
+]
+```
+
 ```bash
-#install Laravel + liveware
-#see note
-
-
-
-# from Laravel project root — create development directory for MagicPro
-mkdir -p packages/dixi
-cd packages/dixi
-
-# clone the repository
-git clone https://github.com/dixiRu/magicpro
-
-# с ключом
-git clone git@github.com:dixiRu/magicpro.git
-
-
-cd ../../ root project
-
-# add to composer
-composer config repositories.magicpro path packages/dixi/magicpro
-
-# enable symlink option
-jq '.repositories.magicpro.options.symlink=true' composer.json > composer.tmp && mv composer.tmp composer.json
-# if jq not in server
-sudo apt install jq -y
-
-
-# install dependencies
-composer require magicpro/magicpro:"^0.1.0"
-composer require packages/dixi/magicpro:"^0.1.0"
-
-# run Laravel migrations — creates 'article' and 'userAdmin' tables
-php artisan migrate
-
-# create necessary folders
+git clone https://github.com/dixiRu/magicpro packages/dixipro/magicpro
+composer require dixipro/magicpro
 php artisan magicpro:install
-cd ..
-# шinstall fro development
+sudo chown -R :www-data dataMagicPro
+php artisan migrate
+##
+cd packages/dixipro/magicpro
+# install fro development
 npm i
 ```
 
@@ -101,10 +95,10 @@ npm i
 Vite is configured to build outside the project root.
 
 ```bash
-cd packages/dixi/magicpro
+cd packages/dixipro/magicpro
 npm i
 npm run dev
-npm run bhuild
+npm run build
 ```
 
 #### 2025-27-10
@@ -112,10 +106,10 @@ npm run bhuild
 ##### Added / Change
 
 - Dynamic Routing
-- Setup Dynamic Routing: binding parametrs
+- Setup Dynamic Routing: binding parameters
 - 404 error handling
 - Admin testing page: attr for writing atrr
-- import foem MagicPro Xml
+- import from MagicPro Xml
 
 #### 2025-23-10
 
@@ -171,15 +165,10 @@ composer -V
 # Create a new Laravel project
 composer create-project laravel/laravel myapp
 
-composer create-project laravel/laravel:^12 myapp
-
-
-
 # Go to the project folder
 cd myapp
 
 # Configure database in .env if needed
-
 #  Run migrations
 php artisan migrate
 
@@ -197,7 +186,7 @@ sudo find . -type d -exec chmod 775 {} \;
 composer require livewire/livewire
 ```
 
-### chamge .env
+### change .env
 
 ```bash
 APP_URL=mpro2.test
@@ -217,6 +206,28 @@ DB_CONNECTION=sqlite
 
 ```
 
+### Git cookbook
+
+```bash
+#generate key
+ssh-keygen -t ed25519 -C "ваш_email@пример.com"
+cat ~/.ssh/id_ed25519.pub
+# GitHub →Settings → SSH and GPG keys → New SSH key.
+# https://github.com/settings/keys
+
+ssh -T git@github.com
+```
+
+````bash
+# del local tags
+git tag -l | xargs git tag -d
+# del repo tags
+git push origin --delete $(git tag -l)
+# add tagh
+git tag 1.0.1
+git push origin 1.0.1
+```
+
 ### SQlite managment
 
 ```bash
@@ -225,7 +236,7 @@ DB_CONNECTION=sqlite
 sudo apt install sqlitebrowser
 sqlitebrowser
 
-```
+````
 
 #### Setup RDP on Ubuntu Server
 
@@ -247,36 +258,32 @@ xhost +SI:localuser:root
 # or use MobaXterm: https://mobaxterm.mobatek.net/download.html
 ```
 
-### Git key
+### nginx cookbook
 
 ```bash
-ssh-keygen -t ed25519 -C "ваш_email@пример.com"
-cat ~/.ssh/id_ed25519.pub
-# GitHub →Settings → SSH and GPG keys → New SSH key.
-# https://github.com/settings/keys
-
-ssh -T git@github.com
-```
-
-### ngnix
-
-```bash
-cd /etc/nginx/sites-available конфиги
-cd /etc/nginx/ites-enabled - ссылки
+# configs
+cd /etc/nginx/sites-available
+# active sites
+cd /etc/nginx/sites-enabled
+# make link
 sudo ln -s /etc/nginx/sites-available/example.com /etc/nginx/sites-enabled/
+# check
 sudo nginx -t
+# restart
 sudo systemctl reload nginx
 ```
 
-### setudDev
+### cookbook difff
 
 ```bash
+#remove
 composer remove dixipro/magicpro
 rm -rf vendor/dixipro composer.lock
 composer clear-cache
 composer require dixipro/magicpro:dev-main
 composer require dixipro/magicpro
 
+# see link page
 ls -la vendor/dixipro/magicpro
 ```
 

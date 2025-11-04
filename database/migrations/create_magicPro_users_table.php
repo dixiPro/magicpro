@@ -35,8 +35,8 @@ return new class extends Migration
 
         echo "Table magicPro_users was created:\n";
         echo "Admin  created:\n";
-        echo "-----> Email: " . $email . "\n";
-        echo "-----> Password:" . $password . "\n";
+        echo "\033[32m-----> Email: " . $email  . "\033[0m\n" . "\n";
+        echo "\033[32m-----> Password:" . $password . "\033[0m\n" . "\n";
     }
 
     public function down(): void
