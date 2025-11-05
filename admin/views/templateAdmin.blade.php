@@ -5,18 +5,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title')</title>
-    <link rel="stylesheet" href="/vendor/bootstrap5/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="/vendor/fontawesome-free/css/all.min.css" />
-    <script src="/vendor/emmet/emmet.js"></script>
+    <link rel="stylesheet" href="/vendor/magicpro/bootstrap5/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="/vendor/magicpro/fontawesome-free/css/all.min.css" />
 
-    <script src="https://unpkg.com/prettier@3.2.5/standalone.js"></script>
-    <script src="https://unpkg.com/prettier@3.2.5/plugins/html.js"></script>
-    <script src="https://unpkg.com/@prettier/plugin-php@0.22.2/standalone.js"></script>
+    <script src="/vendor/magicpro/emmet/emmet.js"></script>
+    <script src="/vendor/magicpro/prettier/standalone.js"></script>
+    <script src="/vendor/magicpro/prettier/plugin-html.js"></script>
+    <script src="/vendor/magicpro/prettier/plugin-php.js"></script>
 
-
-    {{-- 
-    <script src="https://unpkg.com/prettier-plugin-php@0.22.2/standalone.js"></script> --}}
-    {{-- <script src="https://unpkg.com/prettier-plugin-blade@2.1.0/dist/plugin.cjs"></script> --}}
 
 </head>
 

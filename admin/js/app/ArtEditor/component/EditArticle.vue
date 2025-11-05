@@ -299,7 +299,7 @@ async function formatDocument() {
     <div class="row gx-2 py-2 mx-0" style="background: #ffff001f">
       <div class="col-auto">
         <a v-if="article.isRoute" target="_blank" class="fas fa-external-link-alt btn btn-sm btn-primary" :href="url"></a>
-        <span v-else class="fas fa-external-link-alt btn btn-sm btn-secondary"></span>
+        <span v-else class="btn btn-sm btn-secondary fas fa-external-link-alt"></span>
       </div>
       <div class="col-3">
         <div class="input-group input-group-sm">

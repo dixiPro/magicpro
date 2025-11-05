@@ -9,8 +9,7 @@ export default defineConfig({
     vue(),
     laravel({
       input: [
-        'admin/js/artEditor.js',
-        //
+        'admin/js/artEditor.js', //
         'admin/js/editUsers.js',
       ],
       refresh: true,
@@ -23,22 +22,35 @@ export default defineConfig({
       closeBundle() {
         console.log('✅ start copying');
 
+        // сгенерированные файлы вайтом
+        // сохраняются в паблик проекта.
         const buildDirectory = '../../../public/vendor/magicpro/';
-        const publicDirectory = 'public/vendor/magicpro/';
 
-        fs.emptyDirSync(publicDirectory); // 🔥 очищает папку
+        // сюда сохраняем сегенеренное для хранения в пакете
+        const readyBundle = 'readyBundle/';
+
+        fs.emptyDirSync(readyBundle + 'assets'); // 🔥 очищает только папку assests
         // что копируем, куда копируем
         fs.copySync(
           buildDirectory + 'assets', //
-          publicDirectory + 'assets'
+          readyBundle + 'assets'
         );
 
         fs.copySync(
           buildDirectory + 'manifest.json', //
-          publicDirectory + 'manifest.json'
+          readyBundle + 'manifest.json'
         );
 
-        console.log('✅ MagicPro assets copied to public/vendor/magicpro');
+        // // проверяем папку, тут лежат все файлы
+        // // которые подключаются в хеадере
+        // const externalInPublic = '../../../public/vendor/magicpro/external/';
+        // const packageExternal = 'public/vendor/magicpro/external/';
+
+        // if (!fs.existsSync(externalInPublic)) {
+        //   console.log('Папка существует');
+        // }
+
+        console.log('✅ MagicPro assets copied readyBundle');
       },
     },
   ],
@@ -60,3 +72,8 @@ export default defineConfig({
     },
   },
 });
+
+// npm install bootstrap sass @fullhuman/postcss-purgecss --save-dev
+// npm uninstall sass --save-dev
+// npm install sass@1.71.1 --save-dev
+// npm install @fortawesome/fontawesome-free --save-dev

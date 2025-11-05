@@ -1,0 +1,57 @@
+{
+  "_apiCall-Dr87vRPP.js": {
+    "file": "assets/apiCall-Dr87vRPP.js",
+    "name": "apiCall"
+  },
+  "admin/js/artEditor.js": {
+    "file": "assets/artEditor-Dv4JKcRH.js",
+    "name": "artEditor",
+    "src": "admin/js/artEditor.js",
+    "isEntry": true,
+    "imports": [
+      "_apiCall-Dr87vRPP.js"
+    ],
+    "css": [
+      "assets/artEditor-CgdWFXV5.css"
+    ],
+    "assets": [
+      "assets/primeicons-DMOk5skT.eot",
+      "assets/primeicons-C6QP2o4f.woff2",
+      "assets/primeicons-WjwUDZjB.woff",
+      "assets/primeicons-MpK4pl85.ttf",
+      "assets/primeicons-Dr5RGzOO.svg"
+    ]
+  },
+  "admin/js/editUsers.js": {
+    "file": "assets/editUsers-CDf1wRqB.js",
+    "name": "editUsers",
+    "src": "admin/js/editUsers.js",
+    "isEntry": true,
+    "imports": [
+      "_apiCall-Dr87vRPP.js"
+    ],
+    "css": [
+      "assets/editUsers-Cktv8VuK.css"
+    ]
+  },
+  "node_modules/primeicons/fonts/primeicons.eot": {
+    "file": "assets/primeicons-DMOk5skT.eot",
+    "src": "node_modules/primeicons/fonts/primeicons.eot"
+  },
+  "node_modules/primeicons/fonts/primeicons.svg": {
+    "file": "assets/primeicons-Dr5RGzOO.svg",
+    "src": "node_modules/primeicons/fonts/primeicons.svg"
+  },
+  "node_modules/primeicons/fonts/primeicons.ttf": {
+    "file": "assets/primeicons-MpK4pl85.ttf",
+    "src": "node_modules/primeicons/fonts/primeicons.ttf"
+  },
+  "node_modules/primeicons/fonts/primeicons.woff": {
+    "file": "assets/primeicons-WjwUDZjB.woff",
+    "src": "node_modules/primeicons/fonts/primeicons.woff"
+  },
+  "node_modules/primeicons/fonts/primeicons.woff2": {
+    "file": "assets/primeicons-C6QP2o4f.woff2",
+    "src": "node_modules/primeicons/fonts/primeicons.woff2"
+  }
+}

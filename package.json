@@ -14,13 +14,9 @@
     },
     "dependencies": {
         "@he-tree/vue": "^2.10.0-beta.2",
-        "@prettier/plugin-php": "^0.24.0",
         "@primeuix/themes": "^1.2.3",
         "ace-builds": "^1.43.3",
         "alpinejs": "^3.4.2",
-        "emmet-core": "^1.0.0",
-        "flowbite": "^3.1.2",
-        "prettier": "^3.6.2",
         "primeicons": "^7.0.0",
         "primevue": "^4.3.7",
         "vue": "^3.5.21",
