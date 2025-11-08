@@ -6,6 +6,7 @@ import FileManager from './FileManager.vue';
 import TreeArticle from './TreeArticle.vue';
 import { formatBlade } from './formatBlade.js';
 import { formatPhp } from './formatPhp.js';
+import { convertOldMpro } from './convertOldMpro.js';
 
 const articleId = defineModel('articleId', 1);
 const article = ref({ routeParams: {} });
@@ -38,6 +39,13 @@ onMounted(() => {
   watch(
     () => article.value,
     () => {
+      hasTwig.value = /{%\s*.*?\s*%}/.test(article.value.body);
+      if (!article.value.routeParams.useController && splitStatusEditorObj.value.status !== 'hideController') {
+        splitStatusEditorObj.value.set('hideController');
+      }
+      if (article.value.routeParams.useController && splitStatusEditorObj.value.status == 'hideController') {
+        splitStatusEditorObj.value.set('normal');
+      }
       treeRef.value?.changeNode(article.value);
       document.title = article.value.title;
     },
@@ -290,6 +298,12 @@ async function formatDocument() {
     document.showToast('Ошибка форматирования: ' + error.message, 'error');
   }
 }
+
+function convertFromMro() {
+  article.value.body = convertOldMpro(article.value.body);
+}
+
+const hasTwig = ref(true);
 </script>
 
 <template>
@@ -356,6 +370,8 @@ async function formatDocument() {
       </div>
 
       <div class="col text-end">
+        <button v-if="hasTwig" class="btn btn-success fas fa-sync-alt btn-sm me-2" @click="convertFromMro()"></button>
+
         <button class="btn btn-success fas fa-folder-open" @click="folderOpen = !folderOpen"></button>
         <button class="ms-1 btn btn-success fas fa-bars" @click="addPannel = !addPannel"></button>
       </div>
@@ -386,8 +402,9 @@ async function formatDocument() {
   <Dialog v-model:visible="helpDialogShow" header="Справка" modal class="w-50">
     <ul class="list-unstyled m-0">
       <li><kbd>Ctrl+S</kbd> — сохранить</li>
+      <li><kbd>Shift_</kbd> — снипеты блейда</li>
       <li><kbd>Alt+1</kbd> — перейти в статье по выбранному слову</li>
-      <li><kbd>Alt+2</kbd> — снипеты блейда</li>
+
       <li><kbd>Alt+3</kbd> — панель дерева</li>
       <li><kbd>Alt+4</kbd> — боковое меню</li>
       <li><kbd>Alt+5</kbd> — панель контроллера</li>
@@ -402,6 +419,15 @@ async function formatDocument() {
         </div>
         <div class="ms-2">menu</div>
       </div>
+      <div class="d-flex my-2">
+        <div class="nowrap">
+          <ToggleSwitch v-model="article.routeParams.useController" />
+        </div>
+        <div class="ms-2">
+          Испольовать контроллер
+          <div class="small">Если нет, то будет вызываться просто вьюха</div>
+        </div>
+      </div>
       <div class="my-2 d-flex">
         <div class="nowrap">
           <ToggleSwitch v-model="article.isRoute" />
@@ -410,15 +436,6 @@ async function formatDocument() {
       </div>
 
       <div v-if="article.isRoute">
-        <div class="d-flex my-2">
-          <div class="nowrap">
-            <ToggleSwitch v-model="article.routeParams.useController" />
-          </div>
-          <div class="ms-2">
-            Испольовать контроллер
-            <div class="small">Если нет, то будет вызываться просто вьюха</div>
-          </div>
-        </div>
         <div class="d-flex my-2">
           <div class="nowrap">
             <ToggleSwitch v-model="article.routeParams.adminOnly" />

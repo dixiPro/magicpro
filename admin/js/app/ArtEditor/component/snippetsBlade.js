@@ -134,7 +134,9 @@ function smartSelectLines(editor) {
 function toggleCommentLine(line) {
   // убираем Blade-комментарий, если он есть
   if (/{{--.*--}}/.test(line)) {
-    return line.replace(/{{--\s*|\s*--}}/g, '');
+    line = line.replace(/^\s*{{--\s?/, '');
+    line = line.replace(/\s?--}}\s*$/, '');
+    return line;
   }
 
   // иначе добавляем

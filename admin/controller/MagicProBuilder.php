@@ -33,9 +33,9 @@ function createMpro(array $article): void
     $name     = trim($article['name'])  ?: throw new \InvalidArgumentException('name is empty');
     $isRoute  = $article['isRoute'];
 
-    if (!preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $name)) {
-        throw new \InvalidArgumentException("Некорректное имя : {$name}");
-    }
+    // if (!preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $name)) {
+    //     throw new \InvalidArgumentException("Некорректное имя : {$name}");
+    // }
 
     // удаляем все
     deleteMpro($article);

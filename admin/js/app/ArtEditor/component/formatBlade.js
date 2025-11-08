@@ -11,8 +11,14 @@ export async function formatBlade(code, textIdend = 2) {
     return `<!--___PHP____${index}-->`; // подставляем маркер
   });
 
-  let propsBlocks = [];
+  let extendsBlocks = [];
+  formatted = formatted.replace(/@extends\s*\(\s*['"][^)]+?\[[\s\S]*?\]\s*\)/g, (match) => {
+    const index = extendsBlocks.length;
+    extendsBlocks.push(match);
+    return `<!--___EXTENDS____${index}-->`;
+  });
 
+  let propsBlocks = [];
   // находим заменяем props
   formatted = formatted.replace(/@props\s*\(\s*\[[\s\S]*?\]\s*\)/g, (match) => {
     const index = propsBlocks.length;
@@ -35,13 +41,24 @@ export async function formatBlade(code, textIdend = 2) {
   //   propsBlocks = await Promise.all(propsBlocks.map((b) => formatProps(b, textIdend)));
   // }
 
+  try {
+    formatted = await prettier.format(formatted, {
+      parser: 'html',
+      plugins: [prettierPlugins.html],
+      tabWidth: textIdend,
+      printWidth: 160,
+    });
+  } catch (error) {
+    // debugger;
+    const msg = error.message
+      .split('\n')
+      .map((s) => s.replace(/^\s+/, ''))
+      .map((s) => s.replace(/For more info.*/, ''))
+      .filter((s) => !s.includes('at'))
+      .join('\n');
+    document.showToast(msg, 'error');
+  }
   // форматируем
-  formatted = await prettier.format(formatted, {
-    parser: 'html',
-    plugins: [prettierPlugins.html],
-    tabWidth: textIdend,
-    printWidth: 160,
-  });
 
   formatted = afterPrettier(formatted, textIdend);
 
@@ -51,6 +68,8 @@ export async function formatBlade(code, textIdend = 2) {
 
   // восстанавливаем Blade-комментарии из commentBlocks
   formatted = formatted.replace(/<!--___COMMENT____(\d+)-->/g, (_, i) => commentBlocks[i]);
+
+  formatted = formatted.replace(/<!--___EXTENDS____(\d+)-->/g, (_, i) => extendsBlocks[i]);
 
   return formatted;
 }

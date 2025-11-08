@@ -95,6 +95,11 @@ class MagicServiceProvider extends ServiceProvider
         Blade::anonymousComponentPath(MAGIC_VIEW_DIR, 'magic');
         // //
         Blade::componentNamespace('MagicProControllers', 'magic');
+
+        $this->app->booted(
+            fn() =>
+            $this->app->instance(ComponentRegistry::class, new LivewireComponentRegistry($this->app))
+        );
     }
 
     public function register(): void
@@ -103,6 +108,6 @@ class MagicServiceProvider extends ServiceProvider
         // Example: register a Livewire component manually (currently commented out)
         // <livewire:magic::articleName />
 
-        $this->app->extend(ComponentRegistry::class, fn($r, $app) => new LivewireComponentRegistry($app));
+        // $this->app->extend(ComponentRegistry::class, fn($r, $app) => new LivewireComponentRegistry($app));
     }
 }

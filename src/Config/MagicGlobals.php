@@ -29,18 +29,10 @@ class MagicGlobals
         // 💾 Абсолютный путь к папке загрузок на сервере
         define('FILES_UPLOAD_DIRECTORY', base_path('public') . '/' . FILES_JS_UPLOAD);
 
-        // 📚 Список директорий, которые должны существовать
-        // define('MAGIC_DIRECTORIES', [
-        //     MAGIC_DATA_DIR,
-        //     MAGIC_VIEW_DIR,
-        //     MAGIC_CONTROLLER_DIR,
-        //     FILES_UPLOAD_DIRECTORY,
-        // ]);
+        // 💾 Путь к папке вендор где лежить мпро
+        define('VENDOR_FROM', base_path('vendor/dixipro/magicpro/readyBundle/'));
 
-        // 💾 Абсолютный путь к папке вендор где лежить мпро
-        define('VENDOR_FROM', base_path('vendor/dixipro/magicpro/public/vendor/magicpro'));
-
-        // 💾 Абсолютный путь к папке вендор где лежить мпро
+        // 💾 Путь к папке вендор где лежить мпро
         define('VENDOR_PUBLIC', base_path('public/vendor/magicpro/'));
 
 

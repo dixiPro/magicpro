@@ -63,12 +63,16 @@ onMounted(() => {
 
   editor.setFontSize(14);
 
-  // 🔹 Alt + 0 → отправка выделенного текста
+  // 🔹 Alt + 1 → отправка выделенного текста
   editor.commands.addCommand({
     name: 'sendSelectedToParent',
     bindKey: { win: 'Alt-1', mac: 'Alt-1' },
     exec(ed) {
       const selection = ed.session.getTextRange(ed.getSelectionRange());
+      if (selection.trim() === '') {
+        document.showToast('Статья не выделена');
+        return;
+      }
       emit('editor', { command: 'articleByName', value: selection });
     },
   });

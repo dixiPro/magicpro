@@ -164,10 +164,7 @@ class ImportExportController extends Controller
         try {
             $file = $request->file('file');
             $writeBase = $request->boolean('writeBase', false); // по умолчанию false
-            $typeFile = $request->validate([
-                'typeFile' => 'required|string|in:json,xml',
-            ]);
-
+            $typeFile = $request->input('typeFile');
 
             // Проверка файла
             if (!$file || !$file->isValid()) {
@@ -179,9 +176,11 @@ class ImportExportController extends Controller
                 if (!is_array($data)) {
                     throw new \Exception('Некорректный формат JSON');
                 }
-            } else {
+            } elseif ($typeFile === 'xml') {
 
                 $data = $this->parseArticlesXml(file_get_contents($file->getRealPath()));
+            } else {
+                throw new \Exception('Неизвестный тип файла импорта');
             }
 
             foreach ($data as $item) {

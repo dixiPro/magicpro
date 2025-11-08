@@ -101,9 +101,16 @@ npm run dev
 npm run build
 ```
 
-#### 2025-27-10
+### Added / Change
 
-##### Added / Change
+#### 2025-11-06
+
+- change package structure
+- register packagist.org
+- composer installer
+- fixed bugs
+
+#### 2025-10-27
 
 - Dynamic Routing
 - Setup Dynamic Routing: binding parameters
@@ -111,16 +118,9 @@ npm run build
 - Admin testing page: attr for writing atrr
 - import from MagicPro Xml
 
-#### 2025-23-10
-
-##### Added / Change
+#### 2025-10-23
 
 - Export-import JSON
-
-#### 2025-19-10
-
-##### Added / Changed
-
 - Moved all sources to `packages/dixi/magicpro` to structure it as a package
 - Introduced dynamic route handler (`DynamicRouteHandler.php`)
 - Added installation command (`InstallMagicProCommand.php`)
@@ -131,15 +131,11 @@ npm run build
 
 #### 2025-10-10
 
-##### Added
-
 - File manager
 - Transliteration of article names
 - LiveWire controllers and Blade integration
 
-#### 2025-05-10
-
-##### Added
+#### 2025-10-05
 
 - Testing liveWire
 - MoonShine admin panel

@@ -43,10 +43,11 @@ return new class extends Migration
 
                 DB::table('articles')->insert([
                     'parentId'     => 1,
+                    'npp'          => 0,
                     'name'         => ART_NAME_404,
                     'title'        => ART_NAME_404,
                     'controller'   => '',
-                    'body'         => '<p>Ошибка 404</p>',
+                    'body'         => '<p>Error 404</p>',
                     'templateName' => '',
                     'directory'    => false,
                     'menuOn'       => false,
@@ -56,6 +57,7 @@ return new class extends Migration
 
                 DB::table('articles')->insert([
                     'parentId'     => 1,
+                    'npp'          => 1,
                     'name'         => 'index',
                     'title'        => 'index',
                     'controller'   => '',
