@@ -52,6 +52,9 @@ app.use(PrimeVue, {
 app.use(ConfirmationService);
 app.use(ToastService);
 
+import { createPinia } from 'pinia';
+app.use(createPinia());
+
 app.mount('#art_editor');
 
 import * as ApiCallFunctions from './app/apiCall.js';

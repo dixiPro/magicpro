@@ -30,6 +30,7 @@ class API_ArticlesPostController extends Controller
                 'copyRec'                      => ['name' => 'copyRec'],
                 'saveById'                     => ['name' => 'saveById'],
                 'regenerateAll'                => ['name' => 'regenerateAll'],
+                'search'                       => ['name' => 'search'],
             ];
 
             $command = $request->string('command')->toString();
@@ -66,6 +67,19 @@ class API_ArticlesPostController extends Controller
     // ==================================================================
     //                     ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ
     // ==================================================================
+
+    private function search(Request $request): array
+    {
+        $term = $request->input('text');
+        $results = Article::where(function ($q) use ($term) {
+            $q->where('body', 'like', "%$term%")
+                ->orWhere('controller', 'like', "%$term%");
+        })->select('id', 'title')->get()->toArray();
+
+
+        return $results;
+    }
+
 
     private function regenerateAll(Request $request): array
     {

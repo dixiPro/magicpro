@@ -1,24 +1,31 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch, useId } from 'vue';
+
 import { useToast } from 'primevue/usetoast';
-import { setMagicIcon } from '../apiCall';
 const toast = useToast();
-
-import EditArticle from './component/EditArticle.vue';
-
 import { useConfirm } from 'primevue/useconfirm';
 const confirm = useConfirm();
 
+import { setMagicIcon } from '../apiCall';
+
+import TopMenu from './component/TopMenu.vue';
+import RouteParam from './component/RouteParam.vue';
+import Help from './component/Help.vue';
+import EditArticle from './component/EditArticle.vue';
+import FileManager from './component/FileManager.vue';
+
+import { useArticleStore } from './store';
+const store = useArticleStore();
+
 const articleId = ref(1);
-const ready = ref(false);
 
 onMounted(() => {
   const params = new URLSearchParams(window.location.search);
   const obj = Object.fromEntries(params.entries());
-  articleId.value = Number(location.hash.slice(1)) || 1;
+  store.loadRec(Number(location.hash.slice(1)) || 1);
+
   history.pushState(articleId.value, null, '#' + articleId.value);
   console.log('--start ediror--');
-  ready.value = true;
   setMagicIcon('#ff642f');
 
   window.addEventListener('popstate', onPopState);
@@ -59,9 +66,13 @@ const onPopState = (event) => {
   articleId.value = Number(location.hash.slice(1)) || 1;
 };
 </script>
-<template>
-  <EditArticle v-model:articleId="articleId" v-if="ready"></EditArticle>
 
+<template>
+  <TopMenu v-if="store.articleReady"></TopMenu>
+  <EditArticle v-if="store.articleReady"></EditArticle>
+  <FileManager></FileManager>
+  <Help></Help>
+  <RouteParam v-if="store.articleReady"></RouteParam>
   <!-- тосты -->
   <Toast position="bottom-right"></Toast>
   <!-- Дилог Да Нет -->
@@ -80,5 +91,24 @@ const onPopState = (event) => {
 
 .icon-border {
   border: 1px solid #777;
+}
+:root {
+  --p-dialog-header-padding: 0.2rem 1rem;
+  /* новое значение */
+}
+
+.fas,
+.far {
+  cursor: pointer;
+}
+
+.small {
+  font-size: 0.8em;
+}
+.tree-pannel {
+  overflow-y: auto;
+  height: 95%;
+  overflow-x: hidden;
+  white-space: nowrap;
 }
 </style>

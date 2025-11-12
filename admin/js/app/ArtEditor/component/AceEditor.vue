@@ -21,7 +21,8 @@ import 'ace-builds/src-noconflict/snippets/php';
 import { enableBladeColoring } from './enableBladeColoring';
 import { snippetsBlade } from './snippetsBlade';
 
-const emit = defineEmits(['editor']);
+import { useArticleStore } from '../store';
+const store = useArticleStore();
 
 const id = ref(useId());
 
@@ -73,7 +74,7 @@ onMounted(() => {
         document.showToast('Статья не выделена');
         return;
       }
-      emit('editor', { command: 'articleByName', value: selection });
+      store.gotoArticleByName(selection);
     },
   });
 
@@ -85,6 +86,31 @@ onMounted(() => {
   editor.session.on('change', () => {
     body.value = editor.getValue();
   });
+
+  // ждем search для php
+  if (props.lang === 'php')
+    watch(
+      () => store.searchTextController,
+      (val) => {
+        if (!val.trim()) return;
+        editor.find(val);
+        editor.execCommand('find');
+        store.searchTextController = '';
+      }
+    );
+
+  // ждем search для html
+  if (props.lang === 'html') {
+    watch(
+      () => store.searchTextView,
+      (val) => {
+        if (!val.trim()) return;
+        editor.find(store.searchTextView);
+        editor.execCommand('find');
+        store.searchTextView = '';
+      }
+    );
+  }
 });
 
 watch(body, (val) => {

@@ -1,18 +1,18 @@
 {
-  "_apiCall-Dr87vRPP.js": {
-    "file": "assets/apiCall-Dr87vRPP.js",
+  "_apiCall-BhOi8FOm.js": {
+    "file": "assets/apiCall-BhOi8FOm.js",
     "name": "apiCall"
   },
   "admin/js/artEditor.js": {
-    "file": "assets/artEditor-7P4tV6k1.js",
+    "file": "assets/artEditor--7EjkEzI.js",
     "name": "artEditor",
     "src": "admin/js/artEditor.js",
     "isEntry": true,
     "imports": [
-      "_apiCall-Dr87vRPP.js"
+      "_apiCall-BhOi8FOm.js"
     ],
     "css": [
-      "assets/artEditor-B9Cta9jL.css"
+      "assets/artEditor-CdPouoJZ.css"
     ],
     "assets": [
       "assets/primeicons-DMOk5skT.eot",
@@ -23,12 +23,12 @@
     ]
   },
   "admin/js/editUsers.js": {
-    "file": "assets/editUsers-CDf1wRqB.js",
+    "file": "assets/editUsers-DQBdn_Fz.js",
     "name": "editUsers",
     "src": "admin/js/editUsers.js",
     "isEntry": true,
     "imports": [
-      "_apiCall-Dr87vRPP.js"
+      "_apiCall-BhOi8FOm.js"
     ],
     "css": [
       "assets/editUsers-Cktv8VuK.css"

@@ -243,7 +243,7 @@ export function setMagicIcon(color) {
   link.rel = 'icon';
   link.type = 'image/svg+xml';
   link.href = 'data:image/svg+xml,' + encodeURIComponent(svg);
-    document.head.appendChild(link);
+  document.head.appendChild(link);
 }
 //
 //

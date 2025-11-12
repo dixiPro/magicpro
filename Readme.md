@@ -103,6 +103,11 @@ npm run build
 
 ### Added / Change
 
+#### 2025-11-12
+
+- add search in admin
+- add formatter status
+
 #### 2025-11-06
 
 - change package structure
@@ -171,9 +176,22 @@ php artisan migrate
 # Set Laravel  permissions
 
 ```bash
-sudo chown -R $(logname):www-data .
+# юзер в группу www-data
+sudo usermod -a -G www-data $(logname)
+#
 sudo find . -type f -exec chmod 664 {} \;
 sudo find . -type d -exec chmod 775 {} \;
+#
+sudo chgrp -R www-data storage bootstrap/cache public
+sudo chmod 600 .env
+#
+sudo chgrp -R www-data database
+
+
+#?
+php artisan storage:link
+#?
+sudo chown -R $(logname):www-data .
 ````
 
 # install livewire

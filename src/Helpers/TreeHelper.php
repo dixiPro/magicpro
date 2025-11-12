@@ -33,14 +33,29 @@ class TreeHelper
             ->where('parentId', $id)
             ->get()
             ->toArray();
-
         return $result;
     }
 
     // 
-    public static function getPathToRoot(int $id): array
+    public static function getPathToRootById(int $id): array
     {
-        // TODO: идти вверх по parentId до root
-        return ['rootPath' => 'путь на верх'];
+        $path = [];
+        $count = 0;
+
+
+        try {
+            while (++$count < 100) {
+                $article = Article::findOrFail($id);
+                array_unshift($path, $article->name);
+
+                if ($article->parentId == 0) {
+                    break;
+                }
+                $id = $article->parentId;
+            }
+        } catch (\Throwable) {
+            return $path;
+        }
+        return $path;
     }
 }

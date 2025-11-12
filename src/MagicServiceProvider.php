@@ -44,7 +44,8 @@ class MagicServiceProvider extends ServiceProvider
 
         // Include helper functions
         require_once __DIR__ . '/Helpers/TreeHelper.php';
-        require_once __DIR__ . '/Helpers//DumpHelper.php';
+        require_once __DIR__ . '/Helpers/DumpHelper.php';
+
 
         // админка
         // Load admin routes with "web" middleware
@@ -96,10 +97,10 @@ class MagicServiceProvider extends ServiceProvider
         // //
         Blade::componentNamespace('MagicProControllers', 'magic');
 
-        $this->app->booted(
-            fn() =>
-            $this->app->instance(ComponentRegistry::class, new LivewireComponentRegistry($this->app))
-        );
+        // $this->app->booted(
+        //     fn() =>
+        //     $this->app->instance(ComponentRegistry::class, new LivewireComponentRegistry($this->app))
+        // );
     }
 
     public function register(): void
