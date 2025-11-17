@@ -25,6 +25,7 @@ watch(
       currentNodeNode.text = store?.article?.title;
       currentNodeNode.menuOn = store?.article?.menuOn;
       currentNodeNode.isRoute = store?.article?.isRoute;
+      document.title = store.article.title;
     }
   },
   { deep: true }

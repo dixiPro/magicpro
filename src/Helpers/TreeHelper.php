@@ -19,6 +19,7 @@ class TreeHelper
         return Article::query()
             ->select('id', 'title', 'name', 'menuOn')
             ->where('parentId', $artId)
+            ->where('menuOn', true)
             ->get()
             ->toArray();
     }
@@ -31,6 +32,7 @@ class TreeHelper
         $result = Article::query()
             ->select('id', 'title', 'name', 'menuOn')
             ->where('parentId', $id)
+            ->where('menuOn', true)
             ->get()
             ->toArray();
         return $result;

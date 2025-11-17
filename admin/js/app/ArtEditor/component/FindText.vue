@@ -7,7 +7,7 @@ const store = useArticleStore();
 
 // const leftPannel = ref('tree');
 const result = ref([]);
-const findText = ref('MagicController');
+const findText = ref('');
 
 async function findInBase() {
   result.value = await store.search(findText.value);

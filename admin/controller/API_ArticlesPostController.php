@@ -31,6 +31,9 @@ class API_ArticlesPostController extends Controller
                 'saveById'                     => ['name' => 'saveById'],
                 'regenerateAll'                => ['name' => 'regenerateAll'],
                 'search'                       => ['name' => 'search'],
+                'checkUrlByPhp'                => ['name' => 'checkUrlByPhp'],
+
+
             ];
 
             $command = $request->string('command')->toString();
@@ -67,6 +70,27 @@ class API_ArticlesPostController extends Controller
     // ==================================================================
     //                     ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ
     // ==================================================================
+
+    private function checkUrlByPhp(Request $request): array
+    {
+        $url = $request->input('url');
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_NOBODY => true,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 10,
+        ]);
+
+        curl_exec($ch);
+        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        return [
+            'check' => ($code >= 200 && $code < 400),
+            'code'   => $code,
+        ];
+    }
+
 
     private function search(Request $request): array
     {

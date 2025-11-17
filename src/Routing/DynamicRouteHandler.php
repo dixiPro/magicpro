@@ -117,6 +117,14 @@ class DynamicRouteHandler
             $page = $segments[0];
             array_shift($segments);
         }
+        // обработка раута с точкой — файлы якобы
+        $pos = strpos($page, '.');
+        if ($pos === false) {
+            $page = str_replace("___", '.',  $page); // заменяем ___ на точку, что бы не было вызов статйей с ___
+        } else {
+            $page = str_replace('.', "___", $page);
+        }
+
 
         // 🔹 Ищем запись в базе
         $page = trim($page);

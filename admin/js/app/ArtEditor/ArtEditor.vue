@@ -30,9 +30,6 @@ onMounted(() => {
 
   window.addEventListener('popstate', onPopState);
 
-  // document.showToast('Сообщение');
-  // document.confirmDialog('Сохранить?');
-
   // глобальные сервисы диалог подтверждения и тосты
   document.showToast = (msg = '', severity = 'success') => {
     const life = severity === 'success' ? 5000 : 60 * 1000;
@@ -54,6 +51,9 @@ onMounted(() => {
       });
     });
   };
+
+  document.showToast('article.value.ready ' + store.articleReady);
+  // document.confirmDialog('Сохранить?');
 });
 
 onUnmounted(() => {

@@ -1,0 +1,263 @@
+<script setup>
+import { ref, computed, onMounted, onUnmounted, watch, useId, toRaw, unref } from 'vue';
+import { apiCall, apiArt, translitString } from '../apiCall';
+
+import { useToast } from 'primevue/usetoast';
+const toast = useToast();
+import { useConfirm } from 'primevue/useconfirm';
+const confirm = useConfirm();
+
+onMounted(() => {
+  console.log('startCrawler');
+});
+
+onUnmounted(() => {});
+
+// результаты
+const result = ref({});
+// внешние ссылки
+const extrnalLink = ref({});
+// экстренный стоп
+const stop = ref(false);
+//
+const status = ref('start');
+
+async function checkUrlByPhp(url) {
+  try {
+    const res = await apiArt({ command: 'checkUrlByPhp', url: url });
+    return res;
+  } catch (e) {
+    throw new Error(e);
+  }
+}
+
+function getLinks(url) {
+  if (stop.value) return;
+  return new Promise(async (resolve, reject) => {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) {
+        return reject({
+          status: res.status,
+          statusText: res.statusText,
+          error: `HTTP ${res.status}`,
+        });
+      }
+      const html = await res.text();
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+
+      const links = [...doc.querySelectorAll('a')].map((a) => a.getAttribute('href')).filter(Boolean);
+
+      resolve(links);
+    } catch (e) {
+      reject({
+        status: null,
+        statusText: null,
+        error: e.message,
+      });
+    }
+  });
+}
+
+async function start(url, parent) {
+  status.value = 'working';
+  if (stop.value) return;
+  await go(url, parent);
+
+  let sorted = {};
+  Object.keys(result.value)
+    .sort()
+    .forEach((k) => {
+      sorted[k] = result.value[k];
+    });
+
+  result.value = sorted;
+
+  await checkExternal();
+
+  sorted = {};
+  Object.keys(extrnalLink.value)
+    .sort()
+    .forEach((k) => {
+      sorted[k] = extrnalLink.value[k];
+    });
+
+  extrnalLink.value = sorted;
+  status.value = 'end';
+}
+
+async function checkExternal() {
+  if (stop.value) return;
+  for (let key in extrnalLink.value) {
+    try {
+      const res = await checkUrlByPhp(key);
+      extrnalLink.value[key].status = 'done';
+      extrnalLink.value[key].check = res.check ? 'ok' : res.code;
+    } catch (error) {}
+  }
+}
+
+async function go(url, parent) {
+  if (stop.value) return;
+  // админка
+  const arrSkip = ['#', '/a_dmin', '/f_ilament'];
+  if (arrSkip.some((el) => url.startsWith(el))) {
+    return;
+  }
+
+  // внешние ссылки
+  const arrSkipProtocol = ['//', 'http://', 'https://'];
+  if (arrSkipProtocol.some((el) => url.startsWith(el))) {
+    if (!(url in extrnalLink.value)) {
+      extrnalLink.value[url] = {
+        status: 'reading',
+        check: 'unknown',
+        parentArr: [],
+      };
+    }
+    extrnalLink.value[url].parentArr.push(parent);
+    return;
+  }
+
+  // ссылку проверели
+  if (url in result.value) {
+    // добавляем родителей только с ошибками
+    if (result.value[url].check != 'ok') {
+      result.value[url].parentArr.push(parent);
+    }
+
+    return;
+  }
+
+  result.value[url] = {
+    status: 'reading',
+    check: 'unknown',
+    parentArr: [parent],
+  };
+  try {
+    const arr = await getLinks(url);
+    // console.log('url=', url, 'arr', arr);
+    result.value[url].check = 'ok';
+
+    for (const el of arr) {
+      if (stop.value) return;
+      await go(el, url);
+    }
+  } catch (error) {
+    result.value[url].check = error.error;
+  } finally {
+    result.value[url].status = 'done';
+  }
+}
+</script>
+
+<template>
+  <h1>Crawler 0.6</h1>
+  <div class="my-2">
+    <button v-if="status == 'start'" class="btn btn-primary fas fa-angle-right" @click="start('/', '')"></button>
+
+    <button v-if="status == 'working'" class="btn btn-danger fas fa-stop ms-3" @click="stop = true"></button>
+  </div>
+
+  <div v-if="status != 'start'">
+    <h3>Error</h3>
+    <table class="table table-sm table-bordered">
+      <tbody>
+        <template v-for="(val, key) in result" :key="key">
+          <tr v-if="val.check != 'ok'">
+            <td class="link">
+              <a :href="key" target="_blank">{{ key }}</a>
+            </td>
+            <td>{{ val.status }}</td>
+            <td>{{ val.check }}</td>
+            <td>
+              <span v-for="parent in val.parentArr" class="me-2">
+                <a :href="parent" target="_blank">{{ parent }}</a>
+              </span>
+            </td>
+          </tr>
+        </template>
+      </tbody>
+    </table>
+
+    <h3>Ok</h3>
+    <table class="table table-sm table-bordered">
+      <tbody>
+        <template v-for="(val, key) in result" :key="key">
+          <tr v-if="val.check == 'ok'">
+            <td class="link">
+              <a :href="key" target="_blank">{{ key }}</a>
+            </td>
+            <td>{{ val.status }}</td>
+            <td>{{ val.check }}</td>
+            <td>
+              <span v-for="parent in val.parentArr" class="me-2">
+                <a :href="parent" target="_blank">{{ parent }}</a>
+              </span>
+            </td>
+          </tr>
+        </template>
+      </tbody>
+    </table>
+
+    <h2>External Error</h2>
+    <table class="table table-sm table-bordered">
+      <tbody>
+        <template v-for="(val, key) in extrnalLink" :key="key">
+          <tr v-if="val.check != 'ok'">
+            <td class="link">
+              <a :href="key" target="_blank">{{ key }}</a>
+            </td>
+            <td>{{ val.status }}</td>
+            <td>{{ val.check }}</td>
+            <td>
+              <span v-for="parent in val.parentArr" class="me-2">
+                <a :href="parent" target="_blank">{{ parent }}</a>
+              </span>
+            </td>
+          </tr>
+        </template>
+      </tbody>
+    </table>
+
+    <h2>External OK</h2>
+    <table class="table table-sm table-bordered">
+      <tbody>
+        <template v-for="(val, key) in extrnalLink" :key="key">
+          <tr v-if="val.check == 'ok'">
+            <td class="link">
+              <a :href="key" target="_blank">{{ key }}</a>
+            </td>
+            <td>{{ val.status }}</td>
+            <td>{{ val.check }}</td>
+            <td>
+              <span v-for="parent in val.parentArr" class="me-2">
+                <a :href="parent" target="_blank">{{ parent }}</a>
+              </span>
+            </td>
+          </tr>
+        </template>
+      </tbody>
+    </table>
+  </div>
+  <!-- <pre>
+      {{ JSON.stringify(extrnalLink, null, 2) }}
+      </pre
+  > -->
+
+  <!-- <pre>
+      {{ JSON.stringify(result, null, 2) }}
+      </pre
+  > -->
+</template>
+
+<style scoped>
+.link {
+  overflow: hidden;
+  white-space: nowrap;
+  max-width: 450px;
+}
+.pointer {
+  cursor: pointer;
+}
+</style>

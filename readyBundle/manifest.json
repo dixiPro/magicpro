@@ -1,18 +1,30 @@
 {
+  "__plugin-vue_export-helper-DlAUqK2U.js": {
+    "file": "assets/_plugin-vue_export-helper-DlAUqK2U.js",
+    "name": "_plugin-vue_export-helper"
+  },
   "_apiCall-BhOi8FOm.js": {
     "file": "assets/apiCall-BhOi8FOm.js",
     "name": "apiCall"
   },
+  "_index-C9nv6BOL.js": {
+    "file": "assets/index-C9nv6BOL.js",
+    "name": "index",
+    "imports": [
+      "_apiCall-BhOi8FOm.js"
+    ]
+  },
   "admin/js/artEditor.js": {
-    "file": "assets/artEditor--rH-CCWy.js",
+    "file": "assets/artEditor-Do27O41h.js",
     "name": "artEditor",
     "src": "admin/js/artEditor.js",
     "isEntry": true,
     "imports": [
-      "_apiCall-BhOi8FOm.js"
+      "_apiCall-BhOi8FOm.js",
+      "__plugin-vue_export-helper-DlAUqK2U.js"
     ],
     "css": [
-      "assets/artEditor-CSKni23_.css"
+      "assets/artEditor-D1VyIgc_.css"
     ],
     "assets": [
       "assets/primeicons-DMOk5skT.eot",
@@ -22,13 +34,28 @@
       "assets/primeicons-Dr5RGzOO.svg"
     ]
   },
+  "admin/js/crawler.js": {
+    "file": "assets/crawler-CJwn7JwD.js",
+    "name": "crawler",
+    "src": "admin/js/crawler.js",
+    "isEntry": true,
+    "imports": [
+      "_apiCall-BhOi8FOm.js",
+      "_index-C9nv6BOL.js",
+      "__plugin-vue_export-helper-DlAUqK2U.js"
+    ],
+    "css": [
+      "assets/crawler-dTi8OM82.css"
+    ]
+  },
   "admin/js/editUsers.js": {
-    "file": "assets/editUsers-DQBdn_Fz.js",
+    "file": "assets/editUsers-D4wh9iI9.js",
     "name": "editUsers",
     "src": "admin/js/editUsers.js",
     "isEntry": true,
     "imports": [
-      "_apiCall-BhOi8FOm.js"
+      "_apiCall-BhOi8FOm.js",
+      "_index-C9nv6BOL.js"
     ],
     "css": [
       "assets/editUsers-Cktv8VuK.css"

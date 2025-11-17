@@ -11,6 +11,7 @@ export default defineConfig({
       input: [
         'admin/js/artEditor.js', //
         'admin/js/editUsers.js',
+        'admin/js/crawler.js',
       ],
       refresh: true,
       hotFile: path.resolve(__dirname, '../../../storage/magicpro.vite.hot'),

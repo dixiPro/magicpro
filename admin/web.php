@@ -51,6 +51,12 @@ Route::get('/a_dmin/artEditor', function () {
     return view('magicAdmin::artEditor');
 })->where('any', '.*');
 
+
+Route::get('/a_dmin/crawler', function () {
+    return view('magicAdmin::crawler');
+})->where('any', '.*');
+
+
 // файл редактирование админов    
 use MagicProAdminControllers\API_EditUsersController;
 
@@ -71,6 +77,12 @@ use MagicProAdminControllers\AuthController;
 
 Route::post('/a_dmin/login', [AuthController::class, 'login'])->name('magic.login');
 Route::get('/a_dmin/logout', [AuthController::class, 'logout'])->name('magic.logout');
+
+// проверка авторизации по GET
+Route::get('/login', function () {
+    return redirect('/');
+})->name('login');
+
 
 //     
 //
@@ -95,4 +107,4 @@ $pattern = '^(?!(' . implode('|', array_map('preg_quote', $excluded)) . ')).*$';
 
 // ⚙️ Динамический маршрут
 Route::any('{any?}', [DynamicRouteHandler::class, 'handle'])
-    ->where('any', $pattern);
+    ->where('any', $pattern)->withoutMiddleware([Csrf::class]);

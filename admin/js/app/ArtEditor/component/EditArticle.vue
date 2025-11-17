@@ -9,23 +9,28 @@ const store = useArticleStore();
 
 import FindText from './FindText.vue';
 
+// определение размера окна редакторов
 const ready = ref({
   show: false,
   x: 0,
   y: 0,
 });
 
-onMounted(() => {
-  // store.treeSplitterRef = splitterRef;
-  // Фикс размеры для слоя
-  const rect = document.getElementById('editor-layer').getBoundingClientRect();
-  ready.value.y = window.innerHeight - rect.top; // расстояние до нижнего края экрана
-  ready.value.x = window.innerWidth; // Ширина окна
-  ready.value.show = true;
+// тест article.routeParams на контроллер
+function splitterCheckUseController() {
+  if (!store.article.routeParams.useController) {
+    leftSplitEditor.value = 0;
+    modeEditorSplitter.value = 'view';
+  }
 
-  store.toggleTreeSplitter = toggleTreeSplitter;
-  store.toggleEditorSplitter = toggleEditorSplitter;
-});
+  if (store.article.routeParams.useController) {
+    leftSplitEditor.value = 50;
+    modeEditorSplitter.value = 'full';
+  }
+
+  store.modeEditorSplitter = modeEditorSplitter.value;
+  splitEditorRef.value.resetState();
+}
 
 // сплитер ДЕРЕВА
 const splitterTreeRef = ref(null);
@@ -56,25 +61,12 @@ const splitEditorRef = ref();
 const leftSplitEditor = ref(50);
 let savedEditorSplitter = 0;
 const modeEditorSplitter = ref('full');
-
 //
-watch(
-  () => store?.article.routeParams.useController,
-  () => {
-    if (!store.article.routeParams.useController) {
-      leftSplitEditor.value = 0;
-      modeEditorSplitter.value = 'view';
-    }
 
-    if (store.article.routeParams.useController) {
-      leftSplitEditor.value = 50;
-      modeEditorSplitter.value = 'full';
-    }
-
-    store.modeEditorSplitter = modeEditorSplitter.value;
-    splitEditorRef.value.resetState();
-  }
-);
+// стартовое обновление сплиттера
+watch(splitEditorRef, () => {
+  splitterCheckUseController();
+});
 
 function splitterEditorOnResizeEnd(e) {
   leftSplitEditor.value = e.sizes[0];
@@ -107,6 +99,23 @@ function toggleEditorSplitter() {
 }
 
 //
+onMounted(() => {
+  // Фикс размеры для слоя
+  const rect = document.getElementById('editor-layer').getBoundingClientRect();
+  ready.value.y = window.innerHeight - rect.top; // расстояние до нижнего края экрана
+  ready.value.x = window.innerWidth; // Ширина окна
+  ready.value.show = true;
+
+  store.toggleTreeSplitter = toggleTreeSplitter;
+  store.toggleEditorSplitter = toggleEditorSplitter;
+
+  watch(
+    () => store.article.routeParams.useController,
+    () => {
+      splitterCheckUseController();
+    }
+  );
+});
 </script>
 
 <template>

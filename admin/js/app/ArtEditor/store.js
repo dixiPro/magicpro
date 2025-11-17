@@ -11,6 +11,7 @@ export const useArticleStore = defineStore('article', () => {
   const article = ref({});
 
   // переключатели
+
   // кнопка транслит он
   const statusTranslitButton = computed(() => {
     if (article.value.name === '') {
@@ -38,12 +39,14 @@ export const useArticleStore = defineStore('article', () => {
   const aceThemes = ['chrome', 'monokai', 'dracula', 'twilight'];
 
   // findMode
-  const statusLeftPannel = ref('find');
+  const statusLeftPannel = ref('tree');
 
   // сплиттер редактора контроллер/статься
   const articleReady = ref(false);
 
+  // поиск для контроллера (после поиска по файлам)
   const searchTextController = ref('');
+  // для вью
   const searchTextView = ref('');
 
   // ========= функции
@@ -53,10 +56,11 @@ export const useArticleStore = defineStore('article', () => {
     article.value = updateRouteParams(art);
     history.pushState(id, null, '#' + id);
     articleReady.value = true;
+    document.title = article.value.title;
   }
 
   function updateRouteParams(art) {
-    let routeParams = toRaw(art.routeParams);
+    let routeParams = art.routeParams;
     if (Array.isArray(routeParams) || routeParams === null || typeof routeParams !== 'object') {
       routeParams = {};
     }
@@ -136,7 +140,7 @@ export const useArticleStore = defineStore('article', () => {
     article.value.name = translitString(article.value.title.trim());
   }
 
-  // горчие кравиши
+  // горячие кравиши
   const handleKeydown = (event) => {
     if (event.ctrlKey && event.code === 'KeyS') {
       event.preventDefault(); // Prevent browser's default save action
