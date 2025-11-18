@@ -71,23 +71,78 @@ class API_ArticlesPostController extends Controller
     //                     ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ
     // ==================================================================
 
+    private function saveHtmlFile(string $url, string $body): void
+    {
+        // Берём только path (без протокола, домена и параметров)
+        $path = parse_url($url, PHP_URL_PATH) ?? '/';
+
+        // Корневая страница
+        if ($path === '/' || $path === '' || $path === null) {
+            $fullPath = public_path('_html/index.html');
+        } else {
+            // Приводим путь к html/<path>.html
+            // /test → html/test.html
+            // /a/b/  → html/a/b/index.html
+            // /a/b   → html/a/b.html
+            $path = rtrim($path, '/');
+
+            if ($path === '') {
+                $fullPath = public_path('_html/index.html');
+            } elseif (str_contains($path, '/')) {
+                // Поддиректории
+                $dir = public_path('html/' . dirname($path));
+                @mkdir($dir, 0777, true);
+                $fullPath = public_path('_html/' . $path . '.html');
+            } else {
+                // Обычный файл
+                $fullPath = public_path('_html/' . $path . '.html');
+            }
+        }
+
+        // Создать директорию если её нет
+        @mkdir(dirname($fullPath), 0777, true);
+
+        // Пишем файл
+        file_put_contents($fullPath, $body);
+    }
+
     private function checkUrlByPhp(Request $request): array
     {
         $url = $request->input('url');
+
+        $host = parse_url($url, PHP_URL_HOST);
+
+        $resolve = [];
+        if (str_ends_with($host, '.test')) {
+            $resolve[] = "$host:80:192.168.1.33";
+            $resolve[] = "$host:443:192.168.1.33";
+        }
+
         $ch = curl_init($url);
         curl_setopt_array($ch, [
-            CURLOPT_NOBODY => true,
+            CURLOPT_RETURNTRANSFER => true,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => 10,
+            CURLOPT_RESOLVE => $resolve,
         ]);
 
-        curl_exec($ch);
+        $body = curl_exec($ch);
         $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE) ?? '';
+
         curl_close($ch);
+
+        if (
+            $code === 200 &&  $body !== false && str_starts_with($contentType, 'text/html')
+        ) {
+            // $this->saveHtmlFile($url, $body);
+        }
 
         return [
             'check' => ($code >= 200 && $code < 400),
             'code'   => $code,
+            'body' => $body,
+            'url' => $url
         ];
     }
 

@@ -9,6 +9,28 @@ const confirm = useConfirm();
 
 onMounted(() => {
   console.log('startCrawler');
+
+  // глобальные сервисы диалог подтверждения и тосты
+  document.showToast = (msg = '', severity = 'success') => {
+    const life = severity === 'success' ? 5000 : 60 * 1000;
+    toast.add({ severity: severity, detail: msg, life: life });
+    if (severity === 'error') {
+      console.log(msg);
+    }
+  };
+  document.confirmDialog = async (message) => {
+    return new Promise((resolve, reject) => {
+      confirm.require({
+        message,
+        header: '',
+        icon: 'fas fa-question',
+        acceptLabel: 'Да',
+        rejectLabel: 'Нет',
+        accept: () => resolve(true),
+        reject: () => resolve(false), // или reject(), если хотите ошибку
+      });
+    });
+  };
 });
 
 onUnmounted(() => {});
@@ -24,10 +46,32 @@ const status = ref('start');
 
 async function checkUrlByPhp(url) {
   try {
-    const res = await apiArt({ command: 'checkUrlByPhp', url: url });
-    return res;
+    const response = await apiCall({
+      url: '/a_dmin/api/setup',
+      data: { command: 'processUrl', url: url },
+      logResult: false,
+    });
+    return response.data;
   } catch (e) {
     throw new Error(e);
+  }
+}
+
+function fixUrl(url) {
+  try {
+    return new URL(url).href; // абсолютный → не трогаем
+  } catch {
+    return new URL(url, location.origin).href; // относительный → добавим домен
+  }
+}
+
+async function getPaget(url) {
+  try {
+    const res = await checkUrlByPhp(fixUrl(url));
+    console.log(res);
+    return res;
+  } catch (error) {
+    throw new Error(error);
   }
 }
 
@@ -35,11 +79,32 @@ function getLinks(url) {
   if (stop.value) return;
   return new Promise(async (resolve, reject) => {
     try {
+      const res = await getPaget(url);
+      if (!res.check) {
+        return reject({
+          error: res.code,
+        });
+      }
+      const html = res.body;
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      const links = [...doc.querySelectorAll('a')].map((a) => a.getAttribute('href')).filter(Boolean);
+      resolve(links);
+    } catch (e) {
+      reject({
+        error: e.message,
+      });
+    }
+  });
+}
+
+function getLinks1(url) {
+  if (stop.value) return;
+  return new Promise(async (resolve, reject) => {
+    try {
       const res = await fetch(url);
       if (!res.ok) {
         return reject({
           status: res.status,
-          statusText: res.statusText,
           error: `HTTP ${res.status}`,
         });
       }
@@ -52,7 +117,6 @@ function getLinks(url) {
     } catch (e) {
       reject({
         status: null,
-        statusText: null,
         error: e.message,
       });
     }
@@ -152,7 +216,7 @@ async function go(url, parent) {
 </script>
 
 <template>
-  <h1>Crawler 0.6</h1>
+  <h1>Crawler 0.7</h1>
   <div class="my-2">
     <button v-if="status == 'start'" class="btn btn-primary fas fa-angle-right" @click="start('/', '')"></button>
 

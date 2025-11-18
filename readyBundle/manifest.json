@@ -35,7 +35,7 @@
     ]
   },
   "admin/js/crawler.js": {
-    "file": "assets/crawler-CJwn7JwD.js",
+    "file": "assets/crawler-BdMxx5F8.js",
     "name": "crawler",
     "src": "admin/js/crawler.js",
     "isEntry": true,
@@ -45,7 +45,7 @@
       "__plugin-vue_export-helper-DlAUqK2U.js"
     ],
     "css": [
-      "assets/crawler-dTi8OM82.css"
+      "assets/crawler-DWPN9ek1.css"
     ]
   },
   "admin/js/editUsers.js": {

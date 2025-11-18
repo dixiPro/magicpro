@@ -28,7 +28,6 @@ class MagicServiceProvider extends ServiceProvider
     {
         MagicGlobals::register(); // Константы глобальные
 
-
         // Регистрируем artisan-команду
         if ($this->app->runningInConsole()) {
             $this->commands([
@@ -36,7 +35,6 @@ class MagicServiceProvider extends ServiceProvider
                 InstallCommand::class,
             ]);
         }
-
 
         // вьюхи
         $this->loadViewsFrom(MAGIC_VIEW_DIR, 'magic');
