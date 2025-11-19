@@ -2,6 +2,8 @@
 
 namespace MagicProSrc\Config;
 
+use MagicProSrc\MagicFile;
+
 /**
  * Класс для централизованного определения всех глобальных констант MagicPro.
  * Регистрируется в ServiceProvider и делает константы доступными во всём приложении.
@@ -18,55 +20,12 @@ class MagicGlobals
     private static string $localIniFile = 'storage/app/private/mproLocalIni.php';
     public static array $INI = [];
 
-    private static array $schema = [
+    private static array $schema;
 
-        'STATIC_HTML_DIR' => [
-            'label'   => 'Каталог HTML-кеша',
-            'type'    => 'localpath',
-            'default' => 'html', // от папки public
-            'mutable' => false,
-        ],
-
-        'STATIC_HTML_CREATE_DIR' => [
-            'label'   => 'Каталог генерации HTML-кеша',
-            'type'    => 'localpath', // без слеша в на конце
-            'default' => 'html__', // от папки public
-            'mutable' => true,
-        ],
-
-        'STATIC_HTML_ENABLE' => [
-            'label'   => 'Статический HTML-кеш',
-            'type'    => 'boolean', // без слеша в на конце
-            'default' => true,
-            'mutable' => false,
-        ],
-
-        'HOST_DEV' => [
-            'label'   => 'Сервер разработки',
-            'type'    => 'string', // без слеша в на конце
-            'default' => 'mpro2.test',
-            'mutable' => true,
-        ],
-
-        'EXCLUDED_ROUTES' => [
-            'label'   => 'Страницы исключенные из динамического раута',
-            'type'    => 'array', // без слеша в на конце
-            'default' => [
-                'livewire',
-                'telescope',
-                'horizon',
-                'nova',
-                'debugbar',
-                'admin',
-                'public',
-                'f_ilament',
-                'storage'
-            ],
-            'mutable' => true,
-        ],
-    ];
     public static function register(): void
     {
+        self::$schema = require __DIR__ . '/magicSchema.php';
+
         // загрузить файлы из локального ини
         self::loadLocal();
 
@@ -169,21 +128,19 @@ class MagicGlobals
     public static function saveIniFile($allVars): array
     {
         self::validate(($allVars));
-        file_put_contents(
-            base_path(self::$localIniFile),
-            "<?php return " . var_export($allVars, true) . ";"
-        );
+
+        MagicFile::make()
+            ->base()
+            ->name(self::$localIniFile)
+            ->put("<?php return " . var_export($allVars, true) . ";");
+
         return require  base_path(self::$localIniFile);
     }
 
     public static function saveKey($key, $value): array
     {
-        self::validate(([$key => $value]));
         self::$INI[$key] = $value;
-        file_put_contents(
-            base_path(self::$localIniFile),
-            "<?php return " . var_export(self::$INI, true) . ";"
-        );
+        self::saveIniFile(self::$INI);
         return self::$INI;
     }
 

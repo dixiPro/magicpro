@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch, useId, toRaw, unref } from 'vue';
-import { apiSetup, apiCall } from '../apiCall';
+import { apiCall, apiArt, translitString } from '../apiCall';
 
 import { useToast } from 'primevue/usetoast';
 const toast = useToast();
@@ -9,7 +9,6 @@ const confirm = useConfirm();
 
 onMounted(() => {
   console.log('startCrawler');
-  getIniParams();
 
   // глобальные сервисы диалог подтверждения и тосты
   document.showToast = (msg = '', severity = 'success') => {
@@ -34,10 +33,6 @@ onMounted(() => {
   };
 });
 
-async function wait(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 onUnmounted(() => {});
 
 // результаты
@@ -46,21 +41,22 @@ const result = ref({});
 const extrnalLink = ref({});
 // экстренный стоп
 const stop = ref(false);
-// статус обхода
-const status = ref('start');
-// начальные параметры
-const cacheStatus = ref(false);
-
 //
+const status = ref('start');
+
 async function checkUrlByPhp(url) {
-  const response = await apiSetup({
-    command: 'processUrl',
-    url: url,
-  });
-  return response;
+  try {
+    const response = await apiCall({
+      url: '/a_dmin/api/setup',
+      data: { command: 'processUrl', url: url },
+      logResult: false,
+    });
+    return response.data;
+  } catch (e) {
+    document.showToast(e.message, 'error');
+  }
 }
 
-//
 function fixUrl(url) {
   try {
     return new URL(url).href; // абсолютный → не трогаем
@@ -69,36 +65,52 @@ function fixUrl(url) {
   }
 }
 
-async function getLinks(url) {
-  if (stop.value) return;
+async function getPaget(url) {
   try {
     const res = await checkUrlByPhp(fixUrl(url));
-    if (!res.check) {
-      return reject({
-        error: res.code,
+    return res;
+  } catch (error) {
+    throw new Error(error);
+  }
+}
+
+function getLinks(url) {
+  if (stop.value) return;
+  return new Promise(async (resolve, reject) => {
+    try {
+      const res = await getPaget(url);
+      if (!res.check) {
+        return reject({
+          error: res.code,
+        });
+      }
+      const html = res.body;
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      const links = [...doc.querySelectorAll('a')].map((a) => a.getAttribute('href')).filter(Boolean);
+      resolve(links);
+    } catch (e) {
+      reject({
+        error: e.message,
       });
     }
-    const html = res.body;
-    const doc = new DOMParser().parseFromString(html, 'text/html');
-    const links = [...doc.querySelectorAll('a')].map((a) => a.getAttribute('href')).filter(Boolean);
-    return links;
+  });
+}
+
+async function deleteCache() {
+  try {
+    const response = await apiCall({
+      url: '/a_dmin/api/setup',
+      data: { command: 'deleteCache' },
+      logResult: false,
+    });
+    document.showToast('кеш удален');
   } catch (e) {
     document.showToast(e.message, 'error');
   }
 }
-
-//
-//
 async function start(url, parent) {
-  result.value = {};
-  extrnalLink.value = {};
-
   status.value = 'working';
   if (stop.value) return;
-
-  await deleteFromStorage();
-
-  await go(url, parent);
 
   let sorted = {};
   Object.keys(result.value)
@@ -129,9 +141,7 @@ async function checkExternal() {
       const res = await checkUrlByPhp(key);
       extrnalLink.value[key].status = 'done';
       extrnalLink.value[key].check = res.check ? 'ok' : res.code;
-    } catch (e) {
-      document.showToast(e.message, 'error');
-    }
+    } catch (error) {}
   }
 }
 
@@ -187,90 +197,15 @@ async function go(url, parent) {
     result.value[url].status = 'done';
   }
 }
-
-async function deleteFromStorage() {
-  await apiSetup({
-    command: 'deleteFromStorage',
-  });
-  document.showToast('кеш удален');
-}
-
-async function deleteFromPublic() {
-  await apiSetup({
-    command: 'deleteFromPublic',
-  });
-  document.showToast('кеш удален');
-}
-
-async function startHtmlCache() {
-  await apiSetup({
-    command: 'startHtmlCache',
-  });
-  document.showToast('кеш опубликован');
-
-  await getIniParams();
-}
-
-async function listCacheFiles() {
-  const response = await apiSetup({
-    command: 'listCacheFiles',
-  });
-
-  result.value = {};
-  extrnalLink.value = {};
-  response.data.forEach((el) => {
-    result.value[el] = {
-      status: 'file',
-      check: 'ok',
-      parentArr: [],
-    };
-  });
-  status.value = 'end';
-  document.showToast('кеш считан');
-}
-
-async function getIniParams() {
-  // document.showToast('считываю');
-  await wait(2000);
-  const response = await apiSetup({
-    command: 'getIniParams',
-  });
-  document.showToast('Готово');
-
-  cacheStatus.value = response?.STATIC_HTML_ENABLE;
-}
 </script>
 
 <template>
-  <h1>Crawler 0.7</h1>
-
+  <h1>Crawler 0.71</h1>
   <div class="my-2">
-    Статус кеша
-    <button class="btn btn-secondary fas fa-circle" :class="{ 'btn-success ': cacheStatus, 'btn-secondary': !cacheStatus }"></button>
+    <button class="btn btn-primary" @click="deleteCache()">Удалить кэш</button>
   </div>
-
   <div class="my-2">
-    <button class="btn btn-primary" @click="getIniParams()">Считать параметры</button>
-  </div>
-
-  <div class="my-2">
-    <button class="btn btn-primary" @click="listCacheFiles()">Считать кеш</button>
-  </div>
-
-  <div class="my-2">
-    <button class="btn btn-primary" @click="startHtmlCache()">Опубликовать кеш</button>
-  </div>
-
-  <div class="my-2">
-    <button class="btn btn-primary" @click="deleteFromPublic()">Удалить в паблике</button>
-  </div>
-
-  <div class="my-2">
-    <button class="btn btn-primary" @click="deleteFromStorage()">Удалить в сторадже</button>
-  </div>
-
-  <div class="my-2">
-    <button v-if="status != 'working'" class="btn btn-primary" @click="start('/', '')">Построить кеш</button>
+    <button v-if="status == 'start'" class="btn btn-primary fas fa-angle-right" @click="start('/', '')"></button>
 
     <button v-if="status == 'working'" class="btn btn-danger fas fa-stop ms-3" @click="stop = true"></button>
   </div>
@@ -316,27 +251,25 @@ async function getIniParams() {
       </tbody>
     </table>
 
-    <div v-if="Object.keys(result).length > 1">
-      <h2>External Error</h2>
-      <table class="table table-sm table-bordered">
-        <tbody>
-          <template v-for="(val, key) in extrnalLink" :key="key">
-            <tr v-if="val.check != 'ok'">
-              <td class="link">
-                <a :href="key" target="_blank">{{ key }}</a>
-              </td>
-              <td>{{ val.status }}</td>
-              <td>{{ val.check }}</td>
-              <td>
-                <span v-for="parent in val.parentArr" class="me-2">
-                  <a :href="parent" target="_blank">{{ parent }}</a>
-                </span>
-              </td>
-            </tr>
-          </template>
-        </tbody>
-      </table>
-    </div>
+    <h2>External Error</h2>
+    <table class="table table-sm table-bordered">
+      <tbody>
+        <template v-for="(val, key) in extrnalLink" :key="key">
+          <tr v-if="val.check != 'ok'">
+            <td class="link">
+              <a :href="key" target="_blank">{{ key }}</a>
+            </td>
+            <td>{{ val.status }}</td>
+            <td>{{ val.check }}</td>
+            <td>
+              <span v-for="parent in val.parentArr" class="me-2">
+                <a :href="parent" target="_blank">{{ parent }}</a>
+              </span>
+            </td>
+          </tr>
+        </template>
+      </tbody>
+    </table>
 
     <h2>External OK</h2>
     <table class="table table-sm table-bordered">

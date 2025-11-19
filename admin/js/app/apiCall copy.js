@@ -28,75 +28,67 @@ export async function apiArt(data, logResult = false) {
   }
 }
 
-export async function apiSetup(data, logResult = false) {
-  const url = '/a_dmin/api/setup';
-  try {
-    const response = await apiCall({
-      url: url,
-      data: data,
-      logResult: logResult,
-    });
-    return response.data;
-  } catch (e) {
-    document.showToast(e, 'error');
-    throw new Error('ошибка');
-  }
-}
-
 export async function apiCall(params = {}) {
   const { url = '/', data = {}, method = 'POST', logResult = false } = params;
 
-  if (!url) {
-    throw new Error('Ошибка в запросе');
-  }
-
-  if (logResult) {
-    console.log('apiCall Start');
-    console.log('apiCall url', url);
-    console.log('apiCall data', data);
-  }
-
-  let response;
-
-  // Запрос
-  try {
-    response = await fetch(url, {
-      method,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      throw new Error(`${response.status} ${response.statusText}`);
+  //
+  return new Promise(async (resolve, reject) => {
+    if (url == '') {
+      reject(new Error('Ошибка в запросе'));
+      return;
     }
-  } catch {
-    throw new Error('Ошибка сети');
-  }
-
-  // Парсинг JSON
-  let apiResult;
-  try {
-    apiResult = await response.json();
+    let response, apiResult; // Объявляем заранее, чтобы была доступна дальше
 
     if (logResult) {
-      console.log('apiCall apiResult', apiResult);
+      console.log('apiCall Start');
+      console.log('apiCall url', url);
+      console.log('apiCall data', data);
     }
-  } catch {
-    throw new Error('Невалидный ответ');
-  } finally {
-    if (logResult) {
-      console.log('apiCall end', response);
+    // Запрос
+    try {
+      response = await fetch(url, {
+        method: method,
+        headers: {
+          // 'X-Requested-With': 'XMLapiCallRequest',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        // Если HTTP-статус не 2xx (например, 500, 404)
+        reject(new Error(`${response?.status} ${response.statusText}`));
+        return;
+      }
+    } catch (error) {
+      reject(new Error('Ошибка сети'));
+      return;
     }
-  }
 
-  // Анализ ответа API
-  if (apiResult.status) {
-    return apiResult;
-  }
+    // Прасинг ответа
+    try {
+      apiResult = await response.json();
+      if (logResult) {
+        console.log('apiCall apiResult', apiResult);
+      }
+    } catch (error) {
+      reject(new Error('Невалидный ответ'));
+      return;
+    } finally {
+      if (logResult) {
+        console.log('apiCall end', response);
+      }
+    }
 
-  throw new Error(apiResult?.errorMsg || apiResult?.result || 'Неизвестная ошибка');
+    // Анализ ответа
+    if (Boolean(apiResult.status)) {
+      resolve(apiResult); // Успех: status === 1
+      return;
+    } else {
+      reject(new Error(apiResult?.errorMsg || apiResult?.result || 'Неизвестная ошибка')); // Ошибка: status === 0
+      return;
+    }
+  });
 }
 
 export function translitString(input) {
@@ -270,66 +262,3 @@ export function setMagicIcon(color) {
           
 
 */
-
-export async function apiCall_old(params = {}) {
-  const { url = '/', data = {}, method = 'POST', logResult = false } = params;
-
-  //
-  return new Promise(async (resolve, reject) => {
-    if (url == '') {
-      reject(new Error('Ошибка в запросе'));
-      return;
-    }
-    let response, apiResult; // Объявляем заранее, чтобы была доступна дальше
-
-    if (logResult) {
-      console.log('apiCall Start');
-      console.log('apiCall url', url);
-      console.log('apiCall data', data);
-    }
-    // Запрос
-    try {
-      response = await fetch(url, {
-        method: method,
-        headers: {
-          // 'X-Requested-With': 'XMLapiCallRequest',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        // Если HTTP-статус не 2xx (например, 500, 404)
-        reject(new Error(`${response?.status} ${response.statusText}`));
-        return;
-      }
-    } catch (error) {
-      reject(new Error('Ошибка сети'));
-      return;
-    }
-
-    // Прасинг ответа
-    try {
-      apiResult = await response.json();
-      if (logResult) {
-        console.log('apiCall apiResult', apiResult);
-      }
-    } catch (error) {
-      reject(new Error('Невалидный ответ'));
-      return;
-    } finally {
-      if (logResult) {
-        console.log('apiCall end', response);
-      }
-    }
-
-    // Анализ ответа
-    if (Boolean(apiResult.status)) {
-      resolve(apiResult); // Успех: status === 1
-      return;
-    } else {
-      reject(new Error(apiResult?.errorMsg || apiResult?.result || 'Неизвестная ошибка')); // Ошибка: status === 0
-      return;
-    }
-  });
-}

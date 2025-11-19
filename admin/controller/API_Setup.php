@@ -5,11 +5,9 @@ namespace MagicProAdminControllers;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use MagicProDatabaseModels\MagicProUser;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Hash;
 use MagicProSrc\Config\MagicGlobals; // Глобальные константы
-
+use MagicProSrc\MagicFile;
+use Illuminate\Support\Facades\File;
 
 
 class API_Setup extends Controller
@@ -18,12 +16,16 @@ class API_Setup extends Controller
     {
         try {
             $methods = [
-                'getIniParams'   => ['name' => 'getIniParams'],
-                'saveIniParams'  => ['name' => 'saveIniParams'],
-                'saveKey'        => ['name' => 'saveKey'],
-                'startHtmlCache' => ['name' => 'startHtmlCache'],
-                'stopHtmlCache'  => ['name' => 'stopHtmlCache'],
-                'processUrl'     => ['name' => 'processUrl'],
+                'getIniParams'       => ['name' => 'getIniParams'],
+                'saveIniParams'      => ['name' => 'saveIniParams'],
+                'saveKey'            => ['name' => 'saveKey'],
+                'deleteFromPublic'   => ['name' => 'deleteFromPublic'],
+                'deleteFromStorage'  => ['name' => 'deleteFromStorage'],
+                'processUrl'         => ['name' => 'processUrl'],
+                'startHtmlCache'     => ['name' => 'startHtmlCache'],
+                'listCacheFiles'     => ['name' => 'listCacheFiles'],
+
+
             ];
 
             $command = $request->string('command')->toString();
@@ -67,7 +69,7 @@ class API_Setup extends Controller
         $resolve = [];
         $hostDev = MagicGlobals::$INI['HOST_DEV'];
         $saveFile = false;
-        if (str_ends_with($host, MagicGlobals::$INI['HOST_DEV'])) {
+        if (str_ends_with($host, $hostDev)) {
             $resolve[] = "$host:80:192.168.1.33";
             $resolve[] = "$host:443:192.168.1.33";
             $saveFile = true;
@@ -90,7 +92,7 @@ class API_Setup extends Controller
         if (
             $saveFile && $code === 200 &&  $body !== false && str_starts_with($contentType, 'text/html')
         ) {
-            // $this->saveHtmlFile($url, $body);
+            $this->saveHtmlFile($url, $body);
         }
 
         return [
@@ -105,25 +107,23 @@ class API_Setup extends Controller
         // Берём только path (без протокола, домена и параметров)
         $path = parse_url($url, PHP_URL_PATH) ?? '/';
 
-        $saveDir = public_path(MagicGlobals::$INI['STATIC_HTML_CREATE_DIR']);
-        $saveDir = rtrim($saveDir, '/');
-
         // Корневая страница
         if ($path === '/' || $path === '' || $path === null) {
             $path = '/index';
         }
-        $path = rtrim($path, '/');
-        $fullPath = $saveDir . $path . '.html';
-        // Создать директорию если её нет
-        mkdir(dirname($fullPath), 0777, true);
 
-        // Пишем файл
-        file_put_contents($fullPath, $body);
+        MagicFile::make()
+            ->base()
+            ->dir(MagicGlobals::$INI['STATIC_HTML_CREATE_DIR'])
+            ->name($path)
+            ->ext('html')
+            ->put($body);
     }
 
     // 📋 считать параметры
     private function getIniParams(Request $request): array
     {
+        $a = MagicGlobals::$INI;
         return  MagicGlobals::$INI;
     }
     // сохранить параметры
@@ -142,29 +142,78 @@ class API_Setup extends Controller
     // запустить хмтл кеш
     private function startHtmlCache(Request $request): array
     {
-        $old = public_path(MagicGlobals::$INI['STATIC_HTML_DIR']);
-        $new = public_path(MagicGlobals::$INI['STATIC_HTML_CREATE_DIR']);
 
-        // проверка готового кеша
-        if (!file_exists($new)) {
-            throw new \Exception("Нет папки " . $new);
-        }
-        // старая папка есть
-        if (file_exists($old)) {
-            delete_file($old);
-        }
-        rename($new, $old);
+        $this->deleteFromPublic();
 
+        $from = base_path(MagicGlobals::$INI['STATIC_HTML_CREATE_DIR']) . "/";
+        $to =  base_path(MagicGlobals::$INI['STATIC_HTML_DIR']) . "/";
+        $res = File::copyDirectory($from, $to);
+        if (!$res) {
+            throw new \InvalidArgumentException("Ошибка копирования");
+        }
         MagicGlobals::saveKey('STATIC_HTML_ENABLE',  true);
 
         return [];
     }
-    // остановить хтмл кеш
-    private function stopHtmlCache(Request $request): array
+    // 
+    // Удалить из стораджа
+    private function deleteFromStorage(): array
     {
-        $html = public_path(MagicGlobals::$INI['STATIC_HTML_DIR']);
-        delete_file($html);
-        MagicGlobals::saveKey('STATIC_HTML_ENABLE',  true);
+
+        $dir = base_path(MagicGlobals::$INI['STATIC_HTML_CREATE_DIR'])  . "/";
+
+        if (!is_dir($dir)) {
+            $res = $dir  = File::deleteDirectory($dir);
+            if (!$res) {
+                throw new \InvalidArgumentException("Ошибка удаления стораджа");
+            }
+        }
+        MagicGlobals::saveKey('STATIC_HTML_ENABLE',  false);
         return [];
+    }
+    // 
+    // Удалить из публика
+    private function deleteFromPublic(): array
+    {
+        $dir  = base_path(MagicGlobals::$INI['STATIC_HTML_DIR']) . "/";
+
+        if (!File::exists($dir)) {
+            File::makeDirectory($dir, 0777, true);
+        }
+
+        $res  = File::deleteDirectory($dir);
+        if (!$res) {
+            throw new \InvalidArgumentException("Ошибка удаления паблик");
+        }
+        MagicGlobals::saveKey('STATIC_HTML_ENABLE',  false);
+        return [];
+    }
+
+    public static function listCacheFiles(): array
+    {
+        $dir = base_path(MagicGlobals::$INI['STATIC_HTML_CREATE_DIR'])  . "/";
+
+        if (!is_dir($dir)) {
+            return [];
+        }
+
+        $result = [];
+        foreach (scandir($dir) as $item) {
+            if ($item === '.' || $item === '..') continue;
+
+            $path = $dir . '/' . $item;
+
+            if (is_file($path)) {
+                $result[] = $item;
+            }
+
+            if (is_dir($path)) {
+                foreach (self::listCacheFiles($path) as $sub) {
+                    $result[] = $item . '/' . $sub;
+                }
+            }
+        }
+        sort($result);
+        return $result;
     }
 }
