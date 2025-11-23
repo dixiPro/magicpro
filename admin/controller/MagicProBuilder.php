@@ -32,6 +32,8 @@ function createMpro(array $article): void
     $id       = $article['id']        ?: throw new \InvalidArgumentException('id is empty');
     $name     = trim($article['name'])  ?: throw new \InvalidArgumentException('name is empty');
     $isRoute  = $article['isRoute'];
+    $useController  = $article['routeParams']['useController'] ?? false;
+
 
     // if (!preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $name)) {
     //     throw new \InvalidArgumentException("Некорректное имя : {$name}");
@@ -49,7 +51,7 @@ function createMpro(array $article): void
     // удаляем старый контроллер
     $controllerFile = fileNameController($article);
     $controllerText = trim(dataController($article));
-    if ($controllerText !== '') {
+    if ($controllerText !== '' && $isRoute && $useController) {
         write_file_or_fail($controllerFile, $controllerText);
     }
 }

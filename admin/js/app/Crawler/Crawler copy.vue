@@ -1,14 +1,38 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch, useId, toRaw, unref } from 'vue';
-import { apiCall, apiArt, translitString } from '../apiCall';
+import { ref, computed, onMounted, onUnmounted, nextTick, watch, useId, toRaw, unref } from 'vue';
+import { apiSetup, apiCall } from '../apiCall';
 
 import { useToast } from 'primevue/usetoast';
 const toast = useToast();
 import { useConfirm } from 'primevue/useconfirm';
 const confirm = useConfirm();
 
+const iniParams = ref({});
+
+const ready = ref(false);
+
+// результаты
+const result = ref({});
+// внешние ссылки
+const extrnalLink = ref({});
+// экстренный стоп
+const stop = ref(false);
+// статус обхода
+const status = ref('start');
+// статус кеша
+
+const storageDirStatus = ref(false);
+const publicDirStatus = ref(false);
+
+let arrSkip = []; // пропускаем сканирование
+
+const externalProtocol = ['//', 'http://', 'https://']; // внешние ссылки
+
+import LoadingButton from './component/LoadingButton.vue';
+
 onMounted(() => {
   console.log('startCrawler');
+  getIniParams();
 
   // глобальные сервисы диалог подтверждения и тосты
   document.showToast = (msg = '', severity = 'success') => {
@@ -33,30 +57,57 @@ onMounted(() => {
   };
 });
 
-onUnmounted(() => {});
-
-// результаты
-const result = ref({});
-// внешние ссылки
-const extrnalLink = ref({});
-// экстренный стоп
-const stop = ref(false);
-//
-const status = ref('start');
-
-async function checkUrlByPhp(url) {
+async function getIniParams() {
   try {
-    const response = await apiCall({
-      url: '/a_dmin/api/setup',
-      data: { command: 'processUrl', url: url },
-      logResult: false,
+    ready.value = false;
+    await nextTick();
+    const res = await apiSetup({
+      command: 'getIniParams',
     });
-    return response.data;
-  } catch (e) {
-    document.showToast(e.message, 'error');
-  }
+    iniParams.value = res;
+    arrSkip = res.EXCLUDED_ROUTES;
+    arrSkip.push('#');
+
+    const savedParams = await apiSetup({
+      command: 'getCrawlerResults',
+    });
+
+    result.value = 'result' in savedParams ? savedParams.result : {};
+    extrnalLink.value = 'extrnalLink' in savedParams ? savedParams.extrnalLink : {};
+    // publicDirStatus.value = dirStatus.publicDirStatus;
+
+    await nextTick();
+    ready.value = true;
+  } catch (error) {}
 }
 
+async function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+onUnmounted(() => {});
+
+async function saveResults() {
+  const response = await apiSetup({
+    command: 'saveCrawlerResults',
+    savedData: {
+      result: result.value,
+      extrnalLink: extrnalLink.value,
+    },
+  });
+  return response;
+}
+
+//
+async function checkUrlByPhp(url) {
+  const response = await apiSetup({
+    command: 'processUrl',
+    url: url,
+  });
+  return response;
+}
+
+//
 function fixUrl(url) {
   try {
     return new URL(url).href; // абсолютный → не трогаем
@@ -65,52 +116,35 @@ function fixUrl(url) {
   }
 }
 
-async function getPaget(url) {
-  try {
-    const res = await checkUrlByPhp(fixUrl(url));
-    return res;
-  } catch (error) {
-    throw new Error(error);
-  }
-}
-
-function getLinks(url) {
+//
+async function getLinks(url) {
   if (stop.value) return;
-  return new Promise(async (resolve, reject) => {
-    try {
-      const res = await getPaget(url);
-      if (!res.check) {
-        return reject({
-          error: res.code,
-        });
-      }
-      const html = res.body;
-      const doc = new DOMParser().parseFromString(html, 'text/html');
-      const links = [...doc.querySelectorAll('a')].map((a) => a.getAttribute('href')).filter(Boolean);
-      resolve(links);
-    } catch (e) {
-      reject({
-        error: e.message,
-      });
-    }
-  });
+
+  const res = await checkUrlByPhp(fixUrl(url));
+  if (!res.check) {
+    throw new Error(res.code);
+  }
+  const html = res.body;
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const links = [...doc.querySelectorAll('a')].map((a) => a.getAttribute('href')).filter(Boolean);
+  return links;
 }
 
-async function deleteCache() {
-  try {
-    const response = await apiCall({
-      url: '/a_dmin/api/setup',
-      data: { command: 'deleteCache' },
-      logResult: false,
-    });
-    document.showToast('кеш удален');
-  } catch (e) {
-    document.showToast(e.message, 'error');
-  }
-}
-async function start(url, parent) {
+//
+//
+async function start() {
+  if (stop.value) return;
+  result.value = {};
+  extrnalLink.value = {};
   status.value = 'working';
-  if (stop.value) return;
+
+  await deleteFromStorage();
+
+  await go('/', '');
+
+  for (const el of iniParams.value.RENDER_URL) {
+    await go(el, '');
+  }
 
   let sorted = {};
   Object.keys(result.value)
@@ -132,30 +166,27 @@ async function start(url, parent) {
 
   extrnalLink.value = sorted;
   status.value = 'end';
+  // await getIniParams();
 }
 
 async function checkExternal() {
   if (stop.value) return;
   for (let key in extrnalLink.value) {
-    try {
-      const res = await checkUrlByPhp(key);
-      extrnalLink.value[key].status = 'done';
-      extrnalLink.value[key].check = res.check ? 'ok' : res.code;
-    } catch (error) {}
+    const res = await checkUrlByPhp(key);
+    extrnalLink.value[key].status = 'done';
+    extrnalLink.value[key].check = res.check ? 'ok' : res.code;
   }
 }
 
 async function go(url, parent) {
   if (stop.value) return;
   // админка
-  const arrSkip = ['#', '/a_dmin', '/f_ilament'];
   if (arrSkip.some((el) => url.startsWith(el))) {
     return;
   }
 
   // внешние ссылки
-  const arrSkipProtocol = ['//', 'http://', 'https://'];
-  if (arrSkipProtocol.some((el) => url.startsWith(el))) {
+  if (externalProtocol.some((el) => url.startsWith(el))) {
     if (!(url in extrnalLink.value)) {
       extrnalLink.value[url] = {
         status: 'reading',
@@ -173,7 +204,6 @@ async function go(url, parent) {
     if (result.value[url].check != 'ok') {
       result.value[url].parentArr.push(parent);
     }
-
     return;
   }
 
@@ -192,117 +222,204 @@ async function go(url, parent) {
       await go(el, url);
     }
   } catch (error) {
-    result.value[url].check = error.error;
+    result.value[url].check = error.message;
   } finally {
     result.value[url].status = 'done';
   }
 }
+
+async function deleteFromStorage() {
+  await apiSetup({
+    command: 'deleteFromStorage',
+  });
+  document.showToast('Storage удален');
+  await getIniParams();
+}
+
+async function deleteFromPublic() {
+  await apiSetup({
+    command: 'deleteFromPublic',
+  });
+  document.showToast('Public удален');
+  await getIniParams();
+}
+
+async function startHtmlCache() {
+  await apiSetup({
+    command: 'startHtmlCache',
+  });
+  await getIniParams();
+  document.showToast('Кеш опубликован');
+}
+
+async function listCacheFiles() {
+  const response = await apiSetup({
+    command: 'listCacheFiles',
+  });
+
+  result.value = {};
+  extrnalLink.value = {};
+  response.forEach((el) => {
+    result.value[el] = {
+      status: 'file',
+      check: 'ok',
+      parentArr: [],
+    };
+  });
+  status.value = 'end';
+  document.showToast('кеш считан');
+}
+
+const hasInternalError = computed(() => {
+  for (const key in result.value) {
+    if (result.value[key]?.check != 'ok' && result.value[key]?.check != 'reading') {
+      return true;
+    }
+  }
+  return false;
+});
+
+const hasExternalError = computed(() => {
+  for (const key in extrnalLink.value) {
+    if (result.value[key]?.check != 'ok' && result.value[key]?.check != 'reading') {
+      return true;
+    }
+  }
+  return false;
+});
 </script>
 
 <template>
-  <h1>Crawler 0.71</h1>
-  <div class="my-2">
-    <button class="btn btn-primary" @click="deleteCache()">Удалить кэш</button>
-  </div>
-  <div class="my-2">
-    <button v-if="status == 'start'" class="btn btn-primary fas fa-angle-right" @click="start('/', '')"></button>
+  <h1>Crawler 0.81</h1>
+  <div v-if="ready">
+    <div class="my-2">
+      <LoadingButton :action="saveResults">Сохранить результаты</LoadingButton>
+    </div>
 
-    <button v-if="status == 'working'" class="btn btn-danger fas fa-stop ms-3" @click="stop = true"></button>
-  </div>
+    <div class="my-2">
+      <LoadingButton :action="start">Старт</LoadingButton>
+      <button v-if="status == 'working'" class="btn btn-danger fas fa-stop ms-3" @click="stop = true"></button>
+    </div>
 
-  <div v-if="status != 'start'">
-    <h3>Error</h3>
-    <table class="table table-sm table-bordered">
-      <tbody>
-        <template v-for="(val, key) in result" :key="key">
-          <tr v-if="val.check != 'ok'">
-            <td class="link">
-              <a :href="key" target="_blank">{{ key }}</a>
-            </td>
-            <td>{{ val.status }}</td>
-            <td>{{ val.check }}</td>
-            <td>
-              <span v-for="parent in val.parentArr" class="me-2">
-                <a :href="parent" target="_blank">{{ parent }}</a>
-              </span>
-            </td>
-          </tr>
-        </template>
-      </tbody>
-    </table>
+    <div v-if="storageDirStatus">
+      <h4>Кеш создан</h4>
+      <div class="my-2">
+        <LoadingButton :action="listCacheFiles">Показать сторадж</LoadingButton>
+      </div>
+      <div class="my-2">
+        <LoadingButton :action="deleteFromStorage">Удалить сторадж</LoadingButton>
+      </div>
 
-    <h3>Ok</h3>
-    <table class="table table-sm table-bordered">
-      <tbody>
-        <template v-for="(val, key) in result" :key="key">
-          <tr v-if="val.check == 'ok'">
-            <td class="link">
-              <a :href="key" target="_blank">{{ key }}</a>
-            </td>
-            <td>{{ val.status }}</td>
-            <td>{{ val.check }}</td>
-            <td>
-              <span v-for="parent in val.parentArr" class="me-2">
-                <a :href="parent" target="_blank">{{ parent }}</a>
-              </span>
-            </td>
-          </tr>
-        </template>
-      </tbody>
-    </table>
+      <div class="my-2">
+        <LoadingButton :action="startHtmlCache">Опубликовать сторадж</LoadingButton>
+      </div>
+    </div>
+    <div v-if="publicDirStatus">
+      <h4>Кеш опубликован</h4>
+      <div class="my-2">
+        <LoadingButton :action="deleteFromPublic">Удалить опубликованный кеш</LoadingButton>
+      </div>
+    </div>
 
-    <h2>External Error</h2>
-    <table class="table table-sm table-bordered">
-      <tbody>
-        <template v-for="(val, key) in extrnalLink" :key="key">
-          <tr v-if="val.check != 'ok'">
-            <td class="link">
-              <a :href="key" target="_blank">{{ key }}</a>
-            </td>
-            <td>{{ val.status }}</td>
-            <td>{{ val.check }}</td>
-            <td>
-              <span v-for="parent in val.parentArr" class="me-2">
-                <a :href="parent" target="_blank">{{ parent }}</a>
-              </span>
-            </td>
-          </tr>
-        </template>
-      </tbody>
-    </table>
+    <div v-if="hasInternalError">
+      <h3>Error</h3>
+      <table class="table table-sm table-bordered">
+        <tbody>
+          <template v-for="(val, key) in result" :key="key">
+            <tr v-if="val.check != 'ok'">
+              <td class="link">
+                <a :href="key" target="_blank">{{ key }}</a>
+              </td>
+              <td>{{ val.status }}</td>
+              <td>{{ val.check }}</td>
+              <td>
+                <span v-for="parent in val.parentArr" class="me-2">
+                  <a :href="parent" target="_blank">{{ parent }}</a>
+                </span>
+              </td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
 
-    <h2>External OK</h2>
-    <table class="table table-sm table-bordered">
-      <tbody>
-        <template v-for="(val, key) in extrnalLink" :key="key">
-          <tr v-if="val.check == 'ok'">
-            <td class="link">
-              <a :href="key" target="_blank">{{ key }}</a>
-            </td>
-            <td>{{ val.status }}</td>
-            <td>{{ val.check }}</td>
-            <td>
-              <span v-for="parent in val.parentArr" class="me-2">
-                <a :href="parent" target="_blank">{{ parent }}</a>
-              </span>
-            </td>
-          </tr>
-        </template>
-      </tbody>
-    </table>
-  </div>
-  <!-- <pre>
-      {{ JSON.stringify(extrnalLink, null, 2) }}
+    <div v-if="Object.keys(result).length > 0">
+      <h3>Ok</h3>
+      <table class="table table-sm table-bordered">
+        <tbody>
+          <template v-for="(val, key) in result" :key="key">
+            <tr v-if="val.check == 'ok'">
+              <td class="link">
+                <a :href="key" target="_blank">{{ key }}</a>
+              </td>
+              <td>{{ val.status }}</td>
+              <td>{{ val.check }}</td>
+              <td>
+                <span v-for="parent in val.parentArr" class="me-2">
+                  <a :href="parent" target="_blank">{{ parent }}</a>
+                </span>
+              </td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
+
+    <div v-if="hasExternalError">
+      <h2>External Error</h2>
+      <table class="table table-sm table-bordered">
+        <tbody>
+          <template v-for="(val, key) in extrnalLink" :key="key">
+            <tr v-if="val.check != 'ok'">
+              <td class="link">
+                <a :href="key" target="_blank">{{ key }}</a>
+              </td>
+              <td>{{ val.status }}</td>
+              <td>{{ val.check }}</td>
+              <td>
+                <span v-for="parent in val.parentArr" class="me-2">
+                  <a :href="parent" target="_blank">{{ parent }}</a>
+                </span>
+              </td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
+    <div v-if="Object.keys(extrnalLink).length > 1">
+      <h2>External OK</h2>
+      <table class="table table-sm table-bordered">
+        <tbody>
+          <template v-for="(val, key) in extrnalLink" :key="key">
+            <tr v-if="val.check == 'ok'">
+              <td class="link">
+                <a :href="key" target="_blank">{{ key }}</a>
+              </td>
+              <td>{{ val.status }}</td>
+              <td>{{ val.check }}</td>
+              <td>
+                <span v-for="parent in val.parentArr" class="me-2">
+                  <a :href="parent" target="_blank">{{ parent }}</a>
+                </span>
+              </td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
+
+    <pre>
+      {{ JSON.stringify(iniParams, null, 2) }}
       </pre
-  > -->
+    >
 
-  <!-- <pre>
+    <!-- <pre>
       {{ JSON.stringify(result, null, 2) }}
       </pre
   > -->
-
+  </div>
   <!-- тосты -->
-  <Toast position="bottom-right"></Toast>
+  <Toast position="top-left"></Toast>
   <!-- Дилог Да Нет -->
   <ConfirmDialog></ConfirmDialog>
 </template>

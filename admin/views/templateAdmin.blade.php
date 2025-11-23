@@ -79,6 +79,7 @@
 
 
     {{-- @vite(['resources/js/adminCommon.js']) --}}
+    <script src="/vendor/magicpro/bootstrap5/js/bootstrap.bundle.min.js"></script>
 
 </body>
 

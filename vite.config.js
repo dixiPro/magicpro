@@ -12,6 +12,7 @@ export default defineConfig({
         'admin/js/artEditor.js', //
         'admin/js/editUsers.js',
         'admin/js/crawler.js',
+        'admin/js/setup.js',
       ],
       refresh: true,
       hotFile: path.resolve(__dirname, '../../../storage/magicpro.vite.hot'),
@@ -55,6 +56,11 @@ export default defineConfig({
       },
     },
   ],
+
+  // build: {
+  //   sourcemap: true,
+  // },
+
   server: {
     // host: "127.0.0.1", // фиксируем IPv4
     // port: 5174,

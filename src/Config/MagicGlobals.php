@@ -17,15 +17,13 @@ use MagicProSrc\MagicFile;
 class MagicGlobals
 {
 
-    private static string $localIniFile = 'storage/app/private/mproLocalIni.php';
+    public static string $magicStorageDir = 'storage/app/private/magic/';
+    public static string $localIniFile = 'storage/app/private/magic/mproLocalIni.php';
+    public static string $dataSchema = __DIR__ . '/magicSchema.php';
     public static array $INI = [];
-
-    private static array $schema;
 
     public static function register(): void
     {
-        self::$schema = require __DIR__ . '/magicSchema.php';
-
         // загрузить файлы из локального ини
         self::loadLocal();
 
@@ -120,7 +118,8 @@ class MagicGlobals
     // сохранить параметры по умолчанию
     private static function saveDefaultIniFile(): void
     {
-        $defaults = array_map(fn($item) => $item['default'], self::$schema);
+        $schema = require self::$dataSchema;
+        $defaults = array_map(fn($item) => $item['default'], $schema);
         self::$INI = self::saveIniFile($defaults);
     }
 
@@ -128,6 +127,12 @@ class MagicGlobals
     public static function saveIniFile($allVars): array
     {
         self::validate(($allVars));
+
+        // заменяем mutable true на установленные значения
+        $savedParams = require self::$dataSchema;
+        foreach ($savedParams as $key => $value) {
+            $allVars[$key] = $value['mutable'] ? $allVars[$key] : $value['default'];
+        }
 
         MagicFile::make()
             ->base()
@@ -137,22 +142,16 @@ class MagicGlobals
         return require  base_path(self::$localIniFile);
     }
 
-    public static function saveKey($key, $value): array
-    {
-        self::$INI[$key] = $value;
-        self::saveIniFile(self::$INI);
-        return self::$INI;
-    }
-
     private static function validate(array $data): void
     {
+        $schema = require self::$dataSchema;
         foreach ($data as $key => $value) {
 
-            if (!array_key_exists($key, self::$schema)) {
+            if (!array_key_exists($key, $schema)) {
                 throw new \Exception("Неизвестная настройка: $key");
             }
 
-            $type = self::$schema[$key]['type'];
+            $type = $schema[$key]['type'];
 
             switch ($type) {
                 case 'boolean':

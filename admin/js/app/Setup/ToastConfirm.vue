@@ -1,0 +1,40 @@
+<script setup>
+import { ref, computed, onMounted, onUnmounted, watch, useId, toRaw, unref } from 'vue';
+
+import { useToast } from 'primevue/usetoast';
+const toast = useToast();
+import { useConfirm } from 'primevue/useconfirm';
+const confirm = useConfirm();
+
+onMounted(() => {
+  // глобальные сервисы диалог подтверждения и тосты
+  document.showToast = (msg = '', severity = 'success') => {
+    const life = severity === 'success' ? 5000 : 60 * 1000;
+    toast.add({ severity: severity, detail: msg, life: life });
+    if (severity === 'error') {
+      console.log(msg);
+    }
+  };
+  document.confirmDialog = async (message) => {
+    return new Promise((resolve, reject) => {
+      confirm.require({
+        message,
+        header: '',
+        icon: 'fas fa-question',
+        acceptLabel: 'Да',
+        rejectLabel: 'Нет',
+        accept: () => resolve(true),
+        reject: () => resolve(false), // или reject(), если хотите ошибку
+      });
+    });
+  };
+});
+</script>
+
+<template>
+  <!-- тосты -->
+  <Toast position="top-right"></Toast>
+  <!-- Дилог Да Нет -->
+  <ConfirmDialog></ConfirmDialog>
+</template>
+<style scoped></style>

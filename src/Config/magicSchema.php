@@ -3,36 +3,38 @@
 return [
 
     'STATIC_HTML_DIR' => [
-        'label'   => 'Каталог HTML-кеша',
+        'label'   => 'Каталог HTML-кеша от корня проекта',
         'type'    => 'localpath',
-        'default' => 'public/html', // от корня проекта
-        'mutable' => false,
+        'default' => 'public/html', // 
+        'mutable' => true,
     ],
 
     'STATIC_HTML_CREATE_DIR' => [
-        'label'   => 'Каталог генерации HTML-кеша',
-        'type'    => 'localpath', // без слеша в на конце
+        'label'   => 'Каталог генерации HTML-кеша, от корня проекта, без слеша в на конце',
+        'type'    => 'localpath', // 
         'default' => 'storage/app/private/magic/html', // от корня проекта
         'mutable' => true,
     ],
 
-    'STATIC_HTML_ENABLE' => [
-        'label'   => 'Статический HTML-кеш',
-        'type'    => 'boolean', // без слеша в на конце
-        'default' => true,
-        'mutable' => false,
-    ],
-
     'HOST_DEV' => [
-        'label'   => 'Сервер разработки',
-        'type'    => 'string', // без слеша в на конце
+        'label'   => 'Сервер разработки, без слеша в на конце',
+        'type'    => 'string', // 
         'default' => 'mpro2.test',
         'mutable' => true,
     ],
 
+
+    'FILES_JS_UPLOAD' => [
+        'label'   => 'Папка для загрузки изображений относительно public, без слеша в на конце',
+        'type'    => 'string', // без слеша в на конце
+        'default' => 'design',
+        'mutable' => true,
+    ],
+
+
     'EXCLUDED_ROUTES' => [
-        'label'   => 'Страницы исключенные из динамического раута',
-        'type'    => 'array', // без слеша в на конце
+        'label'   => 'Страницы исключенные из динамического раута, ез слеша в на конце',
+        'type'    => 'array', // б
         'default' => [
             'livewire',
             'telescope',
@@ -43,6 +45,15 @@ return [
             'public',
             'f_ilament',
             'storage'
+        ],
+        'mutable' => true,
+    ],
+    'RENDER_URL' => [
+        'label'   => 'Дополнительные страницы для рендера в кеш',
+        'type'    => 'array', // без слеша в на конце
+        'default' => [
+            '/robots.txt',
+            '/sitemap.xml'
         ],
         'mutable' => true,
     ],

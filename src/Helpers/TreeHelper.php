@@ -17,7 +17,7 @@ class TreeHelper
     public static function getChildrenById(int $artId): array
     {
         return Article::query()
-            ->select('id', 'title', 'name', 'menuOn')
+            ->select('id', 'title', 'name', 'menuOn', 'updated_at')
             ->where('parentId', $artId)
             ->where('menuOn', true)
             ->get()
@@ -30,12 +30,22 @@ class TreeHelper
         $id = Article::select('id')->where('name', $name)->value('id');
 
         $result = Article::query()
-            ->select('id', 'title', 'name', 'menuOn')
+            ->select('id', 'title', 'name', 'menuOn', 'updated_at')
             ->where('parentId', $id)
             ->where('menuOn', true)
             ->get()
             ->toArray();
         return $result;
+    }
+
+    public static function getArtByName(string $name): array
+    {
+        $result = Article::query()
+            ->where('name', $name)
+            ->select('*')
+            ->get()
+            ->toArray();
+        return $result[0] ?? [];
     }
 
     // 
