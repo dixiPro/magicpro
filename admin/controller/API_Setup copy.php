@@ -8,7 +8,7 @@ use Illuminate\Http\JsonResponse;
 use MagicProSrc\Config\MagicGlobals; // Глобальные константы
 use MagicProSrc\MagicFile;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Http;
+
 
 class API_Setup extends Controller
 {
@@ -114,41 +114,77 @@ class API_Setup extends Controller
         return [];
     }
 
+
     private function processUrl(Request $request): array
     {
-        //  объявление до try, что бы вернут если что в кетч
-        $body = '';
-        $saveStatus = false;
-        $url = '';
-
         try {
             $url = $request->input('url');
-            $saveToFile = $request->input('saveToFile') ?? false;
+            $saveWithDot = $request->input('saveWithoutChecking') ?? false;
 
-            $res = Http::withOptions([
-                'verify' => false,     // если иногда падает SSL
-                'timeout' => 3,
-                'follow_redirects' => false,
-            ])->get($url);
+            // === 1. Файл или нет ===
+            $path   = parse_url($url, PHP_URL_PATH) ?? '';
+            $isFile = str_contains($path, '.') || $saveWithDot;
 
-            if ($res->status() !== 200) {
-                throw new \InvalidArgumentException($res->status());
+            // === 2. Resolve ===
+            $host = parse_url($url, PHP_URL_HOST);
+
+            $resolve  = [];
+            $hostDev  = MagicGlobals::$INI['HOST_DEV'];
+            $saveFile = false;
+
+            if (str_ends_with($host, $hostDev)) {
+                $resolve[] = "$host:80:192.168.1.33";
+                $resolve[] = "$host:443:192.168.1.33";
+                $saveFile  = true;
             }
-            // Сохранение
+
+            // === 3. CURL ===
+            $ch = curl_init($url);
+
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT        => 10,
+                //CURLOPT_RESOLVE        => $resolve,
+                CURLOPT_ENCODING       => '',
+                CURLOPT_NOBODY         => $isFile,                // если файл — тело не нужно
+                CURLOPT_CUSTOMREQUEST  => $isFile ? 'HEAD' : 'GET', // HEAD для файлов
+            ]);
+
+            // ВАЖНО: всегда выполняем запрос
+            $curlResult = curl_exec($ch);
+
+            // тело только если НЕ файл
+            $body = $isFile ? '' : $curlResult;
+
+            $code        = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE) ?? '';
+
+            curl_close($ch);
+
+            // === 4. Проверка UTF-8 (только для HTML, не файлов) ===
             if (
-                $saveToFile  &&
-                $body !== false && // тело есть 
-                str_starts_with($res->header('Content-Type'), 'text')
+                !$isFile &&
+                $body !== false &&
+                !mb_check_encoding($body, 'UTF-8')
             ) {
-                $body = $res->body();
-                $this->saveHtmlFile($url, $body); // если ошибка выкинет исключение
-                $saveStatus = true;
+                throw new \Exception("Ответ не UTF-8");
+            }
+
+            // === 5. Сохранение HTML (только dev, только 200, только text/html) ===
+            if (
+                !$isFile &&
+                $saveFile && // принадлежит хосту 
+                $code === 200 && // существует 
+                $body !== false && // тело есть 
+                str_starts_with($contentType, 'text/html')
+
+            ) {
+                $this->saveHtmlFile($url, $body);
             }
 
             return [
-                'check' => true,
-                'code'  => 200,
-                'saveStatus' => $saveStatus,
+                'check' => ($code >= 200 && $code < 400),
+                'code'  => $code,
                 'body'  => $body,
                 'url'   => $url,
             ];
@@ -156,8 +192,7 @@ class API_Setup extends Controller
             return [
                 'check' => false,
                 'code'  => $th->getMessage(),
-                'saveStatus' => $saveStatus,
-                'body'  => $body,
+                'body'  => '',
                 'url'   => $url ?? '',
             ];
         }
@@ -168,20 +203,17 @@ class API_Setup extends Controller
     {
         // Берём только path (без протокола, домена и параметров)
         $path = parse_url($url, PHP_URL_PATH) ?? '/';
-        $ext = pathinfo($path, PATHINFO_EXTENSION);
-        $ext = $ext ? $ext : 'html';
-
 
         // Корневая страница
         if ($path === '/' || $path === '' || $path === null) {
             $path = '/index';
         }
-        // если ошибка выкинет исключение
+
         MagicFile::make()
             ->base()
             ->dir(MagicGlobals::$INI['STATIC_HTML_CREATE_DIR'])
             ->name($path)
-            ->ext($ext)
+            ->ext('html')
             ->put($body);
     }
 

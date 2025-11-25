@@ -1,4 +1,11 @@
 {
+  "_ToastConfirm-BbyfyvMA.js": {
+    "file": "assets/ToastConfirm-BbyfyvMA.js",
+    "name": "ToastConfirm",
+    "imports": [
+      "_apiCall-DgoSpTMN.js"
+    ]
+  },
   "__plugin-vue_export-helper-DlAUqK2U.js": {
     "file": "assets/_plugin-vue_export-helper-DlAUqK2U.js",
     "name": "_plugin-vue_export-helper"
@@ -50,17 +57,18 @@
     ]
   },
   "admin/js/crawler.js": {
-    "file": "assets/crawler-BrwpS7VG.js",
+    "file": "assets/crawler-zCRX8WmY.js",
     "name": "crawler",
     "src": "admin/js/crawler.js",
     "isEntry": true,
     "imports": [
       "_apiCall-DgoSpTMN.js",
       "_index-CVxEeueg.js",
+      "_ToastConfirm-BbyfyvMA.js",
       "__plugin-vue_export-helper-DlAUqK2U.js"
     ],
     "css": [
-      "assets/crawler-7GZnQm9u.css"
+      "assets/crawler-DFli2zAs.css"
     ]
   },
   "admin/js/editUsers.js": {
@@ -77,14 +85,15 @@
     ]
   },
   "admin/js/setup.js": {
-    "file": "assets/setup-DkMYYO0C.js",
+    "file": "assets/setup-CpqsOPQC.js",
     "name": "setup",
     "src": "admin/js/setup.js",
     "isEntry": true,
     "imports": [
       "_apiCall-DgoSpTMN.js",
       "_index-X9EClXNl.js",
-      "_index-CVxEeueg.js"
+      "_index-CVxEeueg.js",
+      "_ToastConfirm-BbyfyvMA.js"
     ],
     "css": [
       "assets/setup-DEBB25qV.css"

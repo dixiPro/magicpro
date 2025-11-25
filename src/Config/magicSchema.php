@@ -16,14 +16,6 @@ return [
         'mutable' => true,
     ],
 
-    'HOST_DEV' => [
-        'label'   => 'Сервер разработки, без слеша в на конце',
-        'type'    => 'string', // 
-        'default' => 'mpro2.test',
-        'mutable' => true,
-    ],
-
-
     'FILES_JS_UPLOAD' => [
         'label'   => 'Папка для загрузки изображений относительно public, без слеша в на конце',
         'type'    => 'string', // без слеша в на конце

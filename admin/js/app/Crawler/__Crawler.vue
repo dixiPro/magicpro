@@ -3,6 +3,8 @@ import { ref, computed, onMounted, onUnmounted, nextTick, watch, useId, toRaw, u
 import { apiSetup, apiCall } from '../apiCall';
 import TosatConfirm from '../CommonCom/ToastConfirm.vue';
 
+let totalRequest = 0;
+
 // стартовые параметры
 let iniParams = ref({});
 
@@ -150,7 +152,7 @@ async function start() {
     await go(el, '');
   }
 
-  await go('/', '');
+  // await go('/', '');
 
   let sorted = {};
   Object.keys(result.value)
@@ -170,6 +172,11 @@ async function start() {
 
 //
 async function go(url, parent) {
+  console.log(totalRequest);
+  // while (totalRequest > 10) {
+  //   await wait(100);
+  // }
+
   statistics.value.nowReading = url;
 
   if (stop.value) return;
@@ -210,7 +217,7 @@ async function go(url, parent) {
   try {
     // проверка и сохранение урла
     // добавить проверку на файл
-
+    totalRequest++;
     const res = await apiSetup({
       command: 'processUrl',
       url: url,
@@ -232,7 +239,6 @@ async function go(url, parent) {
     if (!url.startsWith(location.origin)) {
       return;
     }
-
     const arr = getLinks(res.body);
 
     for (const el of arr) {
@@ -244,6 +250,7 @@ async function go(url, parent) {
     statistics.value.error++;
   } finally {
     result.value[url].status = 'done';
+    totalRequest--;
   }
 }
 
