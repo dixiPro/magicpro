@@ -10,20 +10,20 @@
     <h1>Админка</h1>
 
     <ul class="nav nav-tabs">
-        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#t1">Старт</a></li>
-        <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#t2">Setup</a></li>
+        <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#t1">Старт</a></li>
+        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#t2">Setup</a></li>
         <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#t3">Import</a></li>
         <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#t4">Export</a></li>
     </ul>
     <div class="tab-content mt-3">
 
 
-        <div class="tab-pane fade show active" id="t2">
+        <div class="tab-pane fade" id="t2">
             <div id="setup"></div>
             @vite('admin/js/setup.js')
         </div>
 
-        <div class="tab-pane fade" id="t1">
+        <div class="tab-pane fade  show active" id="t1">
             <div class="m2">
                 {{ now() }} {{ now()->timezoneName }}
             </div>
@@ -88,6 +88,11 @@
             <div>
                 <a href="{{ route('magic.exportArticle', ['id' => 1]) }}">Экспорт табицы Article</a>
             </div>
+
+            <div>
+                <a href="{{ route('magic.downloadDb') }}">Экспорт БД</a>
+            </div>
+
         </div>
 
         <div class="tab-pane fade" id="t3">

@@ -2,7 +2,7 @@
 
 @extends('magicAdmin::templateAdmin')
 
-@section('title', 'Список статей')
+@section('title', 'Админы')
 
 @section('body')
 

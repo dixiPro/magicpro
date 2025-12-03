@@ -2,8 +2,6 @@
   "name": "dixipro/magicpro",
   "description": "Magic application inside Laravel",
   "type": "laravel-package",
-  "license": "MIT",
-  "version": "1.0.3",
   "require": {
     "php": "^8.2",
     "laravel/framework": "^12.0",

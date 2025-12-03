@@ -1,11 +1,5 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch, useId } from 'vue';
-
-import { useToast } from 'primevue/usetoast';
-const toast = useToast();
-import { useConfirm } from 'primevue/useconfirm';
-const confirm = useConfirm();
-
 import { setMagicIcon } from '../apiCall';
 
 import TopMenu from './component/TopMenu.vue';
@@ -13,6 +7,7 @@ import RouteParam from './component/RouteParam.vue';
 import Help from './component/Help.vue';
 import EditArticle from './component/EditArticle.vue';
 import FileManager from './component/FileManager.vue';
+import TosatConfirm from '../CommonCom/ToastConfirm.vue';
 
 import { useArticleStore } from './store';
 const store = useArticleStore();
@@ -29,31 +24,6 @@ onMounted(() => {
   setMagicIcon('#ff642f');
 
   window.addEventListener('popstate', onPopState);
-
-  // глобальные сервисы диалог подтверждения и тосты
-  document.showToast = (msg = '', severity = 'success') => {
-    const life = severity === 'success' ? 5000 : 60 * 1000;
-    toast.add({ severity: severity, detail: msg, life: life });
-    if (severity === 'error') {
-      console.log(msg);
-    }
-  };
-  document.confirmDialog = async (message) => {
-    return new Promise((resolve, reject) => {
-      confirm.require({
-        message,
-        header: '',
-        icon: 'fas fa-question',
-        acceptLabel: 'Да',
-        rejectLabel: 'Нет',
-        accept: () => resolve(true),
-        reject: () => resolve(false), // или reject(), если хотите ошибку
-      });
-    });
-  };
-
-  document.showToast('article.value.ready ' + store.articleReady);
-  // document.confirmDialog('Сохранить?');
 });
 
 onUnmounted(() => {
@@ -74,9 +44,7 @@ const onPopState = (event) => {
   <Help></Help>
   <RouteParam v-if="store.articleReady"></RouteParam>
   <!-- тосты -->
-  <Toast position="bottom-right"></Toast>
-  <!-- Дилог Да Нет -->
-  <ConfirmDialog></ConfirmDialog>
+  <TosatConfirm></TosatConfirm>
 </template>
 
 <style>

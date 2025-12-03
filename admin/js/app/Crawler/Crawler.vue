@@ -282,7 +282,7 @@ const hasInternalError = computed(() => {
 </script>
 
 <template>
-  <h1>Crawler 0.82</h1>
+  <h1>Crawler 0.9</h1>
   <table class="table table-sm table-bordered">
     <tbody>
       <tr>

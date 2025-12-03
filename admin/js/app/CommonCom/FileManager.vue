@@ -3,19 +3,20 @@
 // uploadFile если файл уже существует?
 //
 import { ref, computed, onMounted, onUnmounted, watch, reactive, nextTick } from 'vue';
-import { apiFile } from '../../apiCall';
-
-import { useArticleStore } from '../store';
-const store = useArticleStore();
+import { apiFile } from '../apiCall';
 
 import UploadFile from './UploadFile.vue';
 import FileItem from './FileItem.vue';
+
+const showFileManager = defineModel('visible', { type: Boolean, default: false });
+
 const uploadRef = ref(null);
 
+//
 const startDirectory = ref('/design/');
 const path = ref('/design/');
 path.value = startDirectory.value;
-const directory = ref({});
+const directory = ref([]);
 const backToRoot = ref([]);
 
 const viewFull = ref(true);
@@ -161,6 +162,10 @@ function copyLink(el) {
   copyClipBoard(encodeURI(path.value + el.name));
 }
 
+function externalEdit(el) {
+  window.open('/a_dmin/fileEditor?' + encodeURIComponent(path.value + el.name), '_blank');
+}
+
 const menu = ref();
 const items = ref([]);
 
@@ -210,6 +215,16 @@ function onRightClick(event, el) {
       icon: 'far fa-file-image',
       command: () => {
         copyImg(el);
+      },
+    });
+  }
+
+  if (el.type === 'file') {
+    items.value.push({
+      label: 'Редактировать',
+      icon: 'fas fa-link',
+      command: () => {
+        externalEdit(el);
       },
     });
   }
@@ -274,7 +289,7 @@ const backPathArr = computed(() => {
 </script>
 
 <template>
-  <Dialog v-model:visible="store.statusFileManager" modal position="top" class="w-75 mt-4">
+  <Dialog v-model:visible="showFileManager" modal position="top" class="w-75 mt-4">
     <template #header>
       <div class="d-flex align-items-center gap-2 p-1 rounded w-100 border">
         <button v-if="path !== startDirectory" @click="goBack" class="btn btn-success fas fa-chevron-left"></button>

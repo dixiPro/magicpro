@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
+use MagicProSrc\Config\MagicGlobals; // Глобальные константы
 
 // use SplTempFileObject;
 
@@ -53,7 +54,6 @@ class API_FileManagerPostController extends Controller
     {
         try {
             $methods = [
-                'format' => ['name' => 'format'],
                 'start' => ['name' => 'start'],
                 'dirList' => ['name' => 'dirList'],
                 'mkdir'   => ['name' => 'mkdir'],
@@ -61,6 +61,8 @@ class API_FileManagerPostController extends Controller
                 'uploadBin'  => ['name' => 'uploadBin'],
                 'delete'  => ['name' => 'delete'],
                 'rename'  => ['name' => 'rename'],
+                'loadFile'  => ['name' => 'loadFile'],
+                'saveFile'  => ['name' => 'saveFile'],
             ];
 
             $command = $request->string('command')->toString();
@@ -96,6 +98,61 @@ class API_FileManagerPostController extends Controller
 
 
     // ==================================
+
+
+    private function checkFileInPublicStorageDir(string $fileName): void
+    {
+        $startPath = realpath(public_path(MagicGlobals::$magicStorageDir));
+        $fileName = realpath($fileName);
+
+        // Если файла нет или не удалось определить путь — исключение
+        if (!$fileName) {
+            throw new \Exception("Файл не найден: $fileName");
+        }
+
+        if (is_dir($fileName)) {
+            throw new \Exception("Это директория " . $fileName);
+        }
+
+
+        // Проверка принадлежности директории
+        if (!str_starts_with($fileName, $startPath . DIRECTORY_SEPARATOR)) {
+            throw new \Exception("Файл вне разрешённой директории");
+        }
+    }
+
+    private function loadFile(Request $request): array
+    {
+
+        $fileName = public_path($request->input('fileName'));
+        $this->checkFileInPublicStorageDir($fileName);
+        $this->validateEditExtension($fileName);
+
+        return ['fileData' => file_get_contents($fileName)];
+    }
+
+    private function saveFile(Request $request): array
+    {
+
+        $fileName = public_path($request->input('fileName'));
+        $this->checkFileInPublicStorageDir($fileName);
+        $this->validateEditExtension($fileName);
+        $fileData = public_path($request->input('fileData'));
+
+        // Пишем файл
+        $status = @file_put_contents($fileName, $fileData);
+
+        // Если запись не удалась
+        if ($status === false) {
+            $e = error_get_last();
+            throw new \Exception("Ошибка сохранения: $fileName " . ($e['message'] ?? ''));
+        }
+
+        return ['status' => 1];
+    }
+
+
+
     // Старт возвращает стартовую директорию
     private function start(Request $request): array
     {
@@ -343,11 +400,9 @@ class API_FileManagerPostController extends Controller
     }
 
     // ==================================
-    // ⬆️ Проверка расширения 
+    // ⬆️ Проверка расширения загрузки
     private function validateExtension(string $fileName): void
     {
-        $allowed1 = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'pdf', 'txt', 'html', 'css', 'js'];
-
         $allowed = [
             // Изображения
             'jpg',
@@ -396,6 +451,8 @@ class API_FileManagerPostController extends Controller
             'tar.gz',
             // Данные
             'csv',
+            'css',
+            'js',
             'json',
             'xml',
             'sql',
@@ -403,6 +460,27 @@ class API_FileManagerPostController extends Controller
             // Другое
             'ics',
             'vcf',
+        ];
+        $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+
+        if (!$ext || !in_array($ext, $allowed, true)) {
+            throw new \InvalidArgumentException("Недопустимое расширение файла: {$ext}");
+        }
+    }
+
+    // ⬆️ Проверка расширения 
+    private function validateEditExtension(string $fileName): void
+    {
+        $allowed = [
+            'txt',
+            'rtf',
+            'csv',
+            'css',
+            'js',
+            'json',
+            'xml',
+            'sql',
+            'md',
         ];
         $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
 

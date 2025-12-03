@@ -55,6 +55,11 @@ Route::get('/a_dmin/artEditor', function () {
     return view('magicAdmin::artEditor');
 })->where('any', '.*');
 
+// редактор файлов
+Route::get('/a_dmin/fileEditor', function () {
+    return view('magicAdmin::fileEditor');
+})->where('any', '.*');
+
 // файл менеджер АПИ    
 use MagicProAdminControllers\API_FileManagerPostController;
 
@@ -99,6 +104,12 @@ Route::get('/login', function () {
 })->name('login');
 
 
+Route::get('a_dmin/download-db', function () {
+    $path = base_path('database/database.sqlite');
+    return response()->download($path, 'db.sqlite');
+})
+    ->middleware('magic.auth:admin')
+    ->name('magic.downloadDb');
 //     
 //
 // Динамический раут
