@@ -49,14 +49,15 @@ function getExt(name) {
     </div>
   </div>
 
-  <div v-else class="thumb" :style="`width:${viewSize}px;height:${viewSize}px`" @contextmenu.prevent="onRightClick($event, el)">
+  <div v-else class="thumb" :style="`width:${viewSize}px;`" @contextmenu.prevent="onRightClick($event, el)">
     <div class="thumb-pic" v-if="el.isImage">
       <img :src="path + el.name + '?' + el.date" :style="calcImgStyle(el.width, el.height)" />
       <div class="file-name">{{ el.name }}<br />({{ el.width }}x{{ el.height }})</div>
     </div>
 
     <div class="thumb-file" v-else>
-      <div class="fs-5 d-inline-block bg-dark text-light rounded px-2">{{ ext }}</div>
+      <i class="far fa-file" style="font-size: 300%; color: #777"></i>
+      <!-- <div class="fs-5 d-inline-block bg-dark text-light rounded px-2">{{ ext }}</div> -->
       <div style="word-break: break-all">{{ el.name }}</div>
     </div>
   </div>
@@ -65,8 +66,8 @@ function getExt(name) {
 .thumb {
   margin: 10px;
   position: relative;
-  /* background: #f0f0f0;
-  border: 1px solid #ccc; */
+  cursor: pointer;
+  border: 1px solid #ddd;
 }
 
 .thumb-pic {
@@ -76,22 +77,16 @@ function getExt(name) {
 
 .thumb-file {
   position: relative;
-  /* background: #f0f0f0;*/
-  border: 1px solid #ccc;
-  padding: 4px;
+  padding: 12px 8px;
+  border-radius: 2px;
   height: 100%;
-  border-radius: 0 0 15px 15px;
+  font-size: 16px;
 }
 
 .thumb-pic .file-name {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: rgba(0, 0, 0, 0.5);
-  color: white;
   font-size: 12px;
-  margin: 2px;
+  padding: 2px;
+  line-height: 120%;
   text-align: center;
   white-space: nowrap;
   overflow: hidden;

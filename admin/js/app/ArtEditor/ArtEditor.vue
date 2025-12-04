@@ -6,7 +6,7 @@ import TopMenu from './component/TopMenu.vue';
 import RouteParam from './component/RouteParam.vue';
 import Help from './component/Help.vue';
 import EditArticle from './component/EditArticle.vue';
-import FileManager from './component/FileManager.vue';
+import FileManager from '../CommonCom/FileManager.vue';
 import TosatConfirm from '../CommonCom/ToastConfirm.vue';
 
 import { useArticleStore } from './store';
@@ -40,7 +40,7 @@ const onPopState = (event) => {
 <template>
   <TopMenu v-if="store.articleReady"></TopMenu>
   <EditArticle v-if="store.articleReady"></EditArticle>
-  <FileManager></FileManager>
+  <FileManager v-model:visible="store.statusFileManager"></FileManager>
   <Help></Help>
   <RouteParam v-if="store.articleReady"></RouteParam>
   <!-- тосты -->

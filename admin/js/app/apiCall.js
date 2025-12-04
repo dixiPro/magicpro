@@ -254,23 +254,13 @@ export function setMagicIcon(color) {
   document.head.appendChild(link);
 }
 //
-//
-//
-/* use
-            try {
-              response = await apiCall('/admin/design/?action=GetArt', {
-                idPage: 'monaco',
-              });
-              console.log(response);
-            } catch (e) {
-              console.log(e);
-            } finally {
-            }
 
-          
+export function getFileExtension(filename) {
+  const i = filename.lastIndexOf('.');
+  return i <= 0 ? '' : filename.slice(i + 1);
+}
 
-*/
-
+/*
 export async function apiCall_old(params = {}) {
   const { url = '/', data = {}, method = 'POST', logResult = false } = params;
 
@@ -333,3 +323,4 @@ export async function apiCall_old(params = {}) {
     }
   });
 }
+*/

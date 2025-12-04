@@ -3,10 +3,12 @@
 // uploadFile если файл уже существует?
 //
 import { ref, computed, onMounted, onUnmounted, watch, reactive, nextTick } from 'vue';
-import { apiFile } from '../apiCall';
+import { apiFile, getFileExtension } from '../apiCall';
 
 import UploadFile from './UploadFile.vue';
 import FileItem from './FileItem.vue';
+import EditFile from './EditFile.vue';
+import ModalWindow from './ModalWindow.vue';
 
 const showFileManager = defineModel('visible', { type: Boolean, default: false });
 
@@ -23,8 +25,12 @@ const viewFull = ref(true);
 const viewSize = ref(160);
 
 const ready = ref(false);
+// добавить папку
 const showNewFolderModal = ref(false);
 const newFolderName = ref('');
+
+// переименовать
+const showRenameModal = ref(false);
 
 onMounted(async () => {
   await start(path.value);
@@ -163,7 +169,8 @@ function copyLink(el) {
 }
 
 function externalEdit(el) {
-  window.open('/a_dmin/fileEditor?' + encodeURIComponent(path.value + el.name), '_blank');
+  fileName.value = path.value + el.name;
+  editFileStatus.value = true;
 }
 
 const menu = ref();
@@ -220,38 +227,19 @@ function onRightClick(event, el) {
   }
 
   if (el.type === 'file') {
-    items.value.push({
-      label: 'Редактировать',
-      icon: 'fas fa-link',
-      command: () => {
-        externalEdit(el);
-      },
-    });
+    if (['css', 'js', 'ts', 'txt', 'csv', 'json', 'md'].includes(getFileExtension(el.name))) {
+      items.value.push({
+        label: 'Редактировать',
+        icon: 'fas fa-pen',
+        command: () => {
+          externalEdit(el);
+        },
+      });
+    }
   }
 
   // показ меню
   menu.value.show(event);
-}
-
-function calcImgStyle(x, y) {
-  if (x >= y) {
-    return 'width :' + (viewSize.value - 2) + 'px;';
-  } else {
-    return 'height :' + (viewSize.value - 2) + 'px;';
-  }
-}
-
-function backPathEl(back, index) {
-  const arr = path.value.split('/');
-  console.log(arr, index);
-  const a = arr[index + 2];
-  return a ? a + '/' : '';
-}
-
-async function navStart() {
-  path.value = startDirectory.value;
-  backToRoot.value = [];
-  await openFolder(path.value);
 }
 
 async function navBackTo(index) {
@@ -286,10 +274,15 @@ const backPathArr = computed(() => {
   });
   return arr;
 });
+
+const fileName = ref('');
+const editFileStatus = ref(false);
 </script>
 
 <template>
-  <Dialog v-model:visible="showFileManager" modal position="top" class="w-75 mt-4">
+  <!-- <ModalWindow v-model:visible="showFileManager" modal position="top" class="w-75 mt-4"> -->
+
+  <ModalWindow v-model:visible="showFileManager" :zIndex="1000">
     <template #header>
       <div class="d-flex align-items-center gap-2 p-1 rounded w-100 border">
         <button v-if="path !== startDirectory" @click="goBack" class="btn btn-success fas fa-chevron-left"></button>
@@ -353,9 +346,23 @@ const backPathArr = computed(() => {
     <div v-else class="text-center p-3">
       <div class="spinner-border text-info"></div>
     </div>
-  </Dialog>
+  </ModalWindow>
+
+  <EditFile :fileName="fileName" :zIndex="1000" v-if="editFileStatus" @close="editFileStatus = false"></EditFile>
 
   <!-- Модалка создания папки -->
+  <Dialog v-model:visible="showNewFolderModal" header="Создать папку" modal>
+    <div class="mb-3">
+      <label class="form-label">Имя новой папки</label>
+      <input v-model="newFolderName" type="text" class="form-control" placeholder="Новая папка" @keyup.enter="createFolder" />
+    </div>
+    <template #footer>
+      <button class="btn btn-secondary btn-sm" @click="showNewFolderModal = false">Отмена</button>
+      <button class="btn btn-success btn-sm" @click="createFolder">Создать</button>
+    </template>
+  </Dialog>
+
+  <!-- Модалка переименовать-->
   <Dialog v-model:visible="showNewFolderModal" header="Создать папку" modal>
     <div class="mb-3">
       <label class="form-label">Имя новой папки</label>

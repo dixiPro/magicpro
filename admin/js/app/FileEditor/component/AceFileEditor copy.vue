@@ -1,6 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted, onBeforeUnmount, watch, useId } from 'vue';
-
+import { ref, onMounted, onBeforeUnmount, watch, useId } from 'vue';
 import ace from 'ace-builds/src-noconflict/ace';
 
 import 'ace-builds/src-noconflict/mode-html';

@@ -137,7 +137,7 @@ class API_FileManagerPostController extends Controller
         $fileName = public_path($request->input('fileName'));
         $this->checkFileInPublicStorageDir($fileName);
         $this->validateEditExtension($fileName);
-        $fileData = public_path($request->input('fileData'));
+        $fileData = $request->input('fileData');
 
         // Пишем файл
         $status = @file_put_contents($fileName, $fileData);
