@@ -1,18 +1,18 @@
 {
-  "_EditFile-BnPBOO2K.js": {
-    "file": "assets/EditFile-BnPBOO2K.js",
-    "name": "EditFile",
+  "_ModalWindow-BTZBOPaq.js": {
+    "file": "assets/ModalWindow-BTZBOPaq.js",
+    "name": "ModalWindow",
     "imports": [
       "_ToastConfirm-Dx9X-4_N.js",
       "__plugin-vue_export-helper-DlAUqK2U.js"
     ],
     "css": [
-      "assets/EditFile-ChaIZgqW.css"
+      "assets/ModalWindow-Bm-u1HaV.css"
     ]
   },
-  "_EditFile-ChaIZgqW.css": {
-    "file": "assets/EditFile-ChaIZgqW.css",
-    "src": "_EditFile-ChaIZgqW.css"
+  "_ModalWindow-Bm-u1HaV.css": {
+    "file": "assets/ModalWindow-Bm-u1HaV.css",
+    "src": "_ModalWindow-Bm-u1HaV.css"
   },
   "_ToastConfirm-BrjK1KNi.css": {
     "file": "assets/ToastConfirm-BrjK1KNi.css",
@@ -58,18 +58,18 @@
     ]
   },
   "admin/js/artEditor.js": {
-    "file": "assets/artEditor-CrBIqdft.js",
+    "file": "assets/artEditor-DjvDW8OU.js",
     "name": "artEditor",
     "src": "admin/js/artEditor.js",
     "isEntry": true,
     "imports": [
       "_ToastConfirm-Dx9X-4_N.js",
       "_index-C-hXeCQ3.js",
-      "_EditFile-BnPBOO2K.js",
+      "_ModalWindow-BTZBOPaq.js",
       "__plugin-vue_export-helper-DlAUqK2U.js"
     ],
     "css": [
-      "assets/artEditor-D2-N9TjG.css"
+      "assets/artEditor-9VqoBLDk.css"
     ]
   },
   "admin/js/crawler.js": {
@@ -100,15 +100,18 @@
     ]
   },
   "admin/js/fileEditor.js": {
-    "file": "assets/fileEditor-BPrNSXAI.js",
+    "file": "assets/fileEditor-VPvAtVr9.js",
     "name": "fileEditor",
     "src": "admin/js/fileEditor.js",
     "isEntry": true,
     "imports": [
       "_ToastConfirm-Dx9X-4_N.js",
       "_index-C-hXeCQ3.js",
-      "_EditFile-BnPBOO2K.js",
+      "_ModalWindow-BTZBOPaq.js",
       "__plugin-vue_export-helper-DlAUqK2U.js"
+    ],
+    "css": [
+      "assets/fileEditor-r_5nDyHG.css"
     ]
   },
   "admin/js/setup.js": {

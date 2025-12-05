@@ -297,6 +297,15 @@ composer clear-cache
 composer require dixipro/magicpro:dev-main
 composer require dixipro/magicpro
 
+git tag -n
+
+Полностью очистить теги (локально + удалённо)
+git tag -d $(git tag)
+git tag -l | xargs -n 1 -I {} git push origin :refs/tags/{}
+
+git tag -a v1.1.0 -m "release"
+git push --tags
+
 # see link page
 ls -la vendor/dixipro/magicpro
 ```
