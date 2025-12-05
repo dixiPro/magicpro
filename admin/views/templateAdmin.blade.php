@@ -30,7 +30,7 @@
                     <div class="px-2"><a class="text-white" href="/a_dmin/artList">Статьи</a></div>
                     <div class="px-2"><a class="text-white" href="/a_dmin/adminList">Админы</a></div>
                     <div class="px-2"><a class="text-white" href="/a_dmin/crawler">Паук</a></div>
-                    <div class="px-2"><a class="text-white" href="/a_dmin/fileEditor">FileEditor</a></div>
+                    {{-- <div class="px-2"><a class="text-white" href="/a_dmin/fileEditor">FileEditor</a></div> --}}
                     <div class="px-2"><a class="text-white" href="/f_ilament">Таблицы</a></div>
                     <div class="px-2">
                         <a href="{{ route('magic.logout') }}" type="submit" class="btn btn-sm btn-success">Выйти</a>

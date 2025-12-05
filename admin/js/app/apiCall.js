@@ -57,6 +57,10 @@ export async function apiCall(params = {}) {
   }
 
   let response;
+  let spinner = null;
+  if (typeof document.spinnerServiceShow === 'function') {
+    spinner = document.spinnerServiceShow();
+  }
 
   // Запрос
   try {
@@ -73,6 +77,10 @@ export async function apiCall(params = {}) {
     }
   } catch {
     throw new Error('Ошибка сети');
+  } finally {
+    if (spinner !== null) {
+      document.spinnerServiceHide(spinner);
+    }
   }
 
   // Парсинг JSON
@@ -258,6 +266,24 @@ export function setMagicIcon(color) {
 export function getFileExtension(filename) {
   const i = filename.lastIndexOf('.');
   return i <= 0 ? '' : filename.slice(i + 1);
+}
+
+export function copyClipBoard(fullLink) {
+  const textarea = document.createElement('textarea');
+  textarea.value = fullLink;
+  textarea.style.position = 'fixed';
+  textarea.style.opacity = '0';
+  document.body.appendChild(textarea);
+  textarea.select();
+  textarea.setSelectionRange(0, textarea.value.length); // для мобильных
+  try {
+    const ok = document.execCommand('copy');
+    document.showToast(ok ? 'Скопирована ссылка ' + fullLink : 'Ошибка копирования ссылки', ok ? 'success' : 'error');
+  } catch (e) {
+    document.showToast('Ошибка копирования ссылки', 'error');
+  } finally {
+    document.body.removeChild(textarea);
+  }
 }
 
 /*

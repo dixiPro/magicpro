@@ -20,35 +20,25 @@ class API_FileManagerPostController extends Controller
     гарантируя, что нельзя выйти за её пределы.
     */
 
-    private function safePath(string $relative): string
+    private function checkPath(string $name): void
     {
-        // Убираем начальные/конечные слэши
-        $relative = trim($relative, '/\\');
-
-        // Если пусто — просто /design
-        if ($relative === '' || $relative === FILES_JS_UPLOAD) {
-            return public_path(FILES_JS_UPLOAD);
+        // убираем две точки всякие выкрутассы
+        if (strpos($name, '..') !== false) {
+            throw new \RuntimeException("Недопустимое '..' в $name");
         }
 
-        // Если начинается не с design — ошибка
-        if (!str_starts_with($relative, FILES_JS_UPLOAD . '/')) {
-            throw new \RuntimeException("Попытка доступа за пределы директории /" . FILES_JS_UPLOAD);
+        // убираем две точки всякие выкрутассы
+        if (strpos($name, '//') !== false) {
+            throw new \RuntimeException("Недопустимое '//' в $name");
         }
 
-        // Собираем путь без realpath
-        $basePath = public_path($relative);
+        // начальная директория
+        $startDir = public_path(FILES_JS_UPLOAD) . "/";
 
-        // Проверяем что путь не вылез наружу (без зависания от прав)
-        $normalizedBase = str_replace('\\', '/', public_path(FILES_JS_UPLOAD));
-        $normalizedFull = str_replace('\\', '/', $basePath);
-
-        if (strpos($normalizedFull, $normalizedBase) !== 0) {
-            throw new \RuntimeException("Попытка обхода директории /" . FILES_JS_UPLOAD);
+        if (!str_starts_with($name, $startDir)) {
+            throw new \RuntimeException("Запрещён доступ вне $startDir");
         }
-
-        return $basePath;
     }
-
 
     public function handle(Request $request): JsonResponse
     {
@@ -167,11 +157,11 @@ class API_FileManagerPostController extends Controller
     // 📂 Список директорий и файлов
     private function dirList(Request $request): array
     {
-        $relativePath = $request->string('path')->toString();
-        $basePath = $this->safePath($relativePath);
+        $basePath = public_path($request->string('path')->toString());
+        $this->checkPath($basePath);
 
         if (!is_dir($basePath)) {
-            throw new \InvalidArgumentException("Директория '{$relativePath}' не найдена");
+            throw new \InvalidArgumentException("Директория '{$basePath}' не найдена");
         }
 
         $dirs = [];
@@ -209,8 +199,16 @@ class API_FileManagerPostController extends Controller
             }
         }
 
-        usort($dirs, fn($a, $b) => strnatcasecmp($a['name'], $b['name']));
-        usort($files, fn($a, $b) => strnatcasecmp($a['name'], $b['name']));
+        usort(
+            $dirs,
+            fn($a, $b) => (ctype_alnum($a['name'][0]) <=> ctype_alnum($b['name'][0]))
+                ?: strnatcasecmp($a['name'], $b['name'])
+        );
+        usort(
+            $files,
+            fn($a, $b) => (ctype_alnum($a['name'][0]) <=> ctype_alnum($b['name'][0]))
+                ?: strnatcasecmp($a['name'], $b['name'])
+        );
 
         return array_merge($dirs, $files);
     }
@@ -219,35 +217,31 @@ class API_FileManagerPostController extends Controller
     // 📁 Создание папки (без права выполнения)
     private function mkdir(Request $request): array
     {
-        $relativePath = $request->string('path')->toString();
-        $name = trim($request->string('name')->toString());
 
-        if ($name === '') {
-            throw new \InvalidArgumentException('Имя папки не может быть пустым');
+        $folderName = public_path(trim($request->string('folderName')->toString()));
+
+        $this->checkPath($folderName);
+
+        if (File::exists($folderName)) {
+            throw new \RuntimeException("Папка '{$folderName}' уже существует");
         }
 
-        $dir = $this->safePath($relativePath . DIRECTORY_SEPARATOR . $name);
-
-        if (File::exists($dir)) {
-            throw new \RuntimeException("Папка '{$name}' уже существует");
+        if (!mkdir($folderName, 0755, true)) {
+            throw new \RuntimeException("Не удалось создать папку '{$folderName}'");
         }
 
-        if (!mkdir($dir, 0755, true)) {
-            throw new \RuntimeException("Не удалось создать папку '{$name}'");
-        }
-
-        return ['created' => $name];
+        return ['created' => $folderName];
     }
 
     // ==================================
     // ⬆️ Потоковая загрузка файла без X-заголовков
     private function uploadBin(Request $request): array
     {
-        $relativePath = $request->string('path')->toString();
-        $basePath = $this->safePath($relativePath);
+        $basePath = public_path($request->string('path')->toString());
+        $this->checkPath($basePath);
 
         if (!is_dir($basePath)) {
-            throw new \InvalidArgumentException("Путь '{$relativePath}' не существует");
+            throw new \InvalidArgumentException("Путь '{$basePath}' не существует");
         }
 
         $fileName = $request->string('filename')->toString() ?: 'upload.bin';
@@ -304,11 +298,11 @@ class API_FileManagerPostController extends Controller
     // ⬆️ Загрузка файла (Base64)
     private function upload(Request $request): array
     {
-        $relativePath = $request->string('path')->toString();
-        $basePath = $this->safePath($relativePath);
+        $basePath = public_path($request->string('path')->toString());
+        $this->checkPath($basePath);
 
         if (!is_dir($basePath)) {
-            throw new \InvalidArgumentException("Путь '{$relativePath}' не существует");
+            throw new \InvalidArgumentException("Путь '{$basePath}' не существует");
         }
 
         $base64   = $request->input('file');
@@ -359,44 +353,42 @@ class API_FileManagerPostController extends Controller
     // ❌ Удаление файла или папки
     private function delete(Request $request): array
     {
-        $relativePath = $request->string('path')->toString();
-        $name = $request->string('name')->toString();
-        $target = $this->safePath($relativePath . DIRECTORY_SEPARATOR . $name);
+        $deleteFile = public_path($request->string('deleteFile')->toString());
+        $this->checkPath($deleteFile);
 
-        if (!File::exists($target)) {
-            throw new \RuntimeException("Элемент '{$name}' не найден");
+        if (!File::exists($deleteFile)) {
+            throw new \RuntimeException("Элемент '{$deleteFile}' не найден");
         }
 
-        File::isDirectory($target)
-            ? File::deleteDirectory($target)
-            : File::delete($target);
+        File::isDirectory($deleteFile)
+            ? File::deleteDirectory($deleteFile)
+            : File::delete($deleteFile);
 
-        return ['deleted' => $name];
+        return ['deleted' => $deleteFile];
     }
 
     // ==================================
     // ✏️ Переименование файла/папки
     private function rename(Request $request): array
     {
-        $relativePath = $request->string('path')->toString();
-        $old = $request->string('old')->toString();
-        $new = $request->string('new')->toString();
 
-        $basePath = $this->safePath($relativePath);
-        $oldFull = $basePath . DIRECTORY_SEPARATOR . $old;
-        $newFull = $basePath . DIRECTORY_SEPARATOR . $new;
+        $oldName = public_path($request->string('oldName')->toString());
+        $newName = public_path($request->string('newName')->toString());
 
-        if (!File::exists($oldFull)) {
-            throw new \RuntimeException("Элемент '{$old}' не найден");
+        $this->checkPath($oldName);
+        $this->checkPath($newName);
+
+        if (!File::exists($oldName)) {
+            throw new \RuntimeException("Элемент '{$oldName}' не найден");
         }
 
-        if (File::exists($newFull)) {
-            throw new \RuntimeException("Элемент '{$new}' уже существует");
+        if (File::exists($newName)) {
+            throw new \RuntimeException("Элемент '{$newName}' уже существует");
         }
 
-        rename($oldFull, $newFull);
+        rename($oldName, $newName);
 
-        return ['renamed' => [$old => $new]];
+        return ['renamed' => [$oldName => $newName]];
     }
 
     // ==================================

@@ -3,11 +3,10 @@
 // uploadFile если файл уже существует?
 //
 import { ref, computed, onMounted, onUnmounted, watch, reactive, nextTick } from 'vue';
-import { apiFile, getFileExtension } from '../apiCall';
+import { apiFile, getFileExtension, copyClipBoard } from '../apiCall';
 
 import UploadFile from './UploadFile.vue';
 import FileItem from './FileItem.vue';
-import EditFile from './EditFile.vue';
 import ModalWindow from './ModalWindow.vue';
 
 const showFileManager = defineModel('visible', { type: Boolean, default: false });
@@ -25,12 +24,12 @@ const viewFull = ref(true);
 const viewSize = ref(160);
 
 const ready = ref(false);
-// добавить папку
-const showNewFolderModal = ref(false);
-const newFolderName = ref('');
 
-// переименовать
-const showRenameModal = ref(false);
+// добавить папку
+const modalAddNewFolder = reactive({
+  visible: false,
+  newFolderName: '',
+});
 
 onMounted(async () => {
   await start(path.value);
@@ -45,8 +44,8 @@ async function goBack() {
 }
 
 function openNewFolderModal() {
-  newFolderName.value = '';
-  showNewFolderModal.value = true;
+  modalAddNewFolder.newFolderName = '';
+  modalAddNewFolder.visible = true;
 }
 
 async function start() {
@@ -62,22 +61,39 @@ async function start() {
   }
 }
 
-async function createFolder() {
-  if (!newFolderName.value.trim()) return;
+async function deleteFileOrFolder(name) {
+  if (!(await document.confirmDialog('Удалить?' + path.value + name))) return;
+  try {
+    ready.value = false;
+    await apiFile({
+      command: 'delete',
+      deleteFile: path.value + name,
+    });
+    directory.value = directory.value.filter((item) => item.name !== name);
+    document.showToast('Удален ' + name);
+  } catch (e) {
+    console.error(e);
+  } finally {
+    ready.value = true;
+  }
+}
 
+async function createFolder() {
+  // пустой файл
+  if (!modalAddNewFolder.newFolderName.trim()) return;
+  // debugger;
   try {
     ready.value = false;
 
     await apiFile({
       command: 'mkdir',
-      path: path.value,
-      name: newFolderName.value.trim(),
+      folderName: path.value + modalAddNewFolder.newFolderName.trim(),
     });
     await openFolder(path.value);
   } catch (e) {
     console.error(e);
   } finally {
-    showNewFolderModal.value = false;
+    modalAddNewFolder.visible = false;
     ready.value = true;
   }
 }
@@ -122,43 +138,6 @@ async function openFolder(pathVal) {
   }
 }
 
-async function deleteFileOrFolder(name) {
-  if (!(await document.confirmDialog('Удалить?' + path.value + name))) return;
-  try {
-    ready.value = false;
-
-    await apiFile({
-      command: 'delete',
-      path: path.value,
-      name: name,
-    });
-    directory.value = directory.value.filter((item) => item.name !== name);
-    document.showToast('Удален ' + name);
-  } catch (e) {
-    console.error(e);
-  } finally {
-    ready.value = true;
-  }
-}
-
-function copyClipBoard(fullLink) {
-  const textarea = document.createElement('textarea');
-  textarea.value = fullLink;
-  textarea.style.position = 'fixed';
-  textarea.style.opacity = '0';
-  document.body.appendChild(textarea);
-  textarea.select();
-  textarea.setSelectionRange(0, textarea.value.length); // для мобильных
-  try {
-    const ok = document.execCommand('copy');
-    document.showToast(ok ? 'Скопирована ссылка ' + fullLink : 'Ошибка копирования ссылки', ok ? 'success' : 'error');
-  } catch (e) {
-    document.showToast('Ошибка копирования ссылки', 'error');
-  } finally {
-    document.body.removeChild(textarea);
-  }
-}
-
 function copyImg(el) {
   const s = `<img src="${encodeURI(path.value + el.name)}" alt="${el.name}" height="${el.height}" width="${el.width}" />`;
   copyClipBoard(s);
@@ -169,8 +148,8 @@ function copyLink(el) {
 }
 
 function externalEdit(el) {
-  fileName.value = path.value + el.name;
-  editFileStatus.value = true;
+  modalRename.visible = true;
+  modalRename.fileName = path.value + el.name;
 }
 
 const menu = ref();
@@ -187,24 +166,10 @@ const stopEscPropagation = (e) => {
   }
 };
 
-function onRightClick(event, el) {
+function onRightClick(event, el, index) {
   // menu.value.hide();
   document.addEventListener('keydown', stopEscPropagation, true);
-  items.value = [
-    {
-      label: 'Удалить',
-      icon: 'fas fa-trash',
-      command: () => {
-        deleteFileOrFolder(el.name);
-      },
-    },
-
-    {
-      label: 'Переименовать',
-      icon: 'fas fa-plus',
-      command: () => {},
-    },
-  ];
+  items.value = [];
 
   if (el.type === 'file') {
     items.value.push({
@@ -237,6 +202,24 @@ function onRightClick(event, el) {
       });
     }
   }
+
+  items.value.push({
+    label: 'Переименовать',
+    icon: 'fas fa-plus',
+    command: () => {
+      modalRename.visible = true;
+      modalRename.newName = el.name;
+      modalRename.oldName = el.name;
+    },
+  });
+
+  items.value.push({
+    label: 'Удалить',
+    icon: 'fas fa-trash',
+    command: () => {
+      deleteFileOrFolder(el.name);
+    },
+  });
 
   // показ меню
   menu.value.show(event);
@@ -275,8 +258,34 @@ const backPathArr = computed(() => {
   return arr;
 });
 
-const fileName = ref('');
-const editFileStatus = ref(false);
+const modalRename = reactive({
+  visible: false,
+  oldName: '',
+  newName: '',
+  rename: async function () {
+    // if (!(await document.confirmDialog('Подтвердить?' + path.value + name))) return;
+    try {
+      ready.value = false;
+      await apiFile({
+        command: 'rename',
+        oldName: path.value + this.oldName,
+        newName: path.value + this.newName,
+      });
+      directory.value = directory.value.map((item) => {
+        if (item.name == this.oldName) {
+          item.name = this.newName;
+        }
+        return item;
+      });
+      this.visible = false;
+      document.showToast('Готово');
+    } catch (e) {
+      console.error(e);
+    } finally {
+      ready.value = true;
+    }
+  },
+});
 </script>
 
 <template>
@@ -325,7 +334,7 @@ const editFileStatus = ref(false);
           <div class="me-2">
             <i class="far fa-folder pointer" @click="changeFolder(el.name)"></i>
           </div>
-          <div class="pointer" @contextmenu.prevent="onRightClick($event, el)" @click="changeFolder(el.name)">
+          <div class="pointer" @contextmenu.prevent="onRightClick($event, el, index)" @click="changeFolder(el.name)">
             {{ el.name }}
           </div>
         </div>
@@ -333,13 +342,13 @@ const editFileStatus = ref(false);
       <!-- файлы -->
       <div :class="{ 'd-flex flex-wrap': viewFull }" class="">
         <FileItem
+          @contextmenu.prevent="onRightClick($event, el, index)"
           v-for="el in directory.filter((e) => e.type !== 'dir')"
           :key="el.name"
           :el="el"
           :viewFull="viewFull"
           :viewSize="viewSize"
           :path="path"
-          :onRightClick="onRightClick"
         />
       </div>
     </div>
@@ -348,29 +357,26 @@ const editFileStatus = ref(false);
     </div>
   </ModalWindow>
 
-  <EditFile :fileName="fileName" :zIndex="1000" v-if="editFileStatus" @close="editFileStatus = false"></EditFile>
-
   <!-- Модалка создания папки -->
-  <Dialog v-model:visible="showNewFolderModal" header="Создать папку" modal>
+  <Dialog v-model:visible="modalAddNewFolder.visible" header="Создать папку" modal>
     <div class="mb-3">
       <label class="form-label">Имя новой папки</label>
-      <input v-model="newFolderName" type="text" class="form-control" placeholder="Новая папка" @keyup.enter="createFolder" />
+      <input v-model="modalAddNewFolder.newFolderName" type="text" class="form-control" placeholder="Новая папка" @keyup.enter="createFolder" />
     </div>
     <template #footer>
-      <button class="btn btn-secondary btn-sm" @click="showNewFolderModal = false">Отмена</button>
+      <button class="btn btn-secondary btn-sm" @click="modalAddNewFolder.visible = false">Отмена</button>
       <button class="btn btn-success btn-sm" @click="createFolder">Создать</button>
     </template>
   </Dialog>
 
-  <!-- Модалка переименовать-->
-  <Dialog v-model:visible="showNewFolderModal" header="Создать папку" modal>
+  <!-- Модалка переименовать -->
+  <Dialog v-model:visible="modalRename.visible" header="Rename" modal>
     <div class="mb-3">
-      <label class="form-label">Имя новой папки</label>
-      <input v-model="newFolderName" type="text" class="form-control" placeholder="Новая папка" @keyup.enter="createFolder" />
+      <input v-model="modalRename.newName" type="text" class="form-control" placeholder="Новое имя" @keyup.enter="modalRename.rename" />
     </div>
     <template #footer>
-      <button class="btn btn-secondary btn-sm" @click="showNewFolderModal = false">Отмена</button>
-      <button class="btn btn-success btn-sm" @click="createFolder">Создать</button>
+      <button class="btn btn-secondary btn-sm" @click="modalRename.visible = false">Отмена</button>
+      <button class="btn btn-success btn-sm" @click="modalRename.rename">Готово</button>
     </template>
   </Dialog>
 

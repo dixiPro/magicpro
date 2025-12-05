@@ -6,8 +6,13 @@ const toast = useToast();
 import { useConfirm } from 'primevue/useconfirm';
 const confirm = useConfirm();
 
+import { showSpinner, spinnerHide } from '../Service/spinnerService';
+document.spinnerServiceShow = showSpinner;
+document.spinnerServiceHide = spinnerHide;
+
 onMounted(() => {
   // глобальные сервисы диалог подтверждения и тосты
+
   document.showToast = (msg = '', severity = 'success') => {
     const life = severity === 'success' ? 5000 : 60 * 1000;
     toast.add({ severity: severity, detail: msg, life: life });
