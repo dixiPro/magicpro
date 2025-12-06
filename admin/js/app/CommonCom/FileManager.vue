@@ -8,6 +8,7 @@ import { apiFile, getFileExtension, copyClipBoard } from '../apiCall';
 import UploadFile from './UploadFile.vue';
 import FileItem from './FileItem.vue';
 import ModalWindow from './ModalWindow.vue';
+import EditFile from '../CommonCom/EditFile.vue';
 
 const showFileManager = defineModel('visible', { type: Boolean, default: false });
 
@@ -147,10 +148,21 @@ function copyLink(el) {
   copyClipBoard(encodeURI(path.value + el.name));
 }
 
-function externalEdit(el) {
-  modalRename.visible = true;
-  modalRename.fileName = path.value + el.name;
-}
+const editFile = reactive({
+  visible: false,
+  fileName: '',
+  edit: function (el) {
+    this.fileName = path.value + el.name;
+    this.visible = true;
+  },
+});
+
+// const editFileStatus = ref(true);
+// const fileName = ref(path.value + '_snippetsBlade.js');
+// function externalEdit(el) {
+//   editFileStatus.value = true;
+//   modalRename.fileName = path.value + el.name;
+// }
 
 const menu = ref();
 const items = ref([]);
@@ -197,7 +209,7 @@ function onRightClick(event, el, index) {
         label: 'Редактировать',
         icon: 'fas fa-pen',
         command: () => {
-          externalEdit(el);
+          editFile.edit(el);
         },
       });
     }
@@ -383,6 +395,8 @@ const modalRename = reactive({
   <UploadFile ref="uploadRef" :path="path" :directory="directory" @uploaded="onFileUploaded" class="w-50" />
 
   <ContextMenu ref="menu" :model="items" />
+
+  <EditFile :fileName="editFile.fileName" :zIndex="1000" v-if="editFile.visible" @close="editFile.visible = false"></EditFile>
 </template>
 <style>
 .path-element {

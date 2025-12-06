@@ -4,7 +4,7 @@
 
 @extends('magicAdmin::templateAdmin')
 
-@section('title', 'Админка')
+@section('title', 'Админка 1.1.3')
 
 @section('body')
     <h1>Админка</h1>
@@ -86,7 +86,7 @@
         </div>
         <div class="tab-pane fade" id="t4">
             <div>
-                <a href="{{ route('magic.exportArticle', ['id' => 1]) }}">Экспорт табицы Article</a>
+                <a href="{{ route('magic.exportArticle', ['id' => 1]) }}">Экспорт таблицы Article</a>
             </div>
 
             <div>

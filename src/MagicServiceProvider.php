@@ -108,5 +108,6 @@ class MagicServiceProvider extends ServiceProvider
         // <livewire:magic::articleName />
 
         // $this->app->extend(ComponentRegistry::class, fn($r, $app) => new LivewireComponentRegistry($app));
+        $this->app->extend(ComponentRegistry::class, fn($r, $app) => new LivewireComponentRegistry($app));
     }
 }
