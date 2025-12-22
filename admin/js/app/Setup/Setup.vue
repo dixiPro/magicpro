@@ -45,7 +45,7 @@ async function saveParams() {
 </script>
 
 <template>
-  <h1>Setup 0.1</h1>
+  <h1>Setup 1.1</h1>
 
   <div v-if="ready">
     <div class="row my-3" v-for="(value, key) in paramsAttr" :key="key">

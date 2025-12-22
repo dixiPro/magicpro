@@ -20,6 +20,17 @@ export default defineConfig({
       publicDirectory: "../../../public",
       buildDirectory: "vendor/magicpro", // <— манифест будет: public/vendor/magicpro/manifest.json
     }),
+
+    {
+      name: "clean-assets-before-build",
+      // вызывается ДО сборки Vite
+      // удаляет старые assets, чтобы не было мусора и конфликтов
+      buildStart() {
+        const assetsDir = "../../../public/vendor/magicpro/assets";
+        fs.removeSync(assetsDir);
+        console.log("🧹 old assets cleaned");
+      },
+    },    
     {
       name: "copy-after-build",
       closeBundle() {

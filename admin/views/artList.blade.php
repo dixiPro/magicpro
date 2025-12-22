@@ -18,15 +18,15 @@ $GLOBALS['wide'] = 'middle';
         <table class="table table-striped  table-sm">
             <thead>
                 <tr>
-                    <th>id</th>
-                    <th>parentId</th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
                     <th>name</th>
                     <th>title</th>
-                    <th></th>
-                    <th>directory</th>
+                    <th>id</th>
+                    <th>parent</th>
                     <th>npp</th>
-                    <th></th>
-                    <th></th>
                 </tr>
             </thead>
             <tbody>
@@ -35,7 +35,7 @@ $GLOBALS['wide'] = 'middle';
               @php
                   
                     $useController=$a->routeParams['useController'] ?? 'error';
-                    $icon = $useController === 'error' ? '<i style="color:red" class="fas fa-exclamation-circle"></i>' : ($useController ? '<i class="fas fa-cog"></i>' : '' );
+                    $icon = $useController === 'error' ? '<i style="color:red" class="fas fa-exclamation-circle" title="Непонятка с контроллером"></i>' : ($useController ? '<i class="fas fa-cog" title="Есть контроллер" ></i>' : '' );
                   
               @endphp
                     <tr>

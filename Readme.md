@@ -25,7 +25,7 @@
 - **Frontend**: Vue 3, Bootstrap 5, PrimeVue.
 - **DevOps**: Ubuntu, Nginx, SQLite.
 
-### ⚙️ Installation (1)
+### ⚙️ Installation
 
 ```bash
 # in project root
@@ -35,36 +35,9 @@ sudo chown -R :www-data dataMagicPro
 php artisan migrate
 ```
 
-### ⚙️ OR! installation from git (2)
-
-в основной композер добавить
-
-```json
-"repositories": [
-  {
-    "type": "path",
-    "url": "packages/dixipro/magicpro",
-    "options":{
-      "copy": true
-   }
-  }
-]
-```
-
-```bash
-# install magicpro
-git clone https://github.com/dixiRu/magicpro packages/dixipro/magicpro
-composer require dixipro/magicpro
-php artisan magicpro:install
-sudo chown -R :www-data dataMagicPro
-php artisan migrate
-
-##
-```
-
 ## ⚙️ Installation for dev
 
-в основной композер добавить
+Add to main composer
 
 ```json
 "repositories": [
@@ -79,7 +52,6 @@ php artisan migrate
 ```
 
 ```bash
-git clone https://github.com/dixiRu/magicpro packages/dixipro/magicpro
 composer require dixipro/magicpro
 php artisan magicpro:install
 sudo chown -R :www-data dataMagicPro
@@ -91,17 +63,35 @@ npm i
 ```
 
 **Vite build**
-
 Vite is configured to build outside the project root.
 
 ```bash
 cd packages/dixipro/magicpro
-npm i
 npm run dev
 npm run build
 ```
 
 ### Added / Change
+
+#### 2025-12-05
+
+The site can now run in static mode. Performance increased significantly. A crawler was added that visits pages and generates static HTML files. As a result, Nginx serves an HTML file if it exists, otherwise routing takes over.
+
+A file manager was added, including editing of JS and CSS files with formatters.
+
+Livewire was fixed and can now be used directly inside the system.
+
+A Setup section was added to the admin panel. All constants are being moved into a single file (work in progress).
+
+Database export to a file is implemented.
+
+The MagicPro-based site magalif.ru has been built; we are currently testing new.magalif.ru.
+
+Filament has been added to the Magalif site.
+
+Magalif data was exported in JSON format, and inside MagicPro a grabber was implemented that downloaded all this data into Filament.
+
+MagicPro and Filament work together very well. A unified authentication system will be needed later; for now, each one uses its own auth.
 
 #### 2025-11-12
 
