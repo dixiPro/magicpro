@@ -16,11 +16,11 @@ class AuthController
         if ($user && Hash::check($request->password, $user->password)) {
             // Auth::login($user, $request->boolean('remember'));
             Auth::guard('magic')->login($user, $request->boolean('remember'));
-            // возвращаем на ту же страницу
+            // redirect back to the same page
             return redirect()->back();
         }
 
-        return redirect()->back()->with('mpro_error', 'Неверный логин или пароль');
+        return redirect()->back()->with('mpro_error', 'invalid login or password');
     }
 
     public function logout()

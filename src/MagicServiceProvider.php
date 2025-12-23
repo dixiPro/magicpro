@@ -21,12 +21,18 @@ use Illuminate\Support\Facades\Config;
 use MagicProSrc\Config\MagicGlobals; // Глобальные константы
 use MagicProSrc\Installer\InstallCommand;
 
+use MagicProSrc\MagicLang;
 
 class MagicServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
-        MagicGlobals::register(); // Константы глобальные
+        // Lang::addnamespace('magicpro', __dir__ . '/../lang');
+        // Lang::setLocale('ru');
+        // Регистрируем Blade директивы
+
+        MagicLang::loadLocale(MagicGlobals::$INI['LANGUAGE']);
+        // MagicLang::loadLocale('ru');
 
         // Регистрируем artisan-команду
         if ($this->app->runningInConsole()) {
@@ -103,6 +109,8 @@ class MagicServiceProvider extends ServiceProvider
 
     public function register(): void
     {
+        MagicGlobals::register(); // Константы глобальные
+
         // Override Livewire's default ComponentRegistry with a custom implementation
         // Example: register a Livewire component manually (currently commented out)
         // <livewire:magic::articleName />

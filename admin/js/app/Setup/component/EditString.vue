@@ -13,7 +13,4 @@ const value = defineModel();
   <div>
     <input type="text" class="form-control form-sm" v-model="value" :disabled="!mutable" />
   </div>
-  <div v-if="mutable">
-    <small>{{ defaultValue }}</small>
-  </div>
 </template>

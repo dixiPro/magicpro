@@ -3,18 +3,19 @@
 namespace MagicProAdminControllers;
 
 use Illuminate\Support\Facades\File;
+use MagicProSrc\MagicFile;
 
-// 🧩 Контроллер по умолчанию
+// 🧩 default controller
 define('DEFAULT_CONTROLLER', __DIR__ . '/default/defaultController.php');
 
-// ⚡ Livewire-контроллер по умолчанию
+// ⚡ default livewire controller
 define('DEFAULT_LIVEWIRE_CONTROLLER', __DIR__ . '/default/defaultControllerLivewire.php');
 
 
 /**
- * Создать/обновить ресурсы под статью.
- * Обязательные ключи: id, name, isRoute, controllerText, viewText
- *  - при isRoute=false: роут удаляется, контроллер удаляется, вью создаётся/обновляется
+ * create/update resources for an article.
+ * required keys: id, name, isRoute, controllerText, viewText
+ *  - when isRoute=false: route is removed, controller is removed, view is created/updated
  */
 function readDefaultController(): string
 {
@@ -36,19 +37,19 @@ function createMpro(array $article): void
 
 
     // if (!preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $name)) {
-    //     throw new \InvalidArgumentException("Некорректное имя : {$name}");
+    //     throw new \InvalidArgumentException("invalid name : {$name}");
     // }
 
-    // удаляем все
+    // delete everything
     deleteMpro($article);
 
-    // VIEW (создаём/обновляем всегда)
+    // VIEW (always create/update)
     $viewText       = $article['body'];
     $viewFile       = fileNameView($article);
     write_file_or_fail($viewFile, $viewText);
 
     // CONTROLLER 
-    // удаляем старый контроллер
+    // delete old controller
     $controllerFile = fileNameController($article);
     $controllerText = trim(dataController($article));
     if ($controllerText !== '' && $isRoute && $useController) {
@@ -58,15 +59,15 @@ function createMpro(array $article): void
 
 
 /**
- * Полное удаление ресурсов под статью.
- * Обязательные ключи: id, name
+ * full deletion of resources for an article.
+ * required keys: id, name
  */
 function deleteMpro(array $article): void
 {
     $nameView = $article['name'] ?? throw new \InvalidArgumentException('name is empty');
     $nameController = getNameController($article);
 
-    // FILES: удалить контроллер и вью
+    // FILES: delete controller and view
     delete_file(MAGIC_CONTROLLER_DIR . '/' . $nameController . '.php');
     delete_file(MAGIC_VIEW_DIR . '/' . $nameView . '.blade.php');
 }
@@ -102,11 +103,7 @@ function dataController(array $article): string
 
 function write_file_or_fail(string $file, string $data): void
 {
-
-    $res = file_put_contents($file, $data, LOCK_EX);
-    if ($res === false) {
-        throw new \RuntimeException("Error writing file: {$file}");
-    }
+    MagicFile::saveToFile($file, $data);
 }
 
 function read_file_or_fail(string $file): string

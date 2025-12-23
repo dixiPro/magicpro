@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use MagicProDatabaseModels\Article;
 use Illuminate\Support\Facades\Auth;
+use MagicProSrc\Config\MagicGlobals; // Глобальные константы
 
 
 class DynamicRouteHandler
@@ -34,7 +35,7 @@ class DynamicRouteHandler
             // значения в   $segments
 
             // количество ключей не совпадает
-            if (count($segmentParams) !== count($routeParams['keysArr'])) {
+            if (count($segments) !== count($routeParams['keysArr'])) {
                 throw new \Exception('количество ключей не совпадает');
             }
             // ключи из $routeParams['keysArr'] значения из  $segments
@@ -73,7 +74,7 @@ class DynamicRouteHandler
 
         // Удаляем утм ключи, если УТМ   разрешен
         if ($routeParams["utmParamsEnable"]) {
-            $remainingKeys = array_diff($remainingKeys, ENABLE_URL_PARAMS);
+            $remainingKeys = array_diff($remainingKeys, MagicGlobals::$INI['ENABLE_URL_PARAMS']);
         }
 
         // гет запрещены 

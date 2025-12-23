@@ -2,6 +2,8 @@
 
 namespace MagicProAdminMiddleware;
 
+use MagicProSrc\MagicLang;
+
 use Closure;
 use Illuminate\Support\Facades\Auth;
 
@@ -9,6 +11,8 @@ class CheckMagicAuth
 {
     public function handle($request, Closure $next, $role = null)
     {
+        // MagicLang::loadLocale('ru');
+
         $guard = Auth::guard('magic');
 
         if (!$guard->check()) {

@@ -11,22 +11,22 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class ImportExportController extends Controller
 {
     /**
-     * Экспорт статей в JSON
+     * export articles to json
      */
     public function exportArticle(Request $request)
     {
         $id = $request->input('id');
         $name = Article::where('id', $id)->first()->name;
-        // Рекурсивно получаем все дочерние id
+        // recursively get all child ids
         $ids = $this->collectIds($id);
 
-        // Получаем записи по этим id
+        // get records by these ids
         $rows = Article::whereIn('id', $ids)->get();
 
         $data = $rows->map(function ($m) {
             $item = $m->only($m->getFillable());
 
-            // Находим имя родителя
+            // find parent name
             $parentName = null;
             if ($m->parentId > 0) {
                 $parentName = Article::where('id', $m->parentId)->value('name');
@@ -49,7 +49,7 @@ class ImportExportController extends Controller
     }
 
     /**
-     * Рекурсивно собирает все id поддерева.
+     * recursively collects all subtree ids.
      */
     private function collectIds($id)
     {
@@ -67,41 +67,41 @@ class ImportExportController extends Controller
 
     private function parseArticlesXml(string $xmlText): array
     {
-        // Удаляем разделители между статьями
+        // remove separators between articles
         $xmlText = preg_replace('~<hr\s+separate_line\s*>~i', '', $xmlText);
 
-        // Удаляем в конце мусор
+        // remove trailing garbage
         $pos = strpos($xmlText, '</article-list>');
         if ($pos !== false) {
             $xmlText = substr($xmlText, 0, $pos + strlen('</article-list>'));
         }
-        // оборачиваем art_body
+        // wrap art_body
         $xmlText = str_replace('<art_body>', '<art_body><![CDATA[  ', $xmlText);
         $xmlText = str_replace('</art_body>', '  ]]></art_body>', $xmlText);
 
-        // Убираем art_addfield1
+        // remove art_addfield1
         $xmlText = preg_replace('/<art_addfield1>.*?<\/art_addfield1>/s', '', $xmlText);
         $xmlText = preg_replace('/<art_parseError>.*?<\/art_parseError>/s', '', $xmlText);
 
         try {
             $xml = simplexml_load_string($xmlText, 'SimpleXMLElement', LIBXML_NOCDATA);
         } catch (\Throwable $th) {
-            // Извлекаем номер строки из сообщения об ошибке
+            // extract line number from error message
             preg_match('/line\s+(\d+)/i', $th->getMessage(), $m);
             $errLine = isset($m[1]) ? (int)$m[1] : 0;
 
-            // Разбиваем XML по строкам
+            // split xml into lines
             $lines = explode("\n", $xmlText);
             $total = count($lines);
 
-            // Определяем диапазон ±10 строк вокруг ошибки
+            // define range ±10 lines around the error
             $start = max(0, $errLine - 10);
             $end = min($total, $errLine + 10);
 
-            // Собираем контекст
+            // build context
             $excerpt = '';
             for ($i = $start; $i < $end; $i++) {
-                $mark = ($i + 1 === $errLine) ? ' <<< ПРОБЛЕМА ЗДЕСЬ' : '';
+                $mark = ($i + 1 === $errLine) ? ' <<< problem here' : '';
                 $excerpt .= str_pad($i + 1, 4, ' ', STR_PAD_LEFT) . ': ' . $lines[$i] . $mark . "\n";
             }
 
@@ -130,7 +130,7 @@ class ImportExportController extends Controller
                 'npp'         => (int)($a->art_npp ?? 0),
                 'name'        => (string)($a->art_name ?? ''),
                 'title'       => (string)($a->art_title ?? ''),
-                'controller'  => '', // в XML нет — заполняем пустым
+                'controller'  => '', // not in xml — leave empty
                 'body'        => $start . (string)($a->art_body ?? '') . $end,
                 'directory'   => ((int)$a->art_directory ?? 0) === 1,
                 'menuOn'      => ((int)$a->art_menuOn ?? 0) === 1,
@@ -163,24 +163,24 @@ class ImportExportController extends Controller
         DB::beginTransaction();
         try {
             $file = $request->file('file');
-            $writeBase = $request->boolean('writeBase', false); // по умолчанию false
+            $writeBase = $request->boolean('writeBase', false); // default false
             $typeFile = $request->input('typeFile');
 
-            // Проверка файла
+            // file validation
             if (!$file || !$file->isValid()) {
-                throw new \Exception('Файл не загружен или повреждён');
+                throw new \Exception('file not uploaded or corrupted');
             }
             if ($typeFile === 'json') {
-                // Проверка JSON
+                // json validation
                 $data = json_decode(file_get_contents($file->getRealPath()), true);
                 if (!is_array($data)) {
-                    throw new \Exception('Некорректный формат JSON');
+                    throw new \Exception('invalid json format');
                 }
             } elseif ($typeFile === 'xml') {
 
                 $data = $this->parseArticlesXml(file_get_contents($file->getRealPath()));
             } else {
-                throw new \Exception('Неизвестный тип файла импорта');
+                throw new \Exception('unknown import file type');
             }
 
             foreach ($data as $item) {
@@ -221,7 +221,7 @@ class ImportExportController extends Controller
                     $log->add($item['name'], "added. npp old={$oldNpp}, new={$npp}");
                 }
             }
-            // если writeBase комит, иначе отказ
+            // if writeBase then commit, otherwise rollback
             $writeBase ? DB::commit() : DB::rollBack();
         } catch (\Throwable $e) {
             DB::rollBack();

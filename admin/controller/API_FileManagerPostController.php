@@ -7,36 +7,33 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
-use MagicProSrc\Config\MagicGlobals; // Глобальные константы
-
-// use SplTempFileObject;
+use MagicProSrc\Config\MagicGlobals; // global constants
 
 class API_FileManagerPostController extends Controller
 {
     /*
-    📁 Базовая директория для всех файловых операций
-    BASE_DIR = 'design';
-    Возвращает абсолютный путь внутри public/design,
-    гарантируя, что нельзя выйти за её пределы.
+    📁 base directory for all file operations, for example   BASE_DIR = '/design';
+    returns an absolute path inside public/design,
+    guaranteeing that it cannot escape its boundaries.
     */
 
     private function checkPath(string $name): void
     {
-        // убираем две точки всякие выкрутассы
+        // remove ".." and other tricks
         if (strpos($name, '..') !== false) {
-            throw new \RuntimeException("Недопустимое '..' в $name");
+            throw new \RuntimeException("invalid '..' in $name");
         }
 
-        // убираем две точки всякие выкрутассы
+        // remove ".." and other tricks
         if (strpos($name, '//') !== false) {
-            throw new \RuntimeException("Недопустимое '//' в $name");
+            throw new \RuntimeException("invalid '//' in $name");
         }
 
-        // начальная директория
-        $startDir = public_path(FILES_JS_UPLOAD) . "/";
+        // start directory
+        $startDir = public_path(MagicGlobals::$INI['PUBLIC_UPLOAD_DIR']);
 
         if (!str_starts_with($name, $startDir)) {
-            throw new \RuntimeException("Запрещён доступ вне $startDir");
+            throw new \RuntimeException("access outside $startDir is forbidden");
         }
     }
 
@@ -95,19 +92,19 @@ class API_FileManagerPostController extends Controller
         $startPath = realpath(public_path(MagicGlobals::$magicStorageDir));
         $fileName = realpath($fileName);
 
-        // Если файла нет или не удалось определить путь — исключение
+        // if the file does not exist or the path could not be resolved — throw
         if (!$fileName) {
-            throw new \Exception("Файл не найден: $fileName");
+            throw new \Exception("file not found: $fileName");
         }
 
         if (is_dir($fileName)) {
-            throw new \Exception("Это директория " . $fileName);
+            throw new \Exception("this is a directory " . $fileName);
         }
 
 
-        // Проверка принадлежности директории
+        // check allowed directory
         if (!str_starts_with($fileName, $startPath . DIRECTORY_SEPARATOR)) {
-            throw new \Exception("Файл вне разрешённой директории");
+            throw new \Exception("file is outside the allowed directory");
         }
     }
 
@@ -129,13 +126,13 @@ class API_FileManagerPostController extends Controller
         $this->validateEditExtension($fileName);
         $fileData = $request->input('fileData');
 
-        // Пишем файл
+        // write file
         $status = @file_put_contents($fileName, $fileData);
 
-        // Если запись не удалась
+        // if write failed
         if ($status === false) {
             $e = error_get_last();
-            throw new \Exception("Ошибка сохранения: $fileName " . ($e['message'] ?? ''));
+            throw new \Exception("save error: $fileName " . ($e['message'] ?? ''));
         }
 
         return ['status' => 1];
@@ -143,25 +140,25 @@ class API_FileManagerPostController extends Controller
 
 
 
-    // Старт возвращает стартовую директорию
+    // start returns the start directory
     private function start(Request $request): array
     {
 
-        $path = Str::start(FILES_JS_UPLOAD, '/');
+        $path = Str::start(MagicGlobals::$INI['PUBLIC_UPLOAD_DIR'], '/');
         $path = Str::finish($path, '/');
 
         return ['startDirectory' => $path];
     }
 
     // ==================================
-    // 📂 Список директорий и файлов
+    // 📂 directory and file list
     private function dirList(Request $request): array
     {
         $basePath = public_path($request->string('path')->toString());
         $this->checkPath($basePath);
 
         if (!is_dir($basePath)) {
-            throw new \InvalidArgumentException("Директория '{$basePath}' не найдена");
+            throw new \InvalidArgumentException("directory '{$basePath}' not found");
         }
 
         $dirs = [];
@@ -214,7 +211,7 @@ class API_FileManagerPostController extends Controller
     }
 
     // ==================================
-    // 📁 Создание папки (без права выполнения)
+    // 📁 create folder (no execute permission)
     private function mkdir(Request $request): array
     {
 
@@ -223,25 +220,25 @@ class API_FileManagerPostController extends Controller
         $this->checkPath($folderName);
 
         if (File::exists($folderName)) {
-            throw new \RuntimeException("Папка '{$folderName}' уже существует");
+            throw new \RuntimeException("folder '{$folderName}' already exists");
         }
 
         if (!mkdir($folderName, 0755, true)) {
-            throw new \RuntimeException("Не удалось создать папку '{$folderName}'");
+            throw new \RuntimeException("failed to create folder '{$folderName}'");
         }
 
         return ['created' => $folderName];
     }
 
     // ==================================
-    // ⬆️ Потоковая загрузка файла без X-заголовков
+    // ⬆️ streamed file upload without x-headers
     private function uploadBin(Request $request): array
     {
         $basePath = public_path($request->string('path')->toString());
         $this->checkPath($basePath);
 
         if (!is_dir($basePath)) {
-            throw new \InvalidArgumentException("Путь '{$basePath}' не существует");
+            throw new \InvalidArgumentException("path '{$basePath}' does not exist");
         }
 
         $fileName = $request->string('filename')->toString() ?: 'upload.bin';
@@ -254,7 +251,7 @@ class API_FileManagerPostController extends Controller
         $dest   = fopen($fullPath, 'wb');
 
         if (!$stream || !$dest) {
-            throw new \RuntimeException('Ошибка открытия потоков');
+            throw new \RuntimeException('failed to open streams');
         }
 
 
@@ -295,27 +292,27 @@ class API_FileManagerPostController extends Controller
     }
 
     // ==================================
-    // ⬆️ Загрузка файла (Base64)
+    // ⬆️ file upload (base64)
     private function upload(Request $request): array
     {
         $basePath = public_path($request->string('path')->toString());
         $this->checkPath($basePath);
 
         if (!is_dir($basePath)) {
-            throw new \InvalidArgumentException("Путь '{$basePath}' не существует");
+            throw new \InvalidArgumentException("path '{$basePath}' does not exist");
         }
 
         $base64   = $request->input('file');
         $fileName = $request->input('filename') ?? 'upload.bin';
 
         if (!$base64) {
-            throw new \InvalidArgumentException('Файл не передан');
+            throw new \InvalidArgumentException('file not provided');
         }
         $this->validateExtension($fileName);
 
         $decoded = base64_decode($base64);
         if ($decoded === false) {
-            throw new \InvalidArgumentException('Ошибка декодирования файла');
+            throw new \InvalidArgumentException('file decode error');
         }
 
         $fullPath = rtrim($basePath, '/') . '/' . $fileName;
@@ -350,14 +347,14 @@ class API_FileManagerPostController extends Controller
     }
 
     // ==================================
-    // ❌ Удаление файла или папки
+    // ❌ delete file or folder
     private function delete(Request $request): array
     {
         $deleteFile = public_path($request->string('deleteFile')->toString());
         $this->checkPath($deleteFile);
 
         if (!File::exists($deleteFile)) {
-            throw new \RuntimeException("Элемент '{$deleteFile}' не найден");
+            throw new \RuntimeException("item '{$deleteFile}' not found");
         }
 
         File::isDirectory($deleteFile)
@@ -368,7 +365,7 @@ class API_FileManagerPostController extends Controller
     }
 
     // ==================================
-    // ✏️ Переименование файла/папки
+    // ✏️ rename file/folder
     private function rename(Request $request): array
     {
 
@@ -379,11 +376,11 @@ class API_FileManagerPostController extends Controller
         $this->checkPath($newName);
 
         if (!File::exists($oldName)) {
-            throw new \RuntimeException("Элемент '{$oldName}' не найден");
+            throw new \RuntimeException("item '{$oldName}' not found");
         }
 
         if (File::exists($newName)) {
-            throw new \RuntimeException("Элемент '{$newName}' уже существует");
+            throw new \RuntimeException("item '{$newName}' already exists");
         }
 
         rename($oldName, $newName);
@@ -392,11 +389,11 @@ class API_FileManagerPostController extends Controller
     }
 
     // ==================================
-    // ⬆️ Проверка расширения загрузки
+    // ⬆️ upload extension validation
     private function validateExtension(string $fileName): void
     {
         $allowed = [
-            // Изображения
+            // images
             'jpg',
             'jpeg',
             'jpe',
@@ -408,7 +405,7 @@ class API_FileManagerPostController extends Controller
             'ico',
             'psd',
             'nef',
-            // Документы
+            // documents
             'pdf',
             'doc',
             'docx',
@@ -421,27 +418,27 @@ class API_FileManagerPostController extends Controller
             'odt',
             'ods',
             'odp',
-            // Аудио
+            // audio
             'mp3',
             'wav',
             'ogg',
             'aac',
             'flac',
-            // Видео
+            // video
             'mp4',
             'avi',
             'mkv',
             'mov',
             'wmv',
             'webm',
-            // Архивы
+            // archives
             'zip',
             'rar',
             '7z',
             'tar',
             'gz',
             'tar.gz',
-            // Данные
+            // data
             'csv',
             'css',
             'js',
@@ -449,18 +446,18 @@ class API_FileManagerPostController extends Controller
             'xml',
             'sql',
             'md',
-            // Другое
+            // other
             'ics',
             'vcf',
         ];
         $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
 
         if (!$ext || !in_array($ext, $allowed, true)) {
-            throw new \InvalidArgumentException("Недопустимое расширение файла: {$ext}");
+            throw new \InvalidArgumentException("invalid file extension: {$ext}");
         }
     }
 
-    // ⬆️ Проверка расширения 
+    // ⬆️ edit extension validation
     private function validateEditExtension(string $fileName): void
     {
         $allowed = [
@@ -477,7 +474,7 @@ class API_FileManagerPostController extends Controller
         $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
 
         if (!$ext || !in_array($ext, $allowed, true)) {
-            throw new \InvalidArgumentException("Недопустимое расширение файла: {$ext}");
+            throw new \InvalidArgumentException("invalid file extension: {$ext}");
         }
     }
 }

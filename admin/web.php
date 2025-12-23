@@ -117,7 +117,14 @@ use MagicProSrc\Routing\DynamicRouteHandler;
 
 // 🚫 Сегменты, которые не должны попадать в динамический роутинг
 // 🧩 Формируем регулярку: отрицательное совпадение (всё, кроме этих)
-$pattern = '^(?!(' . implode('|', array_map('preg_quote', MagicGlobals::$INI['EXCLUDED_ROUTES'])) . ')).*$';
+
+//  удаление стартовых и завершающих слешей
+$removeStartSlash = array_map(function ($route) {
+    return trim($route, '/');
+}, MagicGlobals::$INI['EXCLUDED_ROUTES']);
+
+$pattern = '^(?!(' . implode('|', array_map('preg_quote', $removeStartSlash)) . ')).*$';
+
 
 // ⚙️ Динамический маршрут
 Route::any('{any?}', [DynamicRouteHandler::class, 'handle'])

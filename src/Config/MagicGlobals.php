@@ -28,7 +28,7 @@ class MagicGlobals
         self::loadLocal();
 
         // 📁 Где лежат данные MagicPro
-        define('MAGIC_DATA_DIR', base_path('dataMagicPro'));
+        define('MAGIC_DATA_DIR', base_path('/dataMagicPro'));
 
         // ⚙️ Контроллеры статей (создаются композером с правами www-data)
         define('MAGIC_CONTROLLER_DIR', MAGIC_DATA_DIR . '/controller');
@@ -36,17 +36,14 @@ class MagicGlobals
         // 📄 Каталог вьюх статей
         define('MAGIC_VIEW_DIR', MAGIC_DATA_DIR . '/view');
 
-        // 📦 Папка для загрузки изображений (относительный путь для JS)
-        define('FILES_JS_UPLOAD', 'design');
-
-        // 💾 Абсолютный путь к папке загрузок на сервере
-        define('FILES_UPLOAD_DIRECTORY', base_path('public') . '/' . FILES_JS_UPLOAD);
-
         // 💾 Путь к папке вендор где лежить мпро
         define('VENDOR_FROM', base_path('vendor/dixipro/magicpro/readyBundle/'));
 
         // 💾 Путь к папке вендор где лежить мпро
         define('VENDOR_PUBLIC', base_path('public/vendor/magicpro/'));
+
+        // 💾 Каталог генерации HTML-кеша, от корня проекта
+        define('STATIC_HTML_CREATE_DIR', base_path('storage/app/private/magic/html'));
 
 
 
@@ -61,49 +58,12 @@ class MagicGlobals
                 'desc'  => 'Контроллеры статей'
             ],
             [
-                'value' => FILES_UPLOAD_DIRECTORY,
+                'value' => public_path(MagicGlobals::$INI['PUBLIC_UPLOAD_DIR']),
                 'desc'  => 'Файлы на сервере'
             ],
         ]);
 
         define('ART_NAME_404', 'error404');
-
-        define('ENABLE_URL_PARAMS', [
-            // Стандартные UTM
-            'utm_source',
-            'utm_medium',
-            'utm_campaign',
-            'utm_term',
-            'utm_content',
-
-            // Рекламные идентификаторы
-            'gclid',     // Google Ads
-            'fbclid',    // Facebook / Instagram
-            'yclid',     // Яндекс.Директ
-            'ttclid',    // TikTok Ads
-            'msclkid',   // Microsoft Ads (Bing)
-
-            // Альтернативные трекинги
-            '_openstat', // Яндекс, Mail.ru
-            // 'aff_id',    // Партнёрские ID
-            // 'ref',
-            // 'partner_id',
-            // 'click_id',
-            // 'cid',
-            // 'track_id',
-        ]);
-
-        define('EXCLUDED_ROUTES', [
-            'livewire',
-            'telescope',
-            'horizon',
-            'nova',
-            'debugbar',
-            'admin',
-            'public',
-            'f_ilament',
-            'storage'
-        ]);
     }
 
     // загрузка локальных настроек

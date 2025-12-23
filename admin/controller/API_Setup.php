@@ -5,10 +5,12 @@ namespace MagicProAdminControllers;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use MagicProSrc\Config\MagicGlobals; // Глобальные константы
+use MagicProSrc\Config\MagicGlobals; // global constants
 use MagicProSrc\MagicFile;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
+use MagicProSrc\MagicLang;
+
 
 class API_Setup extends Controller
 {
@@ -28,6 +30,7 @@ class API_Setup extends Controller
                 'deleteFromStorage'  => ['name' => 'deleteFromStorage'],
                 'processUrl'         => ['name' => 'processUrl'],
                 'startHtmlCache'     => ['name' => 'startHtmlCache'],
+                'restoreParams'      => ['name' => 'restoreParams'],
 
 
             ];
@@ -64,7 +67,17 @@ class API_Setup extends Controller
     }
 
     // ================================
-    // 📋 сохраненные результаты
+    private function restoreParams(): array
+    {
+
+        if (!File::delete(base_path(MagicGlobals::$localIniFile))) {
+            throw new \RuntimeException('Error deleting file ' . base_path(MagicGlobals::$localIniFile));
+        }
+        return [];
+    }
+
+
+    // 📋 saved results
     private function getCrawlerResults(Request $request): array
     {
         $path  = base_path(MagicGlobals::$magicStorageDir) . "/crawlerResult.json";
@@ -75,7 +88,7 @@ class API_Setup extends Controller
         return ['result' => $data];
     }
 
-    // 📋 сохраненные результаты
+    // 📋 saved results
     private function saveCrawlerResults(Request $request): array
     {
         $savedData = $request->input('savedData');
@@ -89,11 +102,11 @@ class API_Setup extends Controller
 
 
 
-    // 📋 считать параметры
+    // 📋 read parameters
     private function getDirStatus(Request $request): array
     {
         $publicDir  = base_path(MagicGlobals::$INI['STATIC_HTML_DIR']) . "/";
-        $storageDir = base_path(MagicGlobals::$INI['STATIC_HTML_CREATE_DIR'])  . "/";
+        $storageDir = STATIC_HTML_CREATE_DIR  . "/";
         return [
             'storageDirStatus' =>  is_dir($storageDir),
             'publicDirStatus' =>  is_dir($publicDir)
@@ -105,18 +118,18 @@ class API_Setup extends Controller
 
         $this->deleteFromPublic();
 
-        $from = base_path(MagicGlobals::$INI['STATIC_HTML_CREATE_DIR']) . "/";
+        $from = STATIC_HTML_CREATE_DIR . "/";
         $to =  base_path(MagicGlobals::$INI['STATIC_HTML_DIR']) . "/";
         $res = File::copyDirectory($from, $to);
         if (!$res) {
-            throw new \InvalidArgumentException("Ошибка копирования");
+            throw new \InvalidArgumentException("copy error");
         }
         return [];
     }
 
     private function processUrl(Request $request): array
     {
-        //  объявление до try, что бы вернут если что в кетч
+        //  declared before try so it can be returned in catch if needed
         $body = '';
         $saveStatus = false;
         $url = '';
@@ -126,7 +139,7 @@ class API_Setup extends Controller
             $saveToFile = $request->input('saveToFile') ?? false;
 
             $res = Http::withOptions([
-                'verify' => false,     // если иногда падает SSL
+                'verify' => false,     // ssl may sometimes fail
                 'timeout' => 3,
                 'follow_redirects' => false,
             ])->get($url);
@@ -134,14 +147,14 @@ class API_Setup extends Controller
             if ($res->status() !== 200) {
                 throw new \InvalidArgumentException($res->status());
             }
-            // Сохранение
+            // save
             if (
                 $saveToFile  &&
-                $body !== false && // тело есть 
+                $body !== false && // body exists 
                 str_starts_with($res->header('Content-Type'), 'text')
             ) {
                 $body = $res->body();
-                $this->saveHtmlFile($url, $body); // если ошибка выкинет исключение
+                $this->saveHtmlFile($url, $body); // will throw an exception on error
                 $saveStatus = true;
             }
 
@@ -163,57 +176,58 @@ class API_Setup extends Controller
         }
     }
 
-
     private function saveHtmlFile(string $url, string $body): void
     {
-        // Берём только path (без протокола, домена и параметров)
+        // take only the path (without protocol, domain, and parameters)
         $path = parse_url($url, PHP_URL_PATH) ?? '/';
         $ext = pathinfo($path, PATHINFO_EXTENSION);
         $ext = $ext ? $ext : 'html';
 
 
-        // Корневая страница
+        // root page
         if ($path === '/' || $path === '' || $path === null) {
             $path = '/index';
         }
-        // если ошибка выкинет исключение
+        // will throw an exception on error
         MagicFile::make()
-            ->base()
-            ->dir(MagicGlobals::$INI['STATIC_HTML_CREATE_DIR'])
+            ->dir(STATIC_HTML_CREATE_DIR)
             ->name($path)
             ->ext($ext)
             ->put($body);
     }
 
-    // 📋 считать параметры
+    // 📋 read parameters
     private function getIniParams(Request $request): array
     {
         return  MagicGlobals::$INI;
     }
 
-    // 📋 считать параметры
+    // 📋 read parameters
     private function getParamsAttr(): array
     {
-        $schema = require MagicGlobals::$dataSchema;;
+        $schema = require MagicGlobals::$dataSchema;
+        foreach ($schema as $key => $value) {
+            $schema[$key]['label'] = MagicLang::getMsg($value['label']);
+        }
         return  $schema;
     }
 
-    // сохранить параметры
+    // save parameters
     private function saveIniParams(Request $request): array
     {
         $allVars = $request->input('allVars');
         return  MagicGlobals::saveIniFile($allVars);
     }
     // 
-    // Удалить из стораджа
+    // delete from storage
     private function deleteFromStorage(): array
     {
-        $dir = base_path(MagicGlobals::$INI['STATIC_HTML_CREATE_DIR'])  . "/";
+        $dir = STATIC_HTML_CREATE_DIR;
 
         if (is_dir($dir)) {
             $res = $dir  = File::deleteDirectory($dir);
             if (!$res) {
-                throw new \InvalidArgumentException("Ошибка удаления стораджа");
+                throw new \InvalidArgumentException("storage delete error");
             }
         }
 
@@ -224,7 +238,7 @@ class API_Setup extends Controller
         return [];
     }
     // 
-    // Удалить из публика
+    // delete from public
     private function deleteFromPublic(): array
     {
         $dir  = base_path(MagicGlobals::$INI['STATIC_HTML_DIR']) . "/";
@@ -235,7 +249,7 @@ class API_Setup extends Controller
 
         $res  = File::deleteDirectory($dir);
         if (!$res) {
-            throw new \InvalidArgumentException("Ошибка удаления паблик");
+            throw new \InvalidArgumentException("public delete error");
         }
         return [];
     }

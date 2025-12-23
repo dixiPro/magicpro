@@ -68,84 +68,8 @@ class API_ArticlesPostController extends Controller
     }
 
     // ==================================================================
-    //                     ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ
+    //                     helper methods
     // ==================================================================
-
-    private function saveHtmlFile(string $url, string $body): void
-    {
-        // Берём только path (без протокола, домена и параметров)
-        $path = parse_url($url, PHP_URL_PATH) ?? '/';
-
-        // Корневая страница
-        if ($path === '/' || $path === '' || $path === null) {
-            $fullPath = public_path('_html/index.html');
-        } else {
-            // Приводим путь к html/<path>.html
-            // /test → html/test.html
-            // /a/b/  → html/a/b/index.html
-            // /a/b   → html/a/b.html
-            $path = rtrim($path, '/');
-
-            if ($path === '') {
-                $fullPath = public_path('_html/index.html');
-            } elseif (str_contains($path, '/')) {
-                // Поддиректории
-                $dir = public_path('html/' . dirname($path));
-                @mkdir($dir, 0777, true);
-                $fullPath = public_path('_html/' . $path . '.html');
-            } else {
-                // Обычный файл
-                $fullPath = public_path('_html/' . $path . '.html');
-            }
-        }
-
-        // Создать директорию если её нет
-        @mkdir(dirname($fullPath), 0777, true);
-
-        // Пишем файл
-        file_put_contents($fullPath, $body);
-    }
-
-    private function checkUrlByPhp(Request $request): array
-    {
-        $url = $request->input('url');
-
-        $host = parse_url($url, PHP_URL_HOST);
-
-        $resolve = [];
-        if (str_ends_with($host, '.test')) {
-            $resolve[] = "$host:80:192.168.1.33";
-            $resolve[] = "$host:443:192.168.1.33";
-        }
-
-        $ch = curl_init($url);
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 10,
-            CURLOPT_RESOLVE => $resolve,
-        ]);
-
-        $body = curl_exec($ch);
-        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $contentType = curl_getinfo($ch, CURLINFO_CONTENT_TYPE) ?? '';
-
-        curl_close($ch);
-
-        if (
-            $code === 200 &&  $body !== false && str_starts_with($contentType, 'text/html')
-        ) {
-            // $this->saveHtmlFile($url, $body);
-        }
-
-        return [
-            'check' => ($code >= 200 && $code < 400),
-            'code'   => $code,
-            'body' => $body,
-            'url' => $url
-        ];
-    }
-
 
     private function search(Request $request): array
     {
@@ -202,7 +126,7 @@ class API_ArticlesPostController extends Controller
         $name = $request->input('name');
         $article = Article::where('name', $name)->first();
         if (!$article) {
-            throw new \InvalidArgumentException("Статья с name='{$name}' не найдена");
+            throw new \InvalidArgumentException("Article with name='{$name}' was not found");
         }
         return $article->toArray();
     }
@@ -270,7 +194,7 @@ class API_ArticlesPostController extends Controller
             : (function () use ($idBrotherUp, $parentId) {
                 $bro = Article::lockForUpdate()->findOrFail($idBrotherUp);
                 if ((int) $bro->parentId !== $parentId) {
-                    throw new \InvalidArgumentException('idBrotherUp не из того же parentId');
+                    throw new \InvalidArgumentException('idBrotherUp is not from the same parentId');
                 }
                 return (int) $bro->npp + 1;
             })();
@@ -304,7 +228,7 @@ class API_ArticlesPostController extends Controller
         return DB::transaction(function () use ($a, $newParentId, $idBrotherUp) {
             $oldParentId = (int) $a->parentId;
             if ($newParentId === $oldParentId) {
-                throw new \InvalidArgumentException('newParentId равен текущему parentId');
+                throw new \InvalidArgumentException('newParentId is equal to the current parentId');
             }
 
             $oldNpp = (int) $a->npp;
@@ -318,7 +242,7 @@ class API_ArticlesPostController extends Controller
             if ($idBrotherUp !== 0) {
                 $bro = Article::lockForUpdate()->findOrFail($idBrotherUp);
                 if ((int) $bro->parentId !== $newParentId) {
-                    throw new \InvalidArgumentException('idBrotherUp принадлежит другому parentId');
+                    throw new \InvalidArgumentException('idBrotherUp belongs to a different parentId');
                 }
                 $pos = (int) $bro->npp + 1;
             }
@@ -400,7 +324,7 @@ class API_ArticlesPostController extends Controller
     {
         $id = $request->integer('id');
         if ($id === 1) {
-            throw new \InvalidArgumentException('Удалять рут нельзя');
+            throw new \InvalidArgumentException('Root cannot be deleted');
         }
 
         return DB::transaction(function () use ($id) {
@@ -412,7 +336,7 @@ class API_ArticlesPostController extends Controller
     {
         $article = Article::find($id);
         if (!$article) {
-            throw new \InvalidArgumentException("Удаление: id={$id} не найден");
+            throw new \InvalidArgumentException("Delete failed: id={$id} not found");
         }
 
         $parent = Article::find($article->parentId);
@@ -447,14 +371,14 @@ class API_ArticlesPostController extends Controller
 
         while (true) {
             if (++$i > $maxDepth) {
-                throw new \InvalidArgumentException("Слишком глубокая или зацикленная иерархия (id={$id})");
+                throw new \InvalidArgumentException("Hierarchy is too deep or cyclic (id={$id})");
             }
 
             $article = Article::where('id', $curId)
                 ->first(['id', 'title as text', 'npp', 'parentId', 'menuOn', 'isRoute', 'directory']);
 
             if (!$article) {
-                throw new \InvalidArgumentException("Статья id={$curId} не найдена");
+                throw new \InvalidArgumentException("Article id={$curId} not found");
             }
 
             $node = $article->toArray();
@@ -535,7 +459,7 @@ class API_ArticlesPostController extends Controller
         $id = $request->integer('id');
         $article = Article::find($id);
         if (!$article) {
-            throw new \InvalidArgumentException("id={$id} не найден");
+            throw new \InvalidArgumentException("id={$id} not found");
         }
 
         return Article::where('parentId', $article->parentId)

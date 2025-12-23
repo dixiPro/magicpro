@@ -4,16 +4,18 @@
 
 @extends('magicAdmin::templateAdmin')
 
-@section('title', 'Админка 1.1.3')
+@section('title')
+    @magic_msg('title') @magic_msg('vesrsion')
+@endsection
 
 @section('body')
-    <h1>Админка</h1>
+    <h1>@magic_msg('title') @magic_msg('vesrsion')</h1>
 
     <ul class="nav nav-tabs">
-        <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#t1">Старт</a></li>
-        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#t2">Setup</a></li>
-        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#t3">Import</a></li>
-        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#t4">Export</a></li>
+        <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#t1">@magic_msg('start')</a></li>
+        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#t2">@magic_msg('setup')</a></li>
+        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#t3">@magic_msg('import_tab')</a></li>
+        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#t4">@magic_msg('export_tab')</a></li>
     </ul>
     <div class="tab-content mt-3">
 
@@ -28,24 +30,24 @@
                 {{ now() }} {{ now()->timezoneName }}
             </div>
             <div>
-                <a href="{{ route('magic.cleatCahe') }}">Очистить кеш</a>
+                <a href="{{ route('magic.cleatCahe') }}">@magic_msg('cache_clear')</a>
             </div>
             {{-- Чистим кеш --}}
             @if (session('clearCacheStatus'))
                 <div class="alert alert-info">
-                    <p>Результат очистки кеша: 0 - успех</p>
+                    <p>@magic_msg('cahceDelteResult')</p>
                     <ul>
-                        <li>Кеш: {{ session('clearCacheStatus.cache') }}</li>
-                        <li>Конфиг: {{ session('clearCacheStatus.config') }}</li>
-                        <li>Маршруты: {{ session('clearCacheStatus.route') }}</li>
-                        <li>Вьюхи: {{ session('clearCacheStatus.view') }}</li>
-                        <li>События: {{ session('clearCacheStatus.event') }}</li>
+                        <li>@magic_msg('cache'): {{ session('clearCacheStatus.cache') }}</li>
+                        <li>@magic_msg('config'): {{ session('clearCacheStatus.config') }}</li>
+                        <li>@magic_msg('routes'): {{ session('clearCacheStatus.route') }}</li>
+                        <li>@magic_msg('views'): {{ session('clearCacheStatus.view') }}</li>
+                        <li>@magic_msg('events'): {{ session('clearCacheStatus.event') }}</li>
                     </ul>
                 </div>
             @endif
 
             <div>
-                <a href="{{ route('magic.testWrite') }}">Права на запись</a>
+                <a href="{{ route('magic.testWrite') }}">@magic_msg('write_permissions')</a>
             </div>
 
             @if (session('testWriteStatus'))
@@ -67,7 +69,7 @@
                 })
                 .then(r => r.json())
                 .then(data => document.getElementById('result').textContent = JSON.stringify(data, null, 2))">
-                    Перегенирация статей
+                    @magic_msg('regenerate_articles')
                 </a>
                 <pre id="result"></pre>
             </div>
@@ -86,24 +88,24 @@
         </div>
         <div class="tab-pane fade" id="t4">
             <div>
-                <a href="{{ route('magic.exportArticle', ['id' => 1]) }}">Экспорт таблицы Article</a>
+                <a href="{{ route('magic.exportArticle', ['id' => 1]) }}">@magic_msg('export_article_table')</a>
             </div>
 
             <div>
-                <a href="{{ route('magic.downloadDb') }}">Экспорт БД</a>
+                <a href="{{ route('magic.downloadDb') }}">@magic_msg('export_db')</a>
             </div>
 
         </div>
 
         <div class="tab-pane fade" id="t3">
             <div class="my-3">
-                <div class="my-2"><strong>Импорт</strong></div>
+                <div class="my-2"><strong>@magic_msg('import')</strong></div>
                 <form action="/a_dmin/importArticle" method="POST" enctype="multipart/form-data"
                     class="p-3 border rounded bg-light">
                     @csrf
 
                     <div class="mb-3">
-                        <label for="file" class="form-label fw-bold">Выберите файл JSON</label>
+                        <label for="file" class="form-label fw-bold">@magic_msg('select_json_file')</label>
                         <input type="file" name="file" id="file" accept=".json, .xml" class="form-control"
                             required>
                     </div>
@@ -111,9 +113,9 @@
                     <div class="form-check mb-3">
                         <input class="form-check-input" type="checkbox" name="writeBase" value="1" id="writeBase">
                         <label class="form-check-label" for="writeBase">
-                            Записать изменения в базу данных
+                            @magic_msg('save_changes_to_db')
                         </label>
-                        <div class="form-text">Если не отмечено — будет только проверка, без сохранения.</div>
+                        <div class="form-text">@magic_msg('import_check_only_hint')</div>
                     </div>
 
                     <div class="mb-3">
@@ -121,19 +123,19 @@
                             <input class="form-check-input" type="radio" name="typeFile" checked id="typeFileJson"
                                 value="json" required>
                             <label class="form-check-label" for="typeFileJson">
-                                из JSON файла
+                                @magic_msg('from_json')
                             </label>
                         </div>
 
                         <div class="form-check">
                             <input class="form-check-input" type="radio" name="typeFile" id="typeFileXml" value="xml">
                             <label class="form-check-label" for="typeFileXml">
-                                из XML файла
+                                @magic_msg('from_xml')
                             </label>
                         </div>
                     </div>
 
-                    <button type="submit" class="btn btn-primary">Импортировать</button>
+                    <button type="submit" class="btn btn-primary">@magic_msg('import')</button>
                 </form>
 
             </div>
@@ -152,7 +154,7 @@
         </div>
     </div>
 
-    <div class="mt-4">Текущий пользователь</div>
+    <div class="mt-4">@magic_msg('current_user')</div>
 
     @php
         DumpHelper::dump(Auth::guard('magic')->user());

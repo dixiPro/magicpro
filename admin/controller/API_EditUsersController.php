@@ -54,7 +54,7 @@ class API_EditUsersController extends Controller
     }
 
     // ================================
-    // 📋 Список пользователей
+    // 📋 user list
     private function getUserList(Request $request): array
     {
         return MagicProUser::select('id', 'name', 'email', 'role', 'created_at', 'updated_at')
@@ -64,7 +64,7 @@ class API_EditUsersController extends Controller
     }
 
     // ================================
-    // ➕ Добавить пользователя
+    // ➕ add user
     private function addUser(Request $request): array
     {
         $data = (array) $request->input('data');
@@ -80,7 +80,7 @@ class API_EditUsersController extends Controller
     }
 
     // ================================
-    // 💾 Сохранить (редактировать) пользователя
+    // 💾 save (edit) user
     private function editUser(Request $request): array
     {
         $data = (array) $request->input('data');
@@ -88,7 +88,7 @@ class API_EditUsersController extends Controller
 
         $user = MagicProUser::find($id);
         if (!$user) {
-            throw new \RuntimeException("Пользователь #{$id} не найден");
+            throw new \RuntimeException("user #{$id} not found");
         }
 
         $user->fill([
@@ -111,7 +111,7 @@ class API_EditUsersController extends Controller
 
 
     // ================================
-    // ❌ Удалить пользователя
+    // ❌ delete user
     private function deleteUser(Request $request): array
     {
 
@@ -119,12 +119,12 @@ class API_EditUsersController extends Controller
         $id = (int)($data['id'] ?? 0);
 
         if ($id === 1) {
-            throw new \RuntimeException('Удаление пользователя #1 запрещено');
+            throw new \RuntimeException('deleting user #1 is forbidden');
         }
 
         $user = MagicProUser::find($id);
         if (!$user) {
-            throw new \RuntimeException("Пользователь #{$id} не найден");
+            throw new \RuntimeException("user #{$id} not found");
         }
 
         $user->delete();

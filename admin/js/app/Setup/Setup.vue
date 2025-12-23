@@ -42,11 +42,22 @@ async function saveParams() {
 
   await getIniParams();
 }
+
+async function restoreParams() {
+  if (!(await document.confirmDialog('Сбросить?'))) {
+    return;
+  }
+  iniParams.value = await apiSetup({
+    command: 'restoreParams',
+    allVars: iniParams.value,
+  });
+  document.showToast('Сохранено');
+
+  await getIniParams();
+}
 </script>
 
 <template>
-  <h1>Setup 1.1</h1>
-
   <div v-if="ready">
     <div class="row my-3" v-for="(value, key) in paramsAttr" :key="key">
       <div class="col-3">
@@ -67,8 +78,8 @@ async function saveParams() {
       </div>
     </div>
     <div class="row">
-      <div class="col-3"></div>
-      <div class="col-md-5"><button class="btn btn-sm btn-success" @click="saveParams">Сохранить</button></div>
+      <div class="col-md-5 text-center"><button class="btn btn-sm btn-success" @click="saveParams">Сохранить</button></div>
+      <div class="col-md-3 text-end"><button class="btn btn-sm btn-danger" @click="restoreParams">Сбросить</button></div>
     </div>
   </div>
 

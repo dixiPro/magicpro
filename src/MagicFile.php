@@ -3,6 +3,7 @@
 namespace MagicProSrc;
 
 use Illuminate\Support\Facades\File;
+use RuntimeException;
 
 class MagicFile
 {
@@ -10,6 +11,30 @@ class MagicFile
     protected string $dir  = '';   // директория или пусто
     protected string $name = '';   // имя файла (обязательно)
     protected string $ext  = '';   // расширение или пусто
+
+    // не доделана
+    public static function saveToBasePathFile($filename, $content): void
+    {
+        $filename = base_path($filename);
+        self::saveToFile($filename, $content);
+        return;
+    }
+
+    public static function saveToFile($filename, $content): void
+    {
+        $dir = dirname($filename);
+
+        if (!is_dir($dir)) {
+            if (false === @mkdir($dir, 0775, true) && !is_dir($dir)) {
+                throw new RuntimeException(sprintf('Unable to create directory "%s".', $dir));
+            }
+        }
+        if (false === @file_put_contents($filename, $content)) {
+            throw new RuntimeException(sprintf('Failed to write file "%s".', $filename));
+        }
+        clearstatcache(true, $filename);
+        return;
+    }
 
     public static function make(): self
     {
@@ -65,7 +90,7 @@ class MagicFile
     protected function buildPath(): string
     {
         if ($this->name === '') {
-            throw new \Exception("Не указано имя файла");
+            throw new \Exception("Require filename");
         }
 
         $parts = [];
@@ -86,7 +111,7 @@ class MagicFile
         $parts[] = $file;
 
         // собрать и нормализовать
-        return preg_replace('#/+#', '/', implode('/', $parts));
+        return preg_replace('#/+#', '/', '/' . implode('/', $parts));
     }
 
     public function put(string $content)
