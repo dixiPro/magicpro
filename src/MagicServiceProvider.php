@@ -27,13 +27,6 @@ class MagicServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
-        // Lang::addnamespace('magicpro', __dir__ . '/../lang');
-        // Lang::setLocale('ru');
-        // Регистрируем Blade директивы
-
-        MagicLang::loadLocale(MagicGlobals::$INI['LANGUAGE']);
-        // MagicLang::loadLocale('ru');
-
         // Регистрируем artisan-команду
         if ($this->app->runningInConsole()) {
             $this->commands([
@@ -101,21 +94,14 @@ class MagicServiceProvider extends ServiceProvider
         // //
         Blade::componentNamespace('MagicProControllers', 'magic');
 
-        // $this->app->booted(
-        //     fn() =>
-        //     $this->app->instance(ComponentRegistry::class, new LivewireComponentRegistry($this->app))
-        // );
+        // Override Livewire's default ComponentRegistry with a custom implementation
+        // <livewire:magic::articleName />
+        $this->app->extend(ComponentRegistry::class, fn($r, $app) => new LivewireComponentRegistry($app));
     }
 
     public function register(): void
     {
         MagicGlobals::register(); // Константы глобальные
-
-        // Override Livewire's default ComponentRegistry with a custom implementation
-        // Example: register a Livewire component manually (currently commented out)
-        // <livewire:magic::articleName />
-
-        // $this->app->extend(ComponentRegistry::class, fn($r, $app) => new LivewireComponentRegistry($app));
-        $this->app->extend(ComponentRegistry::class, fn($r, $app) => new LivewireComponentRegistry($app));
+        MagicLang::loadLocale(MagicGlobals::$INI['LANGUAGE']);
     }
 }

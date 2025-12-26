@@ -55,6 +55,9 @@ app.use(ToastService);
 import { createPinia } from 'pinia';
 app.use(createPinia());
 
+import i18n from './app/CommonCom/translate';
+app.use(i18n);
+
 app.mount('#art_editor');
 
 import * as ApiCallFunctions from './app/apiCall.js';

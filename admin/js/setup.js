@@ -34,6 +34,7 @@ const components = [
 ];
 
 import Setup from './app/Setup/Setup.vue';
+
 const app = createApp(Setup);
 
 // регистрац компонентов
@@ -52,5 +53,8 @@ app.use(PrimeVue, {
 
 app.use(ConfirmationService);
 app.use(ToastService);
+
+import i18n from './app/CommonCom/translate';
+app.use(i18n);
 
 app.mount('#setup');

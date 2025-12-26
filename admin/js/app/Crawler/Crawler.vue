@@ -3,21 +3,24 @@ import { ref, computed, onMounted, onUnmounted, nextTick, watch, useId, toRaw, u
 import { apiSetup, apiCall } from '../apiCall';
 import TosatConfirm from '../CommonCom/ToastConfirm.vue';
 
-// стартовые параметры
+import { useI18n } from 'vue-i18n';
+const { t } = useI18n();
+
+// initial params
 let iniParams = ref({});
 
 const ready = ref(false);
 
-// результаты
+// results
 const result = ref({});
 
-// экстренный стоп
+// emergency stop
 const stop = ref(false);
 
-// статус обхода
+// crawl status
 const status = ref('start');
 
-// Количество обнаруженных ссылок
+// Number of discovered links
 const statistics = ref({
   total: 0,
   error: 0,
@@ -32,7 +35,7 @@ function cleatStatistic() {
   statistics.value.nowReading = 0;
 }
 
-// статус кеша
+// cache status
 const storageDirStatus = ref(false);
 const publicDirStatus = ref(false);
 
@@ -49,7 +52,7 @@ async function getCrawlerResults() {
       const v = JSON.parse(str);
       return v && typeof v === 'object' ? v : {};
     } catch (e) {
-      // document.showToast('JSON parse error. Ошибка в сохраненных результатах', 'error');
+      // document.showToast('JSON parse error. Error in saved results', 'error');
       return {};
     }
   }
@@ -72,9 +75,9 @@ async function getCrawlerResults() {
 async function getIniParams() {
   try {
     ready.value = false;
-    // начальные параметры
-    // добавить EXCLUDED_ROUTES домен
-    // добавить RENDER_URL
+    // initial parameters
+    // add EXCLUDED_ROUTES domain
+    // add RENDER_URL
     await nextTick();
     iniParams.value = await apiSetup({
       command: 'getIniParams',
@@ -91,7 +94,7 @@ async function getIniParams() {
       return u;
     });
 
-    // состояние директорий сторадж и публик
+    // storage and public directories status
     const dirStatus = await apiSetup({
       command: 'getDirStatus',
     });
@@ -123,9 +126,9 @@ async function saveResults() {
 //
 function fixUrl(url) {
   try {
-    return new URL(url).href; // абсолютный → не трогаем
+    return new URL(url).href; // absolute → don't touch
   } catch {
-    return new URL(url, location.origin).href; // относительный → добавим домен
+    return new URL(url, location.origin).href; // relative → add domain
   }
 }
 
@@ -174,18 +177,18 @@ async function go(url, parent) {
 
   if (stop.value) return;
 
-  url = url.replace(/#([^?]*)/g, ''); // выбросить якорь из урл
+  url = url.replace(/#([^?]*)/g, ''); // remove anchor from url
 
-  url = fixUrl(url); // добавить http
+  url = fixUrl(url); // add http
 
-  // исключенные адреса
+  // excluded addresses
   if (iniParams.value.EXCLUDED_ROUTES.some((el) => url.startsWith(el))) {
     return;
   }
 
-  // ссылку проверели
+  // link already checked
   if (url in result.value) {
-    // добавляем родителей только с ошибками иначе например на заглавную будет столько ссылок
+    // add parents only for errors, otherwise e.g. the homepage will have too many links
     if (result.value[url].check != 'ok') {
       result.value[url].parentArr.push(parent);
     }
@@ -199,17 +202,17 @@ async function go(url, parent) {
     parentArr: [parent],
   };
 
-  // сохраняем, или не файл или файл из RENDER_URL
+  // save if it's not a file, or it's a file from RENDER_URL
   const path = new URL(url);
 
   const saveToFile =
-    url.startsWith(location.origin) && // текущий домен
-    (iniParams.value.RENDER_URL.some((el) => url.startsWith(el)) || // доп страницы для рендера
-      !path.pathname.includes('.')); // или нет точки
+    url.startsWith(location.origin) && // current domain
+    (iniParams.value.RENDER_URL.some((el) => url.startsWith(el)) || // extra pages to render
+      !path.pathname.includes('.')); // or no dot
 
   try {
-    // проверка и сохранение урла
-    // добавить проверку на файл
+    // url check and save
+    // add file check
 
     const res = await apiSetup({
       command: 'processUrl',
@@ -228,7 +231,7 @@ async function go(url, parent) {
       statistics.value.saveStatus++;
     }
 
-    // проверка на внешние ссылки
+    // check external links
     if (!url.startsWith(location.origin)) {
       return;
     }
@@ -251,7 +254,7 @@ async function deleteFromStorage() {
   await apiSetup({
     command: 'deleteFromStorage',
   });
-  document.showToast('Storage удален');
+  document.showToast(t('toast_storage_deleted'));
   await getIniParams();
 }
 
@@ -259,7 +262,7 @@ async function deleteFromPublic() {
   await apiSetup({
     command: 'deleteFromPublic',
   });
-  document.showToast('Public удален');
+  document.showToast(t('toast_public_deleted'));
   await getIniParams();
 }
 
@@ -268,7 +271,7 @@ async function startHtmlCache() {
     command: 'startHtmlCache',
   });
   await getIniParams();
-  document.showToast('Кеш опубликован');
+  document.showToast(t('toast_cache_published'));
 }
 
 const hasInternalError = computed(() => {
@@ -282,58 +285,54 @@ const hasInternalError = computed(() => {
 </script>
 
 <template>
-  <h1>Crawler 0.9</h1>
+  <h2>{{ t('crawler') }}</h2>
   <table class="table table-sm table-bordered">
     <tbody>
       <tr>
-        <td class="fixed150">total</td>
+        <td class="fixed150">{{ t('total') }}</td>
         <td><span v-text="statistics.total"></span></td>
       </tr>
       <tr>
-        <td>errors</td>
+        <td>{{ t('errors') }}</td>
         <td><span v-text="statistics.error"></span></td>
       </tr>
       <tr>
-        <td>saved</td>
+        <td>{{ t('saved') }}</td>
         <td><span v-text="statistics.saveStatus"></span></td>
       </tr>
       <tr>
-        <td>nowReading</td>
+        <td>{{ t('now_reading') }}</td>
         <td><span v-text="statistics.nowReading"></span></td>
       </tr>
     </tbody>
   </table>
 
   <div v-if="ready">
-    <!-- <div class="my-2">
-      <LoadingButton :action="saveResults">Сохранить результаты</LoadingButton>
-    </div> -->
-
     <div class="my-2">
-      <LoadingButton :action="start" v-if="status == 'start'">Старт</LoadingButton>
+      <LoadingButton :action="start" v-if="status == 'start'">{{ t('start') }}</LoadingButton>
       <button v-if="status == 'working'" class="btn btn-danger fas fa-stop ms-3" @click="stop = true"></button>
     </div>
 
     <div v-if="storageDirStatus">
-      <h4>Кеш создан</h4>
+      <h4>{{ t('cache_created') }}</h4>
 
       <div class="my-2">
-        <LoadingButton :action="deleteFromStorage">Удалить сторадж</LoadingButton>
+        <LoadingButton :action="deleteFromStorage">{{ t('delete_storage') }}</LoadingButton>
       </div>
 
       <div class="my-2">
-        <LoadingButton :action="startHtmlCache">Опубликовать сторадж</LoadingButton>
+        <LoadingButton :action="startHtmlCache">{{ t('publish_storage') }}</LoadingButton>
       </div>
     </div>
     <div v-if="publicDirStatus">
-      <h4>Кеш опубликован</h4>
+      <h4>{{ t('cache_published') }}</h4>
       <div class="my-2">
-        <LoadingButton :action="deleteFromPublic">Удалить опубликованный кеш</LoadingButton>
+        <LoadingButton :action="deleteFromPublic">{{ t('delete_published_cache') }}</LoadingButton>
       </div>
     </div>
 
     <div v-if="status == 'start'">
-      <h3>Error</h3>
+      <h3>{{ t('errors') }}</h3>
       <table class="table table-sm table-bordered">
         <tbody>
           <template v-for="(val, key) in result" :key="key">
@@ -355,7 +354,7 @@ const hasInternalError = computed(() => {
     </div>
 
     <div v-if="status == 'start'">
-      <h3>Ok</h3>
+      <h3>{{ t('ok') }}</h3>
       <table class="table table-sm table-bordered">
         <tbody>
           <template v-for="(val, key) in result" :key="key">
@@ -365,7 +364,9 @@ const hasInternalError = computed(() => {
               </td>
               <td>{{ val.status }}</td>
               <td>{{ val.check }}</td>
-              <td><span v-if="val.saveStatus">сохранен</span></td>
+              <td>
+                <span v-if="val.saveStatus">{{ t('saved_lower') }}</span>
+              </td>
               <td>
                 <span v-for="parent in val.parentArr" class="me-2">
                   <a :href="parent" target="_blank">{{ parent }}</a>

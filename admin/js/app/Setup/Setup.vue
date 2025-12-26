@@ -8,6 +8,9 @@ import EditString from './component/EditString.vue';
 import EditBoolean from './component/EditBoolean.vue';
 import EditArray from './component/EditArray.vue';
 
+import { useI18n } from 'vue-i18n';
+const { t } = useI18n();
+
 const paramsAttr = ref({});
 const iniParams = ref({});
 const ready = ref(false);
@@ -31,27 +34,27 @@ async function getIniParams() {
 }
 
 async function saveParams() {
-  if (!(await document.confirmDialog('Сохранить?'))) {
+  if (!(await document.confirmDialog(t('save')))) {
     return;
   }
   iniParams.value = await apiSetup({
     command: 'saveIniParams',
     allVars: iniParams.value,
   });
-  document.showToast('Сохранено');
+  document.showToast(t('Saved'));
 
   await getIniParams();
 }
 
 async function restoreParams() {
-  if (!(await document.confirmDialog('Сбросить?'))) {
+  if (!(await document.confirmDialog(t('reset')))) {
     return;
   }
   iniParams.value = await apiSetup({
     command: 'restoreParams',
     allVars: iniParams.value,
   });
-  document.showToast('Сохранено');
+  document.showToast(t('reseted'));
 
   await getIniParams();
 }
@@ -78,8 +81,12 @@ async function restoreParams() {
       </div>
     </div>
     <div class="row">
-      <div class="col-md-5 text-center"><button class="btn btn-sm btn-success" @click="saveParams">Сохранить</button></div>
-      <div class="col-md-3 text-end"><button class="btn btn-sm btn-danger" @click="restoreParams">Сбросить</button></div>
+      <div class="col-md-5 text-center">
+        <button class="btn btn-sm btn-success" @click="saveParams">{{ t('save') }}</button>
+      </div>
+      <div class="col-md-3 text-end">
+        <button class="btn btn-sm btn-danger" @click="restoreParams">{{ t('reset') }}</button>
+      </div>
     </div>
   </div>
 

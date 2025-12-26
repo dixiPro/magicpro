@@ -56,5 +56,6 @@ return [
     'render_url'            => 'Дополнительные страницы для рендера статических страниц',
     'enable_url_params' => 'Разрещенные параметры url после ?',
     'language' => 'language ru or en, save and reload',
-    'addition_link' => 'Дополнительные ссылки в админке'
+    'addition_link' => 'Дополнительные ссылки в админке',
+
 ];

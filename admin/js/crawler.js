@@ -51,4 +51,7 @@ app.use(PrimeVue, {
 app.use(ConfirmationService);
 app.use(ToastService);
 
+import i18n from './app/CommonCom/translate';
+app.use(i18n);
+
 app.mount('#crawler');

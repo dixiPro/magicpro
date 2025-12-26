@@ -2,6 +2,9 @@
 import { ref, computed, onMounted, onUnmounted, watch, useId } from 'vue';
 import { apiFile } from '../apiCall';
 
+import { useI18n } from 'vue-i18n';
+const { t } = useI18n();
+
 import ModalWindow from './ModalWindow.vue';
 import AceFileEditor from './AceFileEditor.vue';
 
@@ -46,7 +49,7 @@ async function saveFile() {
     fileName: props.fileName,
     fileData: fileData.value,
   });
-  document.showToast('Сохранен файл ' + props.fileName);
+  document.showToast(t('file_saved') + ' ' + props.fileName);
 }
 
 async function formatFile() {
@@ -76,7 +79,7 @@ async function formatFile() {
       return;
     }
   }
-  document.showToast('Отформатировано');
+  document.showToast(t('formatted'));
   fileData.value = formatted;
 }
 
@@ -88,7 +91,6 @@ const emit = defineEmits(['close']);
     v-model:visible="ms"
     width="props.width"
     height="props.height"
-    header="Имя файла"
     v-if="ready"
     @close="
       emit('close');
@@ -101,7 +103,7 @@ const emit = defineEmits(['close']);
           {{ fileName }}
         </div>
         <div class="mx-2">
-          <button class="btn btn-sm btn-primary" @click="saveFile">Save→</button>
+          <button class="btn btn-sm btn-primary" @click="saveFile">{{ t('save') }}</button>
         </div>
 
         <div class="">
@@ -128,7 +130,6 @@ const emit = defineEmits(['close']);
 }
 :root {
   --p-dialog-header-padding: 0.2rem 1rem;
-  /* новое значение */
 }
 
 .fas,

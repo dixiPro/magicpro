@@ -23,7 +23,7 @@
 
 - **Backend**: Laravel 12
 - **Frontend**: Vue 3, Bootstrap 5, PrimeVue.
-- **DevOps**: Ubuntu, Nginx, SQLite.
+- **DevOps**: Ubuntu, Nginx, SQLite, MySql, Postgres
 
 ### ⚙️ Installation
 
@@ -35,43 +35,13 @@ sudo chown -R :www-data dataMagicPro
 php artisan migrate
 ```
 
-## ⚙️ Installation for dev
-
-Add to main composer
-
-```json
-"repositories": [
-  {
-    "type": "path",
-    "url": "packages/dixipro/magicpro",
-    "options":{
-      "symlink": true
-   }
-  }
-]
-```
-
-```bash
-composer require dixipro/magicpro
-php artisan magicpro:install
-sudo chown -R :www-data dataMagicPro
-php artisan migrate
-##
-cd packages/dixipro/magicpro
-# install fro development
-npm i
-```
-
-**Vite build**
-Vite is configured to build outside the project root.
-
-```bash
-cd packages/dixipro/magicpro
-npm run dev
-npm run build
-```
-
 ### Added / Change
+
+#### 2025-12-25
+
+Multilingual version has been implemented
+
+Installation bugs have been fixed
 
 #### 2025-12-05
 
@@ -91,7 +61,7 @@ Filament has been added to the Magalif site.
 
 Magalif data was exported in JSON format, and inside MagicPro a grabber was implemented that downloaded all this data into Filament.
 
-MagicPro and Filament work together very well. A unified authentication system will be needed later; for now, each one uses its own auth.
+MagicPro and Filament work together very well.
 
 #### 2025-11-12
 
@@ -141,163 +111,5 @@ MagicPro and Filament work together very well. A unified authentication system w
 - Core project foundation
 
 ## Note
-
-### Laravel installation
-
-````bash
-# Install Composer (if not installed)
-php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
-
-php composer-setup.php --install-dir=/usr/local/bin --filename=composer
-
-# Check version
-composer -V
-
-# Create a new Laravel project
-composer create-project laravel/laravel myapp
-
-# Go to the project folder
-cd myapp
-
-# Configure database in .env if needed
-#  Run migrations
-php artisan migrate
-
-# Set Laravel  permissions
-
-```bash
-# юзер в группу www-data
-sudo usermod -a -G www-data $(logname)
-#
-sudo find . -type f -exec chmod 664 {} \;
-sudo find . -type d -exec chmod 775 {} \;
-#
-sudo chgrp -R www-data storage bootstrap/cache public
-sudo chmod 600 .env
-#
-sudo chgrp -R www-data database
-
-
-#?
-php artisan storage:link
-#?
-sudo chown -R $(logname):www-data .
-````
-
-# install livewire
-
-```bash
-composer require livewire/livewire
-```
-
-### change .env
-
-```bash
-APP_URL=mpro2.test
-
-LOG_CHANNEL=daily
-LOG_STACK=single
-LOG_DEPRECATIONS_CHANNEL=null
-LOG_LEVEL=debug
-LOG_DAILY_DAYS=2
-
-DB_CONNECTION=sqlite
-# DB_HOST=127.0.0.1
-# DB_PORT=3306
-# DB_DATABASE=laravel
-# DB_USERNAME=root
-# DB_PASSWORD=
-
-```
-
-### Git cookbook
-
-```bash
-#generate key
-ssh-keygen -t ed25519 -C "ваш_email@пример.com"
-cat ~/.ssh/id_ed25519.pub
-# GitHub →Settings → SSH and GPG keys → New SSH key.
-# https://github.com/settings/keys
-
-ssh -T git@github.com
-```
-
-````bash
-# del local tags
-git tag -l | xargs git tag -d
-# del repo tags
-git push origin --delete $(git tag -l)
-# add tagh
-git tag 1.0.1
-git push origin 1.0.1
-```
-
-### SQlite managment
-
-```bash
-# need RDP X-11
-
-sudo apt install sqlitebrowser
-sqlitebrowser
-
-````
-
-#### Setup RDP on Ubuntu Server
-
-```bash
-sudo apt update
-sudo apt install -y xrdp xfce4
-
-# Set XFCE as the default session
-echo xfce4-session > ~/.xsession
-
-# Restart RDP service
-sudo systemctl restart xrdp
-
-#
-xhost +SI:localuser:root
-
-# On Windows:
-# Run "mstsc" (Remote Desktop Connection)
-# or use MobaXterm: https://mobaxterm.mobatek.net/download.html
-```
-
-### nginx cookbook
-
-```bash
-# configs
-cd /etc/nginx/sites-available
-# active sites
-cd /etc/nginx/sites-enabled
-# make link
-sudo ln -s /etc/nginx/sites-available/example.com /etc/nginx/sites-enabled/
-# check
-sudo nginx -t
-# restart
-sudo systemctl reload nginx
-
-#certbot
-apt install certbot python3-certbot-nginx -y
-certbot --nginx -d new.magalif.ru
-certbot renew --dry-run
-
-
-```
-
-### cookbook difff
-
-```bash
-#remove
-composer remove dixipro/magicpro
-rm -rf vendor/dixipro composer.lock
-composer clear-cache
-composer require dixipro/magicpro:dev-main
-composer require dixipro/magicpro
-
-
-
-# see link page
-ls -la vendor/dixipro/magicpro
-```
 
 MIT © dixiRu

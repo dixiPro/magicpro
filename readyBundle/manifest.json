@@ -1,50 +1,13 @@
 {
-  "_EditFile-BnPBOO2K.js": {
-    "file": "assets/EditFile-BnPBOO2K.js",
-    "name": "EditFile",
-    "imports": [
-      "_ToastConfirm-Dx9X-4_N.js",
-      "__plugin-vue_export-helper-DlAUqK2U.js"
-    ],
-    "css": [
-      "assets/EditFile-ChaIZgqW.css"
-    ]
-  },
-  "_EditFile-ChaIZgqW.css": {
-    "file": "assets/EditFile-ChaIZgqW.css",
-    "src": "_EditFile-ChaIZgqW.css"
-  },
-  "_ToastConfirm-BrjK1KNi.css": {
-    "file": "assets/ToastConfirm-BrjK1KNi.css",
-    "src": "_ToastConfirm-BrjK1KNi.css"
-  },
-  "_ToastConfirm-Dx9X-4_N.js": {
-    "file": "assets/ToastConfirm-Dx9X-4_N.js",
-    "name": "ToastConfirm",
-    "css": [
-      "assets/ToastConfirm-BrjK1KNi.css"
-    ]
-  },
   "__plugin-vue_export-helper-DlAUqK2U.js": {
     "file": "assets/_plugin-vue_export-helper-DlAUqK2U.js",
     "name": "_plugin-vue_export-helper"
   },
-  "_index-BR_Gqmyn.js": {
-    "file": "assets/index-BR_Gqmyn.js",
+  "_index--tihzQqz.js": {
+    "file": "assets/index--tihzQqz.js",
     "name": "index",
     "imports": [
-      "_ToastConfirm-Dx9X-4_N.js"
-    ]
-  },
-  "_index-Bctn7ikr.css": {
-    "file": "assets/index-Bctn7ikr.css",
-    "src": "_index-Bctn7ikr.css"
-  },
-  "_index-C-hXeCQ3.js": {
-    "file": "assets/index-C-hXeCQ3.js",
-    "name": "index",
-    "imports": [
-      "_ToastConfirm-Dx9X-4_N.js"
+      "_translate-ACaeD73l.js"
     ],
     "css": [
       "assets/index-Bctn7ikr.css"
@@ -57,69 +20,78 @@
       "assets/primeicons-Dr5RGzOO.svg"
     ]
   },
+  "_index-Bctn7ikr.css": {
+    "file": "assets/index-Bctn7ikr.css",
+    "src": "_index-Bctn7ikr.css"
+  },
+  "_index-pJ5qO2LS.js": {
+    "file": "assets/index-pJ5qO2LS.js",
+    "name": "index",
+    "imports": [
+      "_translate-ACaeD73l.js"
+    ]
+  },
+  "_translate-ACaeD73l.js": {
+    "file": "assets/translate-ACaeD73l.js",
+    "name": "translate",
+    "css": [
+      "assets/translate-BrjK1KNi.css"
+    ]
+  },
+  "_translate-BrjK1KNi.css": {
+    "file": "assets/translate-BrjK1KNi.css",
+    "src": "_translate-BrjK1KNi.css"
+  },
   "admin/js/artEditor.js": {
-    "file": "assets/artEditor-Kh29K5Hj.js",
+    "file": "assets/artEditor-B_O11ftH.js",
     "name": "artEditor",
     "src": "admin/js/artEditor.js",
     "isEntry": true,
     "imports": [
-      "_ToastConfirm-Dx9X-4_N.js",
-      "_index-C-hXeCQ3.js",
-      "_EditFile-BnPBOO2K.js",
+      "_translate-ACaeD73l.js",
+      "_index--tihzQqz.js",
       "__plugin-vue_export-helper-DlAUqK2U.js"
     ],
     "css": [
-      "assets/artEditor-9VqoBLDk.css"
+      "assets/artEditor-4SV2fpPB.css"
     ]
   },
   "admin/js/crawler.js": {
-    "file": "assets/crawler-Erpj5rp-.js",
+    "file": "assets/crawler-Dju84A8M.js",
     "name": "crawler",
     "src": "admin/js/crawler.js",
     "isEntry": true,
     "imports": [
-      "_ToastConfirm-Dx9X-4_N.js",
-      "_index-BR_Gqmyn.js",
+      "_translate-ACaeD73l.js",
+      "_index-pJ5qO2LS.js",
       "__plugin-vue_export-helper-DlAUqK2U.js"
     ],
     "css": [
-      "assets/crawler-DqSYIM3q.css"
+      "assets/crawler-DTS1iQxN.css"
     ]
   },
   "admin/js/editUsers.js": {
-    "file": "assets/editUsers-ChTXIQHP.js",
+    "file": "assets/editUsers-DBm4TUSq.js",
     "name": "editUsers",
     "src": "admin/js/editUsers.js",
     "isEntry": true,
     "imports": [
-      "_ToastConfirm-Dx9X-4_N.js",
-      "_index-BR_Gqmyn.js"
+      "_translate-ACaeD73l.js",
+      "_index-pJ5qO2LS.js"
     ],
     "css": [
       "assets/editUsers-Cktv8VuK.css"
     ]
   },
-  "admin/js/fileEditor.js": {
-    "file": "assets/fileEditor-BPrNSXAI.js",
-    "name": "fileEditor",
-    "src": "admin/js/fileEditor.js",
-    "isEntry": true,
-    "imports": [
-      "_ToastConfirm-Dx9X-4_N.js",
-      "_index-C-hXeCQ3.js",
-      "_EditFile-BnPBOO2K.js",
-      "__plugin-vue_export-helper-DlAUqK2U.js"
-    ]
-  },
   "admin/js/setup.js": {
-    "file": "assets/setup-B1A_KIY3.js",
+    "file": "assets/setup-xGX2UNi9.js",
     "name": "setup",
     "src": "admin/js/setup.js",
     "isEntry": true,
     "imports": [
-      "_ToastConfirm-Dx9X-4_N.js",
-      "_index-C-hXeCQ3.js",
-      "_index-BR_Gqmyn.js"
+      "_translate-ACaeD73l.js",
+      "_index--tihzQqz.js",
+      "_index-pJ5qO2LS.js"
     ],
     "css": [
       "assets/setup-DEBB25qV.css"

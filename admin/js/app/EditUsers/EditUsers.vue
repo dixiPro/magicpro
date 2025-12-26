@@ -3,6 +3,9 @@ import { ref, computed, onMounted, onUnmounted, watch, useId } from 'vue';
 import { apiCall, apiArt, translitString } from '../apiCall';
 import TosatConfirm from '../CommonCom/ToastConfirm.vue';
 
+import { useI18n } from 'vue-i18n';
+const { t } = useI18n();
+
 const allUsers = ref([]);
 const apiActive = ref(false);
 const newUser = ref({
@@ -33,7 +36,7 @@ async function apiEditUser(data) {
     return response.data;
   } catch (e) {
     document.showToast(e, 'error');
-    throw new Error('ошибка');
+    throw new Error(t('error'));
   } finally {
     apiActive.value = false;
   }
@@ -50,12 +53,12 @@ async function readUsers() {
       el.edit = false;
       return el;
     });
-    document.showToast('Список считан');
+    document.showToast(t('user_list_loaded'));
   } catch (error) {}
 }
 
 async function editUser() {
-  if (!(await document.confirmDialog('Сохранить???'))) return;
+  if (!(await document.confirmDialog(t('save')))) return;
 
   try {
     const res = await apiEditUser({
@@ -66,12 +69,12 @@ async function editUser() {
     console.log(res);
     allUsers.value[numerUserInAllUsers] = res;
     newUser.value = res;
-    document.showToast('Сохранено');
+    document.showToast(t('saved'));
   } catch (error) {}
 }
 
 async function deleteUser(selectedUser) {
-  if (!(await document.confirmDialog('Удалить?'))) return;
+  if (!(await document.confirmDialog(t('delete')))) return;
   try {
     const res = await apiEditUser({
       command: 'deleteUser',
@@ -85,9 +88,9 @@ function startEdit(selectedUser) {
   numerUserInAllUsers = selectedUser;
   newUser.value = allUsers.value[selectedUser];
   dialogUserForm.value.show = true;
-  dialogUserForm.value.header = 'Изменить';
+  dialogUserForm.value.header = t('edit');
   dialogUserForm.value.mode = 'edit';
-  dialogUserForm.value.header = 'Сохранить';
+  dialogUserForm.value.header = t('save');
 }
 
 function startAdd() {
@@ -98,9 +101,9 @@ function startAdd() {
     role: 'user',
   };
   dialogUserForm.value.show = true;
-  dialogUserForm.value.header = 'Создать';
+  dialogUserForm.value.header = t('create');
   dialogUserForm.value.mode = 'add';
-  dialogUserForm.value.header = 'Создать';
+  dialogUserForm.value.header = t('create');
 }
 
 async function addUser() {
@@ -151,22 +154,20 @@ onUnmounted(() => {});
       </div>
     </template>
     <div class="my-3 text-center">
-      <button class="btn btn-sm btn-success" @click="startAdd()">add</button>
+      <button class="btn btn-sm btn-success" @click="startAdd()">{{ t('add') }}</button>
     </div>
   </div>
 
   <Dialog v-model:visible="dialogUserForm.show" :header="dialogUserForm.header" modal style="width: 400px">
-    <div>
-      <input type="text" class="form-control" v-model="newUser.name" placeholder="name" />
-    </div>
+    <div>name <input type="text" class="form-control" v-model="newUser.name" placeholder="name" /></div>
     <div class="my-2">
       <input type="text" class="form-control" v-model="newUser.email" placeholder="email" />
     </div>
     <div class="my-2"><input type="text" class="form-control" v-model="newUser.password" placeholder="password" /></div>
     <div class="my-2"><input type="text" class="form-control" v-model="newUser.role" placeholder="password" /></div>
 
-    <button class="btn btn-sm btn-success" v-if="dialogUserForm.mode === 'add'" @click="addUser">Создать</button>
-    <button class="btn btn-sm btn-success" v-if="dialogUserForm.mode === 'edit'" @click="editUser">Сохранить</button>
+    <button class="btn btn-sm btn-success" v-if="dialogUserForm.mode === 'add'" @click="addUser">{{ t('create') }}</button>
+    <button class="btn btn-sm btn-success" v-if="dialogUserForm.mode === 'edit'" @click="editUser">{{ t('save') }}</button>
   </Dialog>
 
   <TosatConfirm></TosatConfirm>

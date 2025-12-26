@@ -51,15 +51,15 @@ class MagicGlobals
         define('MAGIC_FILE_ROLES', [
             [
                 'value' => MAGIC_VIEW_DIR,
-                'desc'  => 'Каталог вьюх статей'
+                'desc'  => 'Directory for view'
             ],
             [
                 'value' => MAGIC_CONTROLLER_DIR,
-                'desc'  => 'Контроллеры статей'
+                'desc'  => 'Directory for controllers'
             ],
             [
                 'value' => public_path(MagicGlobals::$INI['PUBLIC_UPLOAD_DIR']),
-                'desc'  => 'Файлы на сервере'
+                'desc'  => 'Directory for public'
             ],
         ]);
 

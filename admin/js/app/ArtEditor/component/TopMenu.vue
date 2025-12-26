@@ -3,6 +3,9 @@ import { ref, computed, onMounted, onUnmounted, watch, reactive, nextTick, toRaw
 import { useArticleStore } from '../store';
 const store = useArticleStore();
 
+import { useI18n } from 'vue-i18n';
+const { t } = useI18n();
+
 const gotoArticle = ref('');
 
 const url = computed(() => {
@@ -23,16 +26,16 @@ const url = computed(() => {
       </div>
     </div>
 
-    <div class="col-3" v-if="store.statusTranslitButton">
+    <div class="col-3">
       <div class="input-group input-group-sm">
         <input type="text" class="form-control form-control-sm" v-model="store.article.title" />
-        <button class="btn btn-sm btn-primary" @click="store.saveRec()">Save→</button>
+        <button class="btn btn-sm btn-primary" @click="store.saveRec()">{{ t('save') }}</button>
       </div>
     </div>
 
     <div class="col-1">
       <div class="input-group input-group-sm">
-        <input placeholder="перейти" type="text" class="form-control" v-model="gotoArticle" />
+        <input :placeholder="t('goto_article')" type="text" class="form-control" v-model="gotoArticle" />
         <button class="btn btn-primary fas fa-angle-right" @click="store.gotoArticleByName(gotoArticle)"></button>
       </div>
     </div>
@@ -76,6 +79,7 @@ const url = computed(() => {
       <button v-if="store.hasTwig" class="btn btn-success fas fa-sync-alt btn-sm me-2" @click="store.convertFromMro()"></button>
 
       <button class="btn btn-success fas fa-folder-open" @click="store.statusFileManager = !store.statusFileManager"></button>
+      <button class="ms-1 btn btn-success fas fa-lightbulb" @click="store.statusAutocompletePannel = !store.statusAutocompletePannel"></button>
       <button class="ms-1 btn btn-success fas fa-bars" @click="store.statusAddPannel = !store.statusAddPannel"></button>
     </div>
   </div>

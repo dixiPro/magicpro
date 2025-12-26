@@ -56,4 +56,5 @@ return [
     'render_url' => 'additional urls for static page rendering',
     'enable_url_params' => 'allowed url parameters after ?',
     'language' => 'language ru or en, save and reload',
+
 ];

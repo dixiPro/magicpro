@@ -34,6 +34,8 @@ export const useArticleStore = defineStore('article', () => {
   // панель  файл менеджера
   const statusFileManager = ref(false);
 
+  const statusAutocompletePannel = ref(false);
+
   // aceTheme
   const aceTheme = 'chrome';
   const aceThemes = ['chrome', 'monokai', 'dracula', 'twilight'];
@@ -198,6 +200,7 @@ export const useArticleStore = defineStore('article', () => {
     statusTranslitButton,
     hasTwig,
     statusLeftPannel,
+    statusAutocompletePannel,
 
     toggleTreeSplitter,
     modeTreeSplitter,

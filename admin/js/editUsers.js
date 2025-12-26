@@ -1,54 +1,57 @@
-import { createApp } from "vue";
+import { createApp } from 'vue';
 
-import PrimeVue from "primevue/config";
-import Aura from "@primeuix/themes/aura";
+import PrimeVue from 'primevue/config';
+import Aura from '@primeuix/themes/aura';
 // import "primeicons/primeicons.css";
 
-import ToastService from "primevue/toastservice";
-import Toast from "primevue/toast";
-import ConfirmDialog from "primevue/confirmdialog";
-import ConfirmationService from "primevue/confirmationservice";
-import Dialog from "primevue/dialog";
-import Splitter from "primevue/splitter";
-import SplitterPanel from "primevue/splitterpanel";
-import ContextMenu from "primevue/contextmenu";
-import Drawer from "primevue/drawer";
-import FileUpload from "primevue/fileupload";
-import InputText from "primevue/inputtext";
-import Button from "primevue/button";
+import ToastService from 'primevue/toastservice';
+import Toast from 'primevue/toast';
+import ConfirmDialog from 'primevue/confirmdialog';
+import ConfirmationService from 'primevue/confirmationservice';
+import Dialog from 'primevue/dialog';
+import Splitter from 'primevue/splitter';
+import SplitterPanel from 'primevue/splitterpanel';
+import ContextMenu from 'primevue/contextmenu';
+import Drawer from 'primevue/drawer';
+import FileUpload from 'primevue/fileupload';
+import InputText from 'primevue/inputtext';
+import Button from 'primevue/button';
 
 const components = [
-    //
-    ToastService,
-    Toast,
-    ConfirmDialog,
-    Dialog,
-    Splitter,
-    SplitterPanel,
-    ContextMenu,
-    Drawer,
-    FileUpload,
-    InputText,
+  //
+  ToastService,
+  Toast,
+  ConfirmDialog,
+  Dialog,
+  Splitter,
+  SplitterPanel,
+  ContextMenu,
+  Drawer,
+  FileUpload,
+  InputText,
 ];
 
-import EditUsers from "./app/EditUsers/EditUsers.vue";
+import EditUsers from './app/EditUsers/EditUsers.vue';
 const app = createApp(EditUsers);
 
 // регистрац компонентов
 components.forEach((component) => {
-    app.component(component.name, component);
+  app.component(component.name, component);
 });
 
 app.use(PrimeVue, {
-    theme: {
-        preset: Aura,
-        options: {
-            cssLayer: { name: "primevue", order: "theme, base, primevue" },
-        },
+  theme: {
+    preset: Aura,
+    options: {
+      cssLayer: { name: 'primevue', order: 'theme, base, primevue' },
     },
+  },
 });
 
 app.use(ConfirmationService);
 app.use(ToastService);
 
-app.mount("#edit_users");
+import i18n from './app/CommonCom/translate';
+app.use(i18n);
+
+app.mount('#edit_users');

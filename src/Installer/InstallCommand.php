@@ -9,13 +9,13 @@ use Illuminate\Support\Facades\File;
 class InstallCommand extends Command
 {
     protected $signature = 'magicpro:install';
-    protected $description = 'Устанавливает MagicPro и публикует его ресурсы';
+    protected $description = 'Installs MagicPro and publishes its resources';
 
 
     public function handle(): void
     {
         $this->info('');
-        $this->info('⚙️ Начало установки MagicPro...');
+        $this->info('⚙️ Starting MagicPro installation...');
 
         $this->processDirectories(
             MAGIC_DATA_DIR,
@@ -23,33 +23,33 @@ class InstallCommand extends Command
             VENDOR_PUBLIC
         );
 
-        $this->info('🎉 Установка MagicPro завершена.');
+        $this->info('🎉 MagicPro installation completed.');
         $this->info('');
     }
 
     private function processDirectories(string $dataDir, string $vendorFrom, string $vendorPublic): void
     {
-        // 1. Проверяем/создаём MAGIC_DATA_DIR
+        // 1. Check/create MAGIC_DATA_DIR
         if (!is_dir($dataDir)) {
             mkdir($dataDir, 0775, true);
-            $this->info("Создана директория: {$dataDir}");
+            $this->info("Directory created: {$dataDir}");
         } else {
-            $this->info("Папка уже существует: {$dataDir}");
+            $this->info("Folder already exists: {$dataDir}");
         }
 
-        // 2. Проверяем/очищаем VENDOR_PUBLIC
+        // 2. Check/clean VENDOR_PUBLIC
         if (!is_dir($vendorPublic)) {
             mkdir($vendorPublic, 0775, true);
-            $this->info("Создана директория: {$vendorPublic}");
+            $this->info("Directory created: {$vendorPublic}");
         } else {
-            $this->info("Очищаем директорию: {$vendorPublic}");
+            $this->info("Cleaning directory: {$vendorPublic}");
             File::cleanDirectory($vendorPublic);
         }
 
-        // 3. Копируем файлы из VENDOR_FROM в VENDOR_PUBLIC
-        $this->info("Копирование файлов из {$vendorFrom} в {$vendorPublic}...");
+        // 3. Copy files from VENDOR_FROM to VENDOR_PUBLIC
+        $this->info("Copying files from {$vendorFrom} to {$vendorPublic}...");
         File::copyDirectory($vendorFrom, $vendorPublic);
-        $this->info('Копирование завершено.');
-        $this->warn('→→→ выполните  sudo chown -R :www-data ' . MAGIC_DATA_DIR);
+        $this->info('Copy completed.');
+        $this->warn('→→→ run: sudo chown -R :www-data ' . MAGIC_DATA_DIR);
     }
 }

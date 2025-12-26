@@ -1,6 +1,10 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch, useId, toRaw, unref } from 'vue';
 
+// vue-i18n
+import { useI18n } from 'vue-i18n';
+const { t } = useI18n();
+
 import { useToast } from 'primevue/usetoast';
 const toast = useToast();
 import { useConfirm } from 'primevue/useconfirm';
@@ -26,8 +30,8 @@ onMounted(() => {
         message,
         header: '',
         icon: 'fas fa-question',
-        acceptLabel: 'Да',
-        rejectLabel: 'Нет',
+        acceptLabel: t('yes'),
+        rejectLabel: t('no'),
         accept: () => resolve(true),
         reject: () => resolve(false), // или reject(), если хотите ошибку
       });

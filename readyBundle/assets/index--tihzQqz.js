@@ -1,4 +1,4 @@
-import{a5 as a,a4 as s,a6 as r,b as c,o as g,d,a7 as o,D as h}from"./ToastConfirm-Dx9X-4_N.js";var u=`
+import{af as a,ag as s,ah as r,l as c,p as g,q as d,ai as o,R as h}from"./translate-ACaeD73l.js";var u=`
     .p-toggleswitch {
         display: inline-block;
         width: dt('toggleswitch.width');

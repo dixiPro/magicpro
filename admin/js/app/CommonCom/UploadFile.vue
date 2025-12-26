@@ -1,6 +1,9 @@
 <script setup>
 import { ref, computed } from 'vue';
 
+import { useI18n } from 'vue-i18n';
+const { t } = useI18n(); //
+
 const emit = defineEmits(['uploaded']);
 
 const props = defineProps({
@@ -12,7 +15,7 @@ const show = ref(false);
 const uploading = ref(false);
 const uploads = ref([]); // [{ name, progress, status }]
 
-// Список имён уже существующих файлов (для проверки дубликатов)
+// List of names of already existing files (to check for duplicates)
 const existingNames = computed(() => {
   return new Set((props.directory ?? []).map((it) => (it.name ?? '').toLowerCase()));
 });
@@ -27,7 +30,7 @@ function close() {
 }
 
 // ============================
-// Загрузка одного файла через XHR
+// Upload a single file via XHR
 // ============================
 function uploadFile(file, index) {
   return new Promise((resolve, reject) => {
@@ -42,7 +45,7 @@ function uploadFile(file, index) {
     xhr.open('POST', `/a_dmin/api/fileManager?${params.toString()}`, true);
     xhr.responseType = 'json';
 
-    // Индивидуальный прогресс
+    // Per-file progress
     xhr.upload.onprogress = (e) => {
       if (e.lengthComputable) {
         uploads.value[index].progress = Math.round((e.loaded / e.total) * 100);
@@ -58,19 +61,19 @@ function uploadFile(file, index) {
         emit('uploaded', res.data);
         resolve(res.data);
       } else {
-        const msg = res?.errorMsg || res?.message || `Ошибка загрузки (${xhr.status})`;
+        const msg = res?.errorMsg || res?.message || `Upload error (${xhr.status})`;
         reject(new Error(msg));
       }
     };
 
     xhr.onerror = () => {
       uploads.value[index].status = 'error';
-      reject(new Error('Ошибка сети при загрузке файла'));
+      reject(new Error('Network error while uploading the file'));
     };
 
     xhr.onabort = () => {
       uploads.value[index].status = 'error';
-      reject(new Error('Загрузка отменена'));
+      reject(new Error('Upload canceled'));
     };
 
     xhr.setRequestHeader('Content-Type', 'application/octet-stream');
@@ -79,7 +82,7 @@ function uploadFile(file, index) {
 }
 
 // ============================
-// Обработчик загрузки
+// Upload handler
 // ============================
 async function onUpload(event) {
   const files = Array.isArray(event?.files) ? event.files : [];
@@ -98,7 +101,7 @@ async function onUpload(event) {
       try {
         await uploadFile(f, i);
       } catch (error) {
-        document.showToast(error.message || 'Ошибка загрузки файла', 'error');
+        document.showToast(error.message || 'File upload error', 'error');
       }
     })
   );
@@ -107,7 +110,7 @@ async function onUpload(event) {
   uploader.value?.clear();
 }
 
-// Проверка на дубликат
+// Duplicate check
 function isDuplicate(name) {
   return existingNames.value.has(name.toLowerCase());
 }
@@ -125,14 +128,14 @@ defineExpose({ open, close });
 </script>
 
 <template>
-  <Dialog v-model:visible="show" modal header="Загрузка файлов" class="w-50">
+  <Dialog v-model:visible="show" modal :header="t('upload_files')" class="w-50">
     <FileUpload
       name="files[]"
       mode="advanced"
       multiple
-      chooseLabel="Выбрать файлы"
-      uploadLabel="Загрузить"
-      cancelLabel="Отмена"
+      :chooseLabel="t('choose_files')"
+      :uploadLabel="t('upload')"
+      :cancelLabel="t('cancel')"
       customUpload
       :auto="false"
       :maxFileSize="500000000"
@@ -150,7 +153,7 @@ defineExpose({ open, close });
                 <div>
                   <small>{{ file.name }}</small>
                 </div>
-                <div v-if="isDuplicate(file.name) && !uploading" class="text-danger">копия — будет переписан</div>
+                <div v-if="isDuplicate(file.name) && !uploading" class="text-danger">{{ t('duplicate_overwrite') }}</div>
                 <div>
                   <small v-if="uploads[i]">{{ uploads[i].progress }}%</small>
                 </div>
