@@ -27,7 +27,7 @@ function readDefaultLiveWareController(): string
     return read_file_or_fail(DEFAULT_LIVEWIRE_CONTROLLER);
 }
 
-function createMpro(array $article): void
+function createMpro(array $article): array
 {
 
     $id       = $article['id']        ?: throw new \InvalidArgumentException('id is empty');
@@ -35,6 +35,7 @@ function createMpro(array $article): void
     $isRoute  = $article['isRoute'];
     $useController  = $article['routeParams']['useController'] ?? false;
 
+    $result = ['view' => false, 'controller => false'];
 
     // if (!preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $name)) {
     //     throw new \InvalidArgumentException("invalid name : {$name}");
@@ -47,14 +48,17 @@ function createMpro(array $article): void
     $viewText       = $article['body'];
     $viewFile       = fileNameView($article);
     write_file_or_fail($viewFile, $viewText);
+    $result['view'] = true;
 
     // CONTROLLER 
     // delete old controller
     $controllerFile = fileNameController($article);
     $controllerText = trim(dataController($article));
-    if ($controllerText !== '' && $isRoute && $useController) {
+    if ($controllerText !== '' && $useController) {
+        $result['controller'] = true;
         write_file_or_fail($controllerFile, $controllerText);
     }
+    return ($result);
 }
 
 

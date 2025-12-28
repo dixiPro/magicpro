@@ -17,9 +17,10 @@ class TreeHelper
     public static function getChildrenById(int $artId): array
     {
         return Article::query()
-            ->select('id', 'title', 'name', 'menuOn', 'updated_at')
+            ->select('id', 'title', 'name', 'menuOn', 'updated_at', 'npp')
             ->where('parentId', $artId)
             ->where('menuOn', true)
+            ->orderBy('npp')
             ->get()
             ->toArray();
     }
@@ -33,6 +34,7 @@ class TreeHelper
             ->select('id', 'title', 'name', 'menuOn', 'updated_at')
             ->where('parentId', $id)
             ->where('menuOn', true)
+            ->orderBy('npp')
             ->get()
             ->toArray();
         return $result;

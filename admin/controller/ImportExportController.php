@@ -143,7 +143,6 @@ class ImportExportController extends Controller
         return $result;
     }
 
-
     public function importArticle(Request $request)
     {
         $log = new class {
@@ -161,72 +160,104 @@ class ImportExportController extends Controller
         };
 
         DB::beginTransaction();
+
         try {
             $file = $request->file('file');
-            $writeBase = $request->boolean('writeBase', false); // default false
+            $writeBase = $request->boolean('writeBase', false);
             $typeFile = $request->input('typeFile');
 
             // file validation
             if (!$file || !$file->isValid()) {
                 throw new \Exception('file not uploaded or corrupted');
             }
+
             if ($typeFile === 'json') {
-                // json validation
                 $data = json_decode(file_get_contents($file->getRealPath()), true);
                 if (!is_array($data)) {
                     throw new \Exception('invalid json format');
                 }
             } elseif ($typeFile === 'xml') {
-
                 $data = $this->parseArticlesXml(file_get_contents($file->getRealPath()));
             } else {
                 throw new \Exception('unknown import file type');
             }
 
+            // pass 1: create/update only (do not resolve parents)
             foreach ($data as $item) {
-                $article = Article::where('name', $item['name'])->first();
+                $article = Article::where('name', $item['name'])
+                    ->orderByDesc('id')
+                    ->first();
+
+                $payload = $item;
+                unset($payload['parentName']);
 
                 if ($article) {
-                    unset($item['parentName'], $item['npp']);
-                    $article->update($item);
+                    $article->update($payload);
                     $log->add($item['name'], 'updated');
                 } else {
-                    $parentName = $item['parentName'] ?? null;
-
-                    if (!$parentName) {
-                        $log->add($item['name'], 'parent name not specified, set to root');
-                        $parentName = 'root';
+                    // set temporary parentid (will be fixed on pass 2)
+                    if (!array_key_exists('parentId', $payload)) {
+                        $payload['parentId'] = 1;
                     }
 
-                    $parent = Article::where('name', $parentName)->first();
-                    if (!$parent) {
-                        $log->add($item['name'], 'parent not found, set to root');
-                    }
-
-                    $parentId = $parent?->id ?? 1;
-
-                    $item['parentId'] = $parentId;
-
-                    $last = Article::where('parentId', $parentId)
-                        ->orderByDesc('npp')
-                        ->first();
-
-                    $npp = $last ? $last->npp + 1 : 1;
-
-                    unset($item['parentName']);
-                    $oldNpp = $item['npp'];
-                    $item['npp'] = $npp;
-
-                    Article::create($item);
-                    $log->add($item['name'], "added. npp old={$oldNpp}, new={$npp}");
+                    Article::create($payload);
+                    $log->add($item['name'], 'added');
                 }
             }
-            // if writeBase then commit, otherwise rollback
+
+            // pass 2: resolve parents
+            foreach ($data as $item) {
+                $article = Article::where('name', $item['name'])
+                    ->orderByDesc('id')
+                    ->first();
+
+                if (!$article) {
+                    $log->add($item['name'], 'not found on pass 2');
+                    continue;
+                }
+
+                $parentName = $item['parentName'] ?? null;
+
+                if (!$parentName) {
+                    $log->add($item['name'], 'parent name not specified, set to root');
+                    $article->update(['parentId' => 1]);
+                    continue;
+                }
+
+                if ($parentName === 'root') {
+                    $article->update(['parentId' => 1]);
+                    continue;
+                }
+
+                $parent = Article::where('name', $parentName)
+                    ->orderByDesc('id')
+                    ->first();
+
+                if (!$parent) {
+                    $log->add($item['name'], 'parent not found, set to root');
+                    $article->update(['parentId' => 1]);
+                    continue;
+                }
+
+                $article->update(['parentId' => $parent->id]);
+
+                $article->refresh();
+
+                $log->add($article->name, json_encode([
+                    'name'       => $article->name,
+                    'title'      => $article->title ?? null,
+                    'parentId'   => $article->parentId,
+                    'parentName' => $parent->name,
+                    'npp'        => $article->npp,
+                ], JSON_UNESCAPED_UNICODE));
+            }
+
             $writeBase ? DB::commit() : DB::rollBack();
         } catch (\Throwable $e) {
             DB::rollBack();
             $log->add('', 'ERROR: ' . $e->getMessage());
         }
+
         return back()->with('importResult', $log->all());
     }
 }

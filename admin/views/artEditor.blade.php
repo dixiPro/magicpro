@@ -1,5 +1,10 @@
 @extends('magicAdmin::templateAdmin')
 
+@php
+    $GLOBALS['nolfetMenu'] = true;
+@endphp
+
+
 @section('title')
     @magic_msg('atricle_edit')
 @endsection

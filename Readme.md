@@ -39,23 +39,23 @@ php artisan migrate
 
 #### 2025-12-25
 
+The first website on MagicPRO-laravel has been launched.
+
 Multilingual version has been implemented
 
 Installation bugs have been fixed
 
+Livewire was fixed.
+
 #### 2025-12-05
+
+The MagicPro-based site has been built; we are currently testing.
 
 The site can now run in static mode. Performance increased significantly. A crawler was added that visits pages and generates static HTML files. As a result, Nginx serves an HTML file if it exists, otherwise routing takes over.
 
 A file manager was added, including editing of JS and CSS files with formatters.
 
-Livewire was fixed and can now be used directly inside the system.
-
 A Setup section was added to the admin panel. All constants are being moved into a single file (work in progress).
-
-Database export to a file is implemented.
-
-The MagicPro-based site magalif.ru has been built; we are currently testing new.magalif.ru.
 
 Filament has been added to the Magalif site.
 

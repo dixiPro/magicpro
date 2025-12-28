@@ -11,7 +11,31 @@ use MagicProSrc\Config\MagicGlobals; // Глобальные константы
 // Админка
 use MagicProAdminControllers\AdminController;
 
-Route::get('/a_dmin', [AdminController::class, 'index']);
+Route::get('/a_dmin', [AdminController::class, 'index'])->name('magic.a_dmin');
+
+// Сетап
+Route::get('/a_dmin/setup', function () {
+    return view('magicAdmin::setup');
+})->name('magic.setup');
+
+// start
+Route::get('/a_dmin/start', function () {
+    return view('magicAdmin::start');
+})->name('magic.start');
+
+// import_tab
+Route::get('/a_dmin/import_tab', function () {
+    return view('magicAdmin::import_tab');
+})->name('magic.import_tab');
+
+// import_tab
+Route::get('/a_dmin/export_tab', function () {
+    return view('magicAdmin::export_tab');
+})->name('magic.export_tab');
+
+
+
+
 // список статей
 Route::get('/a_dmin/artList', [AdminController::class, 'artList']);
 
@@ -53,12 +77,12 @@ Route::post('/a_dmin/api/articles', [API_ArticlesPostController::class, 'handle'
 // страница редактирования статьи
 Route::get('/a_dmin/artEditor', function () {
     return view('magicAdmin::artEditor');
-})->where('any', '.*');
+})->where('any', '.*')->name('magic.artEditor');
 
 // редактор файлов
 Route::get('/a_dmin/fileEditor', function () {
     return view('magicAdmin::fileEditor');
-})->where('any', '.*');
+})->where('any', '.*')->name('magic.fileEditor');
 
 // файл менеджер АПИ    
 use MagicProAdminControllers\API_FileManagerPostController;
@@ -71,10 +95,10 @@ Route::post('/a_dmin/api/fileManager', [API_FileManagerPostController::class, 'h
 // страница паука
 Route::get('/a_dmin/crawler', function () {
     return view('magicAdmin::crawler');
-})->where('any', '.*');
+})->where('any', '.*')->name('magic.crawler');
 
 // список админов
-Route::get('/a_dmin/adminList', [AdminController::class, 'adminList']);
+Route::get('/a_dmin/adminList', [AdminController::class, 'adminList'])->name('magic.admin_list');
 
 // апи админов
 use MagicProAdminControllers\API_EditUsersController;

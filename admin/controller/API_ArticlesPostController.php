@@ -91,9 +91,10 @@ class API_ArticlesPostController extends Controller
         $saved = [];
 
         foreach ($records as $article) {
-            deleteMpro($article);
-            createMpro($article);
-            $saved[] =  $article['name'];
+            $result = createMpro($article);
+            $view = $result['view'] ?? '--';
+            $controller = $result['controller'] ?? false ? '--controller' : '';
+            $saved[] = "{$article['name']} {$controller}";
         }
         return $saved;
     }

@@ -13,6 +13,7 @@ export default defineConfig({
         'admin/js/editUsers.js',
         'admin/js/crawler.js',
         'admin/js/setup.js',
+        // 'admin/js/fileManager.js',
       ],
       refresh: true,
       hotFile: path.resolve(__dirname, '../../../storage/magicpro.vite.hot'),
@@ -76,7 +77,7 @@ export default defineConfig({
   // },
 
   server: {
-    // host: "127.0.0.1", // фиксируем IPv4
+    host: '192.168.1.33', // фиксируем IPv4
     // port: 5174,
     strictPort: true,
     fs: { allow: [path.resolve(__dirname, '../../..')] },

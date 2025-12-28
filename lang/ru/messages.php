@@ -10,7 +10,7 @@ return [
     'export_tab' => 'Export',
 
     'cache' => 'кеш',
-    'cache_clear' => 'Jчистить кеш',
+    'cache_clear' => 'Очистить кеш',
     'cahceDelteResult' => 'Результат очистки кеша: 0 - успех',
     'config' => 'конфиг',
     'routes' => 'маршруты',
@@ -57,5 +57,7 @@ return [
     'enable_url_params' => 'Разрещенные параметры url после ?',
     'language' => 'language ru or en, save and reload',
     'addition_link' => 'Дополнительные ссылки в админке',
+
+    'file_manager' => 'Файл менеджер',
 
 ];

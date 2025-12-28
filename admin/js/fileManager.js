@@ -16,9 +16,6 @@ import Drawer from 'primevue/drawer';
 import FileUpload from 'primevue/fileupload';
 import ToggleSwitch from 'primevue/toggleswitch';
 
-// локальные компоненты
-import FileEditor from './app/FileEditor/FileEditor.vue';
-
 const components = [
   //
   ToastService,
@@ -33,7 +30,9 @@ const components = [
   ToggleSwitch,
 ];
 
-const app = createApp(FileEditor);
+import FileManager from './app/FileManager/FileManager.vue';
+
+const app = createApp(FileManager);
 
 // регистрац компонентов
 components.forEach((component) => {
@@ -55,10 +54,10 @@ app.use(ToastService);
 import { createPinia } from 'pinia';
 app.use(createPinia());
 
-import i18n from './app/CommonCom/translate';
+import i18n from './app/CommonCom/translate.js';
 app.use(i18n);
 
-app.mount('#file_editor');
+app.mount('#file_manager');
 
 import * as ApiCallFunctions from './app/apiCall.js';
 Object.assign(globalThis, ApiCallFunctions);

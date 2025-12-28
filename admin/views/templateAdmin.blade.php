@@ -33,19 +33,6 @@
                         <a class="text-white" href="/a_dmin/artEditor#1">@magic_msg('root')</a>
                     </div>
                     <div class="px-2">
-                        <a class="text-white" href="/a_dmin/artList">@magic_msg('articles')</a>
-                    </div>
-                    <div class="px-2">
-                        <a class="text-white" href="/a_dmin/adminList">@magic_msg('admins')</a>
-                    </div>
-                    <div class="px-2">
-                        <a class="text-white" href="/a_dmin/crawler">@magic_msg('crawler')</a>
-                    </div>
-                    {{-- <div class="px-2"><a class="text-white" href="/a_dmin/fileEditor">FileEditor</a></div> --}}
-                    <div class="px-2">
-                        <a class="text-white" href="/f_ilament">@magic_msg('tables')</a>
-                    </div>
-                    <div class="px-2">
                         <a href="{{ route('magic.logout') }}" type="submit" class="btn btn-sm btn-success">
                             @magic_msg('logout')
                         </a>
@@ -53,44 +40,50 @@
                 </div>
             </div>
 
-            <div class="d-flex flex-column flex-grow-1" id="admin-content">
-                @if ($GLOBALS['wide'] ?? '' == 'middle')
-                    <div class="container">
-                        @yield('body')
-                    </div>
-                @else
-                    @yield('body')
+            @if ($GLOBALS['nolfetMenu'] ?? false == true)
+                @yield('body')
+                @hasSection('script')
+                    @yield('script')
                 @endif
-            </div>
-        </div>
+            @else
+                <div class="d-flex">
+                    <div class="px-3">
+                        @include('magicAdmin::leftColumn')
 
-        @hasSection('script')
-            @yield('script')
-        @endif
-    @else
-        <div class="container my-5">
-            <h1>MagicPro</h1>
+                    </div>
+                    <div class="flex-grow-1 mx-3">
+                        @yield('body')
+                        @hasSection('script')
+                            @yield('script')
+                        @endif
 
-            @if (session('mpro_error'))
-                <div style="color:red">{{ session('mpro_error') }}</div>
+                    </div>
+                </div>
             @endif
+        @else
+            <div class="container my-5">
+                <h1>MagicPro</h1>
 
-            <form method="POST" action="{{ route('magic.login') }}">
-                @csrf
+                @if (session('mpro_error'))
+                    <div style="color:red">{{ session('mpro_error') }}</div>
+                @endif
 
-                <input type="text" name="email" placeholder="Email" required value="">
-                <input type="password" name="password" placeholder="@magic_msg('password')" required value="">
+                <form method="POST" action="{{ route('magic.login') }}">
+                    @csrf
 
-                <label>
-                    <input type="checkbox" name="remember"> @magic_msg('remember_me')
-                </label>
+                    <input type="text" name="email" placeholder="Email" required value="">
+                    <input type="password" name="password" placeholder="@magic_msg('password')" required value="">
 
-                <button type="submit">@magic_msg('login')</button>
-            </form>
-        </div>
-    @endmproauth
+                    <label>
+                        <input type="checkbox" name="remember"> @magic_msg('remember_me')
+                    </label>
 
-    <script src="/vendor/magicpro/bootstrap5/js/bootstrap.bundle.min.js"></script>
+                    <button type="submit">@magic_msg('login')</button>
+                </form>
+            </div>
+        @endmproauth
+
+        <script src="/vendor/magicpro/bootstrap5/js/bootstrap.bundle.min.js"></script>
 </body>
 
 </html>
