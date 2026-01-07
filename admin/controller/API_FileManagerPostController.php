@@ -8,6 +8,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use MagicProSrc\Config\MagicGlobals; // global constants
+use MagicProSrc\MagicFile;
+
 
 class API_FileManagerPostController extends Controller
 {
@@ -44,12 +46,16 @@ class API_FileManagerPostController extends Controller
                 'start' => ['name' => 'start'],
                 'dirList' => ['name' => 'dirList'],
                 'mkdir'   => ['name' => 'mkdir'],
+                'mkfile'   => ['name' => 'mkfile'],
+
                 'upload'  => ['name' => 'upload'],
                 'uploadBin'  => ['name' => 'uploadBin'],
                 'delete'  => ['name' => 'delete'],
                 'rename'  => ['name' => 'rename'],
                 'loadFile'  => ['name' => 'loadFile'],
                 'saveFile'  => ['name' => 'saveFile'],
+
+
             ];
 
             $command = $request->string('command')->toString();
@@ -228,6 +234,26 @@ class API_FileManagerPostController extends Controller
         }
 
         return ['created' => $folderName];
+    }
+
+    // 📁 create folder (no execute permission)
+    private function mkfile(Request $request): array
+    {
+
+        $fileName = public_path(trim($request->string('fileName')->toString()));
+
+        $this->checkPath($fileName);
+
+        if (File::exists($fileName)) {
+            throw new \RuntimeException("folder '{$fileName}' already exists");
+        }
+
+        $this->validateEditExtension($fileName);
+
+        MagicFile::saveToFile($fileName, '');
+
+
+        return ['created' => $fileName];
     }
 
     // ==================================

@@ -1,14 +1,11 @@
 <?php
-
 return [
     'vesrsion' => '1.1.5',
     'title' => 'Админка',
-
     'start' => 'Cтарт',
     'setup' => 'Setup',
     'import_tab' => 'Import',
     'export_tab' => 'Export',
-
     'cache' => 'кеш',
     'cache_clear' => 'Очистить кеш',
     'cahceDelteResult' => 'Результат очистки кеша: 0 - успех',
@@ -16,21 +13,16 @@ return [
     'routes' => 'маршруты',
     'views' => 'вьюхи',
     'events' => 'события',
-
     'write_permissions' => 'Права на запись',
-
     'regenerate_articles' => 'Перегенерация статей',
-
     'export_article_table' => 'Экспорт таблицы article',
     'export_db' => 'экспорт бд',
-
     'import' => 'Импорт',
     'select_json_file' => 'Выберите файл json',
     'save_changes_to_db' => 'Записать изменения в базу данных',
     'import_check_only_hint' => 'Если не отмечено — будет только проверка, без сохранения.',
     'from_json' => 'из json файла',
     'from_xml' => 'из xml файла',
-
     'current_user' => 'Текущий пользователь',
     'admins_title' => 'Админы',
     'no_permissions' => 'Недостаточно прав',
@@ -57,7 +49,7 @@ return [
     'enable_url_params' => 'Разрещенные параметры url после ?',
     'language' => 'language ru or en, save and reload',
     'addition_link' => 'Дополнительные ссылки в админке',
-
     'file_manager' => 'Файл менеджер',
+    'artList' => 'Список статей'
 
 ];

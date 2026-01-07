@@ -254,7 +254,7 @@ async function deleteFromStorage() {
   await apiSetup({
     command: 'deleteFromStorage',
   });
-  document.showToast(t('toast_storage_deleted'));
+  document.showToast(t('storage_deleted'));
   await getIniParams();
 }
 
@@ -262,7 +262,7 @@ async function deleteFromPublic() {
   await apiSetup({
     command: 'deleteFromPublic',
   });
-  document.showToast(t('toast_public_deleted'));
+  document.showToast(t('public_deleted'));
   await getIniParams();
 }
 
@@ -271,7 +271,7 @@ async function startHtmlCache() {
     command: 'startHtmlCache',
   });
   await getIniParams();
-  document.showToast(t('toast_cache_published'));
+  document.showToast(t('cache_published'));
 }
 
 const hasInternalError = computed(() => {
@@ -365,7 +365,7 @@ const hasInternalError = computed(() => {
               <td>{{ val.status }}</td>
               <td>{{ val.check }}</td>
               <td>
-                <span v-if="val.saveStatus">{{ t('saved_lower') }}</span>
+                <span v-if="val.saveStatus">{{ t('url_saved') }}</span>
               </td>
               <td>
                 <span v-for="parent in val.parentArr" class="me-2">

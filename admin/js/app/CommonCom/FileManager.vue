@@ -33,6 +33,12 @@ const modalAddNewFolder = reactive({
   newFolderName: '',
 });
 
+// add file
+const modalAddNewFile = reactive({
+  visible: false,
+  fileName: '',
+});
+
 onMounted(async () => {
   await start(path.value);
   await openFolder(path.value);
@@ -43,6 +49,11 @@ async function goBack() {
     path.value = backToRoot.value.pop();
   }
   await openFolder(path.value);
+}
+
+function openNewFileModal() {
+  modalAddNewFile.fileName = '';
+  modalAddNewFile.visible = true;
 }
 
 function openNewFolderModal() {
@@ -64,7 +75,8 @@ async function start() {
 }
 
 async function deleteFileOrFolder(name) {
-  if (!(await document.confirmDialog(t('delete') + ' ' + path.value + name))) return;
+  const msg = t('delete') + ' ' + path.value + name;
+  if (!(await document.confirmDialog(msg))) return;
   try {
     ready.value = false;
     await apiFile({
@@ -95,6 +107,26 @@ async function createFolder() {
     console.error(e);
   } finally {
     modalAddNewFolder.visible = false;
+    ready.value = true;
+  }
+}
+
+async function createFile() {
+  // empty
+
+  if (!modalAddNewFile.fileName.trim()) return;
+  try {
+    ready.value = false;
+
+    await apiFile({
+      command: 'mkfile',
+      fileName: path.value + modalAddNewFile.fileName.trim(),
+    });
+    await openFolder(path.value);
+  } catch (e) {
+    console.error(e);
+  } finally {
+    modalAddNewFile.visible = false;
     ready.value = true;
   }
 }
@@ -302,8 +334,6 @@ const modalRename = reactive({
     <template #header>
       <div class="d-flex align-items-center gap-2 p-1 rounded w-100 border">
         <button v-if="path !== startDirectory" @click="goBack" class="btn btn-success fas fa-chevron-left"></button>
-        <button @click="openNewFolderModal" class="btn btn-success fas fa-folder-plus"></button>
-        <button @click="uploadFile" class="btn btn-success fas fa-file-upload"></button>
 
         <div class="flex-grow-1">
           <span v-for="(el, i) in backPathArr" :key="i">
@@ -319,6 +349,10 @@ const modalRename = reactive({
         </div>
 
         <div>
+          <button @click="openNewFileModal" class="me-2 btn btn-success fas fa-plus-circle"></button>
+          <button @click="openNewFolderModal" class="me-2 btn btn-success fas fa-folder-plus"></button>
+          <button @click="uploadFile" class="me-2 btn btn-success fas fa-file-upload"></button>
+
           <button
             class="btn btn-success"
             :class="{
@@ -364,14 +398,24 @@ const modalRename = reactive({
     </div>
   </ModalWindow>
 
-  <!-- ModalWindow create folder-->
-  <Dialog v-model:visible="modalAddNewFolder.visible" :header="t('create_folder')" modal>
+  <!-- ModalWindow create file-->
+  <Dialog v-model:visible="modalAddNewFile.visible" :header="t('create_file')" modal style="width: 600px">
     <div class="mb-3">
-      <label class="form-label">{{ t('name_folder') }}</label>
+      <input v-model="modalAddNewFile.fileName" type="text" class="form-control" :placeholder="t('name_file')" @keyup.enter="createFolder" />
+    </div>
+    <template #footer>
+      <!-- <button class="btn btn-secondary btn-sm" @click="modalAddNewFolder.visible = false">{{ t('cancel') }}</button> -->
+      <button class="btn btn-success btn-sm" @click="createFile">{{ t('create') }}</button>
+    </template>
+  </Dialog>
+
+  <!-- ModalWindow create folder-->
+  <Dialog v-model:visible="modalAddNewFolder.visible" :header="t('create_folder')" modal style="width: 600px">
+    <div class="mb-3">
       <input v-model="modalAddNewFolder.newFolderName" type="text" class="form-control" :placeholder="t('name_folder')" @keyup.enter="createFolder" />
     </div>
     <template #footer>
-      <button class="btn btn-secondary btn-sm" @click="modalAddNewFolder.visible = false">{{ t('cancel') }}</button>
+      <!-- <button class="btn btn-secondary btn-sm" @click="modalAddNewFolder.visible = false">{{ t('cancel') }}</button> -->
       <button class="btn btn-success btn-sm" @click="createFolder">{{ t('create') }}</button>
     </template>
   </Dialog>
@@ -394,6 +438,10 @@ const modalRename = reactive({
   <EditFile :fileName="editFile.fileName" :zIndex="1000" v-if="editFile.visible" @close="editFile.visible = false"></EditFile>
 </template>
 <style>
+.p-contextmenu-item-content a {
+  text-decoration: none !important;
+}
+
 .path-element {
   cursor: pointer;
   /* text-decoration: underline; */

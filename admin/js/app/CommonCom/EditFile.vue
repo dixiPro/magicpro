@@ -29,6 +29,7 @@ const handleKeydown = async (event) => {
 };
 
 onMounted(async () => {
+  console.log('mount', props.fileName);
   fileExtention.value = props.fileName.split('.').pop();
   const res = await apiFile({ command: 'loadFile', fileName: props.fileName });
   fileData.value = res.fileData;
@@ -37,7 +38,8 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
-  window.removeEventListener('keydown', handleKeydown);
+  console.log('unmount', props.fileName);
+  window.removeEventListener('keydown', handleKeydown, { capture: true });
 });
 
 const ms = ref(true);
@@ -99,9 +101,7 @@ const emit = defineEmits(['close']);
   >
     <template #header>
       <div class="d-flex gx-2 py-2 mx-0 align-items-center">
-        <div class="flex-grow-1">
-          {{ fileName }}
-        </div>
+        <div class="flex-grow-1">{{ fileName }}</div>
         <div class="mx-2">
           <button class="btn btn-sm btn-primary" @click="saveFile">{{ t('save') }}</button>
         </div>

@@ -41,7 +41,7 @@ async function saveParams() {
     command: 'saveIniParams',
     allVars: iniParams.value,
   });
-  document.showToast(t('Saved'));
+  document.showToast(t('setup_saved'));
 
   await getIniParams();
 }
@@ -54,7 +54,7 @@ async function restoreParams() {
     command: 'restoreParams',
     allVars: iniParams.value,
   });
-  document.showToast(t('reseted'));
+  document.showToast(t('setup_reset'));
 
   await getIniParams();
 }
@@ -90,7 +90,7 @@ async function restoreParams() {
     </div>
   </div>
 
-  <pre>
+  <!-- <pre>
       {{ JSON.stringify(iniParams, null, 2) }}
       </pre
   >
@@ -99,7 +99,7 @@ async function restoreParams() {
   <pre>
       {{ JSON.stringify(paramsAttr, null, 2) }}
       </pre
-  >
+  > -->
   <TosatConfirm></TosatConfirm>
 </template>
 

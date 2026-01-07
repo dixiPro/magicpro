@@ -18,11 +18,6 @@ Route::get('/a_dmin/setup', function () {
     return view('magicAdmin::setup');
 })->name('magic.setup');
 
-// start
-Route::get('/a_dmin/start', function () {
-    return view('magicAdmin::start');
-})->name('magic.start');
-
 // import_tab
 Route::get('/a_dmin/import_tab', function () {
     return view('magicAdmin::import_tab');
@@ -37,7 +32,7 @@ Route::get('/a_dmin/export_tab', function () {
 
 
 // список статей
-Route::get('/a_dmin/artList', [AdminController::class, 'artList']);
+Route::get('/a_dmin/artList', [AdminController::class, 'artList'])->name('magic.artList');
 
 // очистить кэш
 Route::get('/a_dmin/api/clearCache', [AdminController::class, 'clearCache'])
@@ -80,9 +75,9 @@ Route::get('/a_dmin/artEditor', function () {
 })->where('any', '.*')->name('magic.artEditor');
 
 // редактор файлов
-Route::get('/a_dmin/fileEditor', function () {
-    return view('magicAdmin::fileEditor');
-})->where('any', '.*')->name('magic.fileEditor');
+Route::get('/a_dmin/fileManager', function () {
+    return view('magicAdmin::fileManager');
+})->where('any', '.*')->name('magic.fileManager');
 
 // файл менеджер АПИ    
 use MagicProAdminControllers\API_FileManagerPostController;
