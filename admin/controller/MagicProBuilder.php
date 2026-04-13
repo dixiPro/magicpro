@@ -57,6 +57,17 @@ function createMpro(array $article): array
     if ($controllerText !== '' && $useController) {
         $result['controller'] = true;
         write_file_or_fail($controllerFile, $controllerText);
+
+        $cmd = 'php -l ' . escapeshellarg($controllerFile) . ' 2>&1';
+        $out = shell_exec($cmd);
+
+        if ($out === null) {
+            throw new \RuntimeException('php lint failed');
+        }
+
+        if (!str_contains($out, 'No syntax errors detected')) {
+            throw new \RuntimeException($out);
+        }
     }
     return ($result);
 }

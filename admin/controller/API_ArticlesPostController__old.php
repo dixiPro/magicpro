@@ -10,34 +10,68 @@ use MagicProDatabaseModels\Article;
 
 require_once __DIR__ . '/MagicProBuilder.php';
 
-class API_ArticlesPostController extends AbstractApiHandler
+class API_ArticlesPostController extends Controller
 {
-    protected array $map = [
-        'getDefaultController'         => 'getDefaultController',
-        'getDefaultLiveWareController' => 'getDefaultLiveWareController',
-        'getParents'                   => 'getParents',
-        'getChildrens'                 => 'getChildrens',
-        'getBrothers'                  => 'getBrothers',
-        'makeHeTree'                   => 'makeHeTree',
-        'getById'                      => 'getArticle',
-        'createNew'                    => 'createNew',
-        'deleteById'                   => 'deleteRec',
-        'articleByName'                => 'getArticleByName',
-        'move'                         => 'move',
-        'copyRec'                      => 'copyRec',
-        'saveById'                     => 'saveById',
-        'regenerateAll'                => 'regenerateAll',
-        'search'                       => 'search',
-        'checkUrlByPhp'                => 'checkUrlByPhp',
-    ];
+    public function handle(Request $request): JsonResponse
+    {
+        try {
+            $methods = [
+                'getDefaultController'         => ['name' => 'getDefaultController'],
+                'getDefaultLiveWareController' => ['name' => 'getDefaultLiveWareController'],
+                'getParents'                   => ['name' => 'getParents'],
+                'getChildrens'                 => ['name' => 'getChildrens'],
+                'getBrothers'                  => ['name' => 'getBrothers'],
+                'makeHeTree'                   => ['name' => 'makeHeTree'],
+                'getById'                      => ['name' => 'getArticle'],
+                'createNew'                    => ['name' => 'createNew'],
+                'deleteById'                   => ['name' => 'deleteRec'],
+                'articleByName'                => ['name' => 'getArticleByName'],
+                'move'                         => ['name' => 'move'],
+                'copyRec'                      => ['name' => 'copyRec'],
+                'saveById'                     => ['name' => 'saveById'],
+                'regenerateAll'                => ['name' => 'regenerateAll'],
+                'search'                       => ['name' => 'search'],
+                'checkUrlByPhp'                => ['name' => 'checkUrlByPhp'],
 
 
+            ];
+
+            $command = $request->string('command')->toString();
+
+            if (!array_key_exists($command, $methods)) {
+                throw new \InvalidArgumentException("Unknown command '{$command}'");
+            }
+
+            $methodName = $methods[$command]['name'];
+            if (!method_exists($this, $methodName)) {
+                throw new \BadMethodCallException("Method {$methodName} not found");
+            }
+
+            $data = $this->{$methodName}($request);
+
+            return response()->json([
+                'status'  => true,
+                'data'    => $data,
+                'request' => $request->all(),
+            ]);
+        } catch (\Throwable $th) {
+            $msg = $th->getMessage();
+            if ($th->getFile()) $msg .=  "\n" . 'in ' . $th->getFile();
+            if ($th->getLine()) $msg .= "\n" .  'on line ' . $th->getLine();
+
+            return response()->json([
+                'status'   => false,
+                'errorMsg' => $msg,
+                'request'  => $request->all(),
+            ]);
+        }
+    }
 
     // ==================================================================
     //                     helper methods
     // ==================================================================
 
-    protected function search(Request $request): array
+    private function search(Request $request): array
     {
         $term = $request->input('text');
         $results = Article::where(function ($q) use ($term) {
@@ -50,7 +84,7 @@ class API_ArticlesPostController extends AbstractApiHandler
     }
 
 
-    protected function regenerateAll(Request $request): array
+    private function regenerateAll(Request $request): array
     {
 
         $records = Article::orderBy('name', 'asc')->get()->toArray();
@@ -65,7 +99,7 @@ class API_ArticlesPostController extends AbstractApiHandler
         return $saved;
     }
 
-    protected function saveById(Request $request): array
+    private function saveById(Request $request): array
     {
 
         $article = $request->input('article', []);
@@ -88,7 +122,7 @@ class API_ArticlesPostController extends AbstractApiHandler
         return $record->toArray();
     }
 
-    protected function getArticleByName(Request $request): array
+    private function getArticleByName(Request $request): array
     {
         $name = $request->input('name');
         $article = Article::where('name', $name)->first();
@@ -98,17 +132,17 @@ class API_ArticlesPostController extends AbstractApiHandler
         return $article->toArray();
     }
 
-    protected function getDefaultController(): array
+    private function getDefaultController(): array
     {
         return ['controller' => readDefaultController()];
     }
 
-    protected function getDefaultLiveWareController(): array
+    private function getDefaultLiveWareController(): array
     {
         return ['controller' => readDefaultLiveWareController()];
     }
 
-    protected function copyRec(Request $request): array
+    private function copyRec(Request $request): array
     {
         $id = $request->integer('id');
         return DB::transaction(function () use ($id) {
@@ -135,7 +169,7 @@ class API_ArticlesPostController extends AbstractApiHandler
         });
     }
 
-    protected function move(Request $request): array
+    private function move(Request $request): array
     {
         $id = $request->integer('id');
         $newParentId = $request->integer('newParentId');
@@ -247,7 +281,7 @@ class API_ArticlesPostController extends AbstractApiHandler
         });
     }
 
-    protected function getArticle(Request $request): array
+    private function getArticle(Request $request): array
     {
         $id = $request->integer('id');
         $article = Article::find($id);
@@ -257,7 +291,7 @@ class API_ArticlesPostController extends AbstractApiHandler
         throw new \InvalidArgumentException("id=$id not found");
     }
 
-    protected function createNew(Request $request): array
+    private function createNew(Request $request): array
     {
         $id = $request->integer('id');
         return DB::transaction(function () use ($id) {
@@ -287,7 +321,7 @@ class API_ArticlesPostController extends AbstractApiHandler
         });
     }
 
-    protected function deleteRec(Request $request): array
+    private function deleteRec(Request $request): array
     {
         $id = $request->integer('id');
         if ($id === 1) {
@@ -299,7 +333,7 @@ class API_ArticlesPostController extends AbstractApiHandler
         });
     }
 
-    protected function deleteRecNoTx(int $id): array
+    private function deleteRecNoTx(int $id): array
     {
         $article = Article::find($id);
         if (!$article) {
@@ -328,7 +362,7 @@ class API_ArticlesPostController extends AbstractApiHandler
         return $parent ? $parent->toArray() : [];
     }
 
-    protected function makeHeTree(Request $request): array
+    private function makeHeTree(Request $request): array
     {
         $id = $request->integer('id');
         $tree = [];
@@ -376,7 +410,7 @@ class API_ArticlesPostController extends AbstractApiHandler
         return [$tree];
     }
 
-    protected function getParents(Request $request): array
+    private function getParents(Request $request): array
     {
         $id = $request->integer('id');
         if ($id == 1) {
@@ -408,7 +442,7 @@ class API_ArticlesPostController extends AbstractApiHandler
         return $parents;
     }
 
-    protected function getChildrens(Request $request): array
+    private function getChildrens(Request $request): array
     {
         $id = $request->integer('id');
         if (!Article::find($id)) {
@@ -421,7 +455,7 @@ class API_ArticlesPostController extends AbstractApiHandler
             ->toArray();
     }
 
-    protected function getBrothers(Request $request): array
+    private function getBrothers(Request $request): array
     {
         $id = $request->integer('id');
         $article = Article::find($id);

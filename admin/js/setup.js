@@ -31,6 +31,7 @@ const components = [
   FileUpload,
   InputText,
   ToggleSwitch,
+  Button,
 ];
 
 import Setup from './app/Setup/Setup.vue';

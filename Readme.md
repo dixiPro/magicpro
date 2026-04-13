@@ -30,12 +30,17 @@
 ```bash
 # in project root
 composer require dixipro/magicpro
-php artisan magicpro:install
-sudo chown -R :www-data dataMagicPro
 php artisan migrate
+
 ```
 
 ### Added / Change
+
+#### 2026-04-05
+
+- Launched second website on MagicPRO (Laravel)
+- Launched new store powered by MagicShop (headless): catalog admin + frontend/backend via MagicPRO
+- Fixed bugs
 
 #### 2025-12-25
 

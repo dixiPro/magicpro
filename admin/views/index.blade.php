@@ -11,6 +11,14 @@
 @section('body')
     <h1>@magic_msg('title') @magic_msg('vesrsion')</h1>
 
+    {{-- Сюда про установку если будут сообщения --}}
+
+    <div>
+        @foreach ($messages as $val)
+            {{ $val }}<br>
+        @endforeach
+    </div>
+
     <div class="mt-4">@magic_msg('current_user')</div>
 
     @php

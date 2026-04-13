@@ -8,12 +8,58 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use MagicProDatabaseModels\Article;
 use MagicProDatabaseModels\MagicProUser;
+use MagicProSrc\MagicLang;
+
+use MagicProAdminControllers\API_ArticlesPostController;
 
 class AdminController extends Controller
 {
     public function index()
     {
-        return view('magicAdmin::index');
+
+        $messages = [];
+
+        try {
+            // 1. Проверить/создать MAGIC_DATA_DIR
+            if (!is_dir(MAGIC_DATA_DIR)) {
+                if (!mkdir(MAGIC_DATA_DIR, 0775, true)) {
+                    throw new \Exception('Cannot create dir: ' . MAGIC_DATA_DIR);
+                }
+                $messages[] = MagicLang::getMsg('install_start');
+                $messages[] = MagicLang::getMsg('install_dir_created') . ': ' . MAGIC_DATA_DIR;
+
+                // Проверить права: записать и удалить тестовый файл
+                $testFile = MAGIC_DATA_DIR . DIRECTORY_SEPARATOR . 'write_test.tmp';
+                File::put($testFile, 'test');
+                File::delete($testFile);
+                $messages[] = MagicLang::getMsg('install_write_ok');
+
+                // Перегенирация статий
+                $res = API_ArticlesPostController::run(['command' => 'regenerateAll']);
+                if ($res['status']) {
+
+                    $messages[] = MagicLang::getMsg('regenerate_articles');
+                    $messages = array_merge($messages, $res['data']);
+                } else {
+                    # code...
+                    $messages[] = $res['errorMsg'];
+                }
+            }
+
+            // 2. Проверить/создать VENDOR_PUBLIC и скопировать файлы только если папки не было
+            if (!is_dir(VENDOR_PUBLIC)) {
+                if (!mkdir(VENDOR_PUBLIC, 0775, true)) {
+                    throw new \Exception('Cannot create dir: ' . VENDOR_PUBLIC);
+                }
+                File::copyDirectory(VENDOR_FROM, VENDOR_PUBLIC);
+                $messages[] = MagicLang::getMsg('install_files_copied') . ': ' . VENDOR_PUBLIC;
+            }
+        } catch (\Throwable $e) {
+            $messages[] = MagicLang::getMsg('install_error') . ': ' . $e->getMessage();
+        }
+
+        // packages\dixipro\magicpro\admin\views\index.blade.php
+        return view('magicAdmin::index', compact('messages'));
     }
 
     public function testWrite()

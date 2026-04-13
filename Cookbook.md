@@ -5,9 +5,10 @@
 ```bash
 # in project root
 composer require dixipro/magicpro
+php artisan migrate
+
 php artisan magicpro:install
 sudo chown -R :www-data dataMagicPro
-php artisan migrate
 ```
 
 ### ⚙️ Installation for dev

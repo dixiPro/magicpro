@@ -20,8 +20,8 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        $email = readline('Введите email администратора: ');
-        $password = readline('Введите пароль администратора: ');
+        $email = readline('Enter admin email: ');
+        $password = readline('Enter password: ');
 
         // создаём администратора
         DB::table('magicPro_users')->insert([
@@ -37,6 +37,8 @@ return new class extends Migration
         echo "Admin  created:\n";
         echo "\033[32m-----> Email: " . $email  . "\033[0m\n" . "\n";
         echo "\033[32m-----> Password:" . $password . "\033[0m\n" . "\n";
+        echo "\n";
+        echo "open yourdomain/a_dmin\n";
     }
 
     public function down(): void

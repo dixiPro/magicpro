@@ -452,6 +452,9 @@ const modalRename = reactive({
   color: #198754;
   box-shadow: inset 0 -1px 0 #198754;
 }
+[data-bs-theme='dark'] .path-element:hover {
+  color: #9dff00; /* светлее зелёный */
+}
 
 .path-end {
   font-weight: bold;
@@ -459,5 +462,9 @@ const modalRename = reactive({
 
 .folder {
   color: var(--bs-indigo);
+}
+
+[data-bs-theme='dark'] .folder {
+  color: #a3f0ff; /* светлее */
 }
 </style>

@@ -163,15 +163,18 @@ function toggleMax() {
 
 .win {
   position: absolute;
-  background: #fff;
-  border-radius: 6px;
+  background: var(--bs-body-bg);
+  /* border-radius: 6px; */
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
   overflow: hidden;
+}
+[data-bs-theme='dark'] .win {
+  border: 1px solid #ccc;
 }
 
 .header {
   height: 32px;
-  background: #e5e5e5;
+  background: var(--bs-body-bg);
   display: flex;
   align-items: center;
   padding: 0 8px;
@@ -183,7 +186,6 @@ function toggleMax() {
   flex: 1;
   font-size: 14px;
   line-height: 1;
-  color: #000;
 }
 
 .close {

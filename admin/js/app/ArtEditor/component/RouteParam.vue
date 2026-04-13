@@ -23,10 +23,9 @@ const swapForName = ref('');
         <div class="nowrap">
           <ToggleSwitch v-model="store.article.routeParams.useController" />
         </div>
-        <div class="ms-2">
-          {{ t('use_controller') }}
-        </div>
+        <div class="ms-2">{{ t('use_controller') }}</div>
       </div>
+      <hr />
       <div class="my-2 d-flex">
         <div class="nowrap">
           <ToggleSwitch v-model="store.article.isRoute" />
@@ -34,14 +33,14 @@ const swapForName = ref('');
         <div class="ms-2">{{ t('is_route') }}</div>
       </div>
 
-      <div v-if="store.article.isRoute">
-        <div class="d-flex my-2">
-          <div class="nowrap">
-            <ToggleSwitch v-model="store.article.routeParams.adminOnly" />
-          </div>
-          <div class="ms-2">{{ t('only_admin') }}</div>
+      <div class="my-2 d-flex">
+        <div class="nowrap">
+          <ToggleSwitch v-model="store.article.routeParams.postEnable" />
         </div>
+        <div class="ms-2">{{ t('route_post') }}</div>
+      </div>
 
+      <div v-if="store.article.isRoute && !store.article.routeParams.postEnable" class="ms-3">
         <div class="d-flex my-2">
           <div class="nowrap">
             <ToggleSwitch v-model="store.article.routeParams.utmParamsEnable" />
@@ -141,6 +140,13 @@ const swapForName = ref('');
             <span v-if="store.article.routeParams.utmParamsEnable">?utm_rametrs...</span>
           </strong>
         </div>
+      </div>
+
+      <div class="d-flex my-2" v-if="store.article.isRoute">
+        <div class="nowrap">
+          <ToggleSwitch v-model="store.article.routeParams.adminOnly" />
+        </div>
+        <div class="ms-2">{{ t('only_admin') }}</div>
       </div>
     </div>
 

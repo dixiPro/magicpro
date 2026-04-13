@@ -50,4 +50,11 @@ return [
     'language' => 'language ru or en, save and reload',
     'addition_link' => 'Add links in admin pannel',
     'file_manager' => 'File manager',
+
+    'install_start'       => 'Installation',
+    'install_dir_created' => 'Directory created',
+    'install_write_ok'    => 'Write test: success',
+    'install_files_copied'=> 'Files copied',
+    'install_error'       => 'Install error',
+
 ];

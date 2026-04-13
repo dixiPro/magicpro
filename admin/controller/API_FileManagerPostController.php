@@ -47,7 +47,6 @@ class API_FileManagerPostController extends Controller
                 'dirList' => ['name' => 'dirList'],
                 'mkdir'   => ['name' => 'mkdir'],
                 'mkfile'   => ['name' => 'mkfile'],
-
                 'upload'  => ['name' => 'upload'],
                 'uploadBin'  => ['name' => 'uploadBin'],
                 'delete'  => ['name' => 'delete'],
@@ -383,9 +382,14 @@ class API_FileManagerPostController extends Controller
             throw new \RuntimeException("item '{$deleteFile}' not found");
         }
 
-        File::isDirectory($deleteFile)
+
+        $ok = File::isDirectory($deleteFile)
             ? File::deleteDirectory($deleteFile)
             : File::delete($deleteFile);
+
+        if (!$ok) {
+            throw new \RuntimeException("delete error '{$deleteFile}'");
+        }
 
         return ['deleted' => $deleteFile];
     }

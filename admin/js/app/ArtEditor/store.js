@@ -1,6 +1,6 @@
 // stores/article.js
 import { defineStore } from 'pinia';
-import { ref, toRaw, computed } from 'vue';
+import { ref, toRaw, computed, watch } from 'vue';
 import { apiArt, translitString } from '../apiCall';
 import { formatBlade } from './component/formatBlade.js';
 import { formatPhp } from './component/formatPhp.js';
@@ -37,8 +37,19 @@ export const useArticleStore = defineStore('article', () => {
   const statusAutocompletePannel = ref(false);
 
   // aceTheme
-  const aceTheme = 'chrome';
+  const aceTheme = ref('chrome');
   const aceThemes = ['chrome', 'monokai', 'dracula', 'twilight'];
+
+  //
+  watch(aceTheme, (val) => {
+    const darkThemes = ['monokai', 'dracula', 'twilight'];
+    if (darkThemes.includes(val)) {
+      document.documentElement.setAttribute('data-bs-theme', 'dark');
+    } else {
+      document.documentElement.setAttribute('data-bs-theme', 'light');
+    }
+    localStorage.setItem('magic-theme', val);
+  });
 
   // findMode
   const statusLeftPannel = ref('tree');
@@ -54,6 +65,8 @@ export const useArticleStore = defineStore('article', () => {
   // ========= функции
 
   async function loadRec(id) {
+    aceTheme.value = localStorage.getItem('magic-theme') ? localStorage.getItem('magic-theme') : 'chrome';
+
     const art = await apiArt({ command: 'getById', id });
     article.value = updateRouteParams(art);
     history.pushState(id, null, '#' + id);
@@ -66,12 +79,22 @@ export const useArticleStore = defineStore('article', () => {
     if (Array.isArray(routeParams) || routeParams === null || typeof routeParams !== 'object') {
       routeParams = {};
     }
-    const { adminOnly = false, useController = true, getEnable = false, utmParamsEnable = true, bindKeys = false, keysArr = [] } = routeParams;
+    const {
+      //
+      adminOnly = false,
+      useController = true,
+      getEnable = false,
+      utmParamsEnable = true,
+      bindKeys = false,
+      postEnable = false,
+      keysArr = [],
+    } = routeParams;
 
     art.routeParams = {
       useController,
       adminOnly,
       getEnable,
+      postEnable,
       utmParamsEnable,
       bindKeys,
       keysArr,

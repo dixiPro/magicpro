@@ -18,6 +18,8 @@ const fileExtention = ref('');
 const fileData = ref('');
 const ready = ref(false);
 
+const aceTheme = ref('chrome');
+
 const handleKeydown = async (event) => {
   if (event.ctrlKey && event.code === 'KeyS') {
     console.log('save file');
@@ -29,7 +31,8 @@ const handleKeydown = async (event) => {
 };
 
 onMounted(async () => {
-  console.log('mount', props.fileName);
+  aceTheme.value = localStorage.getItem('magic-theme') ? localStorage.getItem('magic-theme') : 'chrome';
+
   fileExtention.value = props.fileName.split('.').pop();
   const res = await apiFile({ command: 'loadFile', fileName: props.fileName });
   fileData.value = res.fileData;
@@ -111,7 +114,7 @@ const emit = defineEmits(['close']);
         </div>
       </div>
     </template>
-    <AceFileEditor v-model="fileData" :fileExtention="fileExtention" theme="chrome" />
+    <AceFileEditor v-model="fileData" :fileExtention="fileExtention" :theme="aceTheme" />
   </ModalWindow>
 </template>
 

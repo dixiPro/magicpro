@@ -19,7 +19,7 @@ onMounted(() => {
   getIniParams();
 });
 
-onUnmounted(() => {});
+onUnmounted(() => { });
 
 async function getIniParams() {
   paramsAttr.value = await apiSetup({
@@ -70,14 +70,12 @@ async function restoreParams() {
         </div>
       </div>
       <div class="col-md-5">
-        <EditString
-          v-if="value.type == 'localpath' || value.type == 'string'"
-          v-model="iniParams[key]"
-          :defaultValue="value.default"
-          :mutable="value.mutable"
-        ></EditString>
-        <EditBoolean v-if="value.type == 'boolean'" v-model="iniParams[key]" :defaultValue="value.default" :mutable="value.mutable"></EditBoolean>
-        <EditArray v-if="value.type == 'array'" v-model="iniParams[key]" :defaultValue="value.default" :mutable="value.mutable"></EditArray>
+        <EditString v-if="value.type == 'localpath' || value.type == 'string'" v-model="iniParams[key]"
+          :defaultValue="value.default" :mutable="value.mutable"></EditString>
+        <EditBoolean v-if="value.type == 'boolean'" v-model="iniParams[key]" :defaultValue="value.default"
+          :mutable="value.mutable"></EditBoolean>
+        <EditArray v-if="value.type == 'array'" v-model="iniParams[key]" :defaultValue="value.default"
+          :mutable="value.mutable"></EditArray>
       </div>
     </div>
     <div class="row">

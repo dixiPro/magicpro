@@ -50,6 +50,12 @@ return [
     'language' => 'language ru or en, save and reload',
     'addition_link' => 'Дополнительные ссылки в админке',
     'file_manager' => 'Файл менеджер',
-    'artList' => 'Список статей'
+    'artList' => 'Список статей',
+
+    'install_start'       => 'Установка',
+    'install_dir_created' => 'Папка создана',
+    'install_write_ok'    => 'Тест записи: успех',
+    'install_files_copied'=> 'Файлы скопированы',
+    'install_error'       => 'Ошибка установки',
 
 ];

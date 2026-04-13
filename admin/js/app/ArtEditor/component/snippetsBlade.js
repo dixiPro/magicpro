@@ -65,7 +65,19 @@ export function snippetsBlade(editor) {
     { tabTrigger: '', name: '_@while', content: '@while ($${1:flag})\n\t$0\n@endwhile' },
     { tabTrigger: '', name: '_@yield', content: "@yield('${1:section}')" },
 
+    { tabTrigger: '', name: '_@pushOnce', content: "@pushOnce('${1:styles}')\n@endpushOnce" },
+
     { tabTrigger: '', name: '_<x-magic', content: '<x-magic::${1:anonymus} :data="$${1:value}"></x-magic::${1:anonymus}>)' },
+
+    { tabTrigger: '', name: '_helper_getArtByName', content: '\\$art =TreeHelper::getArtByName($${1:artname})' },
+    { tabTrigger: '', name: '_helper_getChildrenByName', content: '\\$childs =TreeHelper::getChildrenByName($${1:artname})' },
+    { tabTrigger: '', name: '_helper_getChildrenById', content: '\\$childs =TreeHelper::getChildrenById($${1:id})' },
+    { tabTrigger: '', name: '_helper_getPathToRootById', content: '\\$path =TreeHelper::getPathToRootById($${1:id})' },
+    { tabTrigger: '', name: '_helper_getParent', content: '\\$parent =TreeHelper::getParent($${1:parent})' },
+    { tabTrigger: '', name: '_dumpHlper', content: '{{ DumpHelper::dumpA( $${1:var} }}' },
+    { tabTrigger: '', name: '_@mproauth', content: '@mproauth\n@endmproauth' },
+
+    { tabTrigger: '', name: '_auth_magic', content: "if (!auth('magic')->check()) { \n return;\n  }" },
   ];
   const allKeys = snippetArr.map((e) => e.tabTrigger.replace('@', ''));
 

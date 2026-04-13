@@ -42,7 +42,7 @@ onMounted(() => {
 
 <template>
   <!-- тосты -->
-  <Toast position="top-right"></Toast>
+  <Toast position="bottom-right"></Toast>
   <!-- Дилог Да Нет -->
   <ConfirmDialog></ConfirmDialog>
 </template>

@@ -14,7 +14,7 @@ watch(
   () => store.article.id,
   () => {
     makeHeTree(store.article.id);
-  }
+  },
 );
 
 // атрибуты узла
@@ -28,7 +28,7 @@ watch(
       document.title = store.article.title;
     }
   },
-  { deep: true }
+  { deep: true },
 );
 
 onMounted(() => {
@@ -254,7 +254,7 @@ async function onAfterDrop() {
   // состав соседей и позиция
   const list = targetInfo.siblings ?? parentStat.children ?? [];
   const idx = list.findIndex((s) => s === dragNode || s.data?.id === id);
-  const idBrotherUp = idx > 0 ? list[idx - 1].data?.id ?? 0 : 0;
+  const idBrotherUp = idx > 0 ? (list[idx - 1].data?.id ?? 0) : 0;
 
   try {
     const res = await apiArt({
@@ -315,6 +315,10 @@ function rollback(dragNode) {
   </div>
 </template>
 <style>
+.p-splitter {
+  background: var(--bs-body-bg);
+}
+
 .active {
   font-weight: bold;
 }
@@ -323,12 +327,28 @@ function rollback(dragNode) {
   cursor: pointer;
 }
 
-.notroute {
+/* .notroute {
   color: #555;
 }
 
 .route {
   color: #007700;
+} */
+
+.route {
+  color: var(--bs-success);
+}
+
+[data-bs-theme='dark'] .route {
+  color: #9dff00; /* светлее зелёный */
+}
+
+.notroute {
+  color: var(--bs-secondary-color);
+}
+
+[data-bs-theme='dark'] .notroute {
+  color: #eee;
 }
 
 .he-tree__open-icon svg {

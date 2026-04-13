@@ -14,10 +14,6 @@ class DynamicRouteHandler
 
     private function checkRout(Request $request, $routeParams, $segments)
     {
-        // только для админа
-        if ($routeParams['adminOnly'] && ! Auth::guard('magic')->check()) {
-            throw new \Exception('Только админам');
-        }
         // 
         // парсим все данные в один массив = сегмент + квери
         // выбрасываем разрешенные
@@ -141,12 +137,25 @@ class DynamicRouteHandler
 
         // нет раута
         if (! ($article['isRoute'] ?? null)) {
-            throw new \Exception('раут запрещен');
+            throw new \Exception('route not eneble');
         }
 
         $routeParams = $article['routeParams'];
 
-        $res = $this->checkRout($request, $article['routeParams'], $segments);
+        // только для админа
+        if ($routeParams['adminOnly'] && ! Auth::guard('magic')->check()) {
+            throw new \Exception('Только админам');
+        }
+
+        $postParams = [];
+        $res = [];
+
+        // проверка поста
+        if ($routeParams['postEnable'] ?? false) {
+            $postParams = $request->post();
+        } else {
+            $res = $this->checkRout($request, $article['routeParams'], $segments);
+        }
 
         // Тут все верно
         $name      = $article['name'];
@@ -163,14 +172,15 @@ class DynamicRouteHandler
         if (array_key_exists('useController', $article['routeParams']) &&  !$article['routeParams']['useController']) {
             return view($view, [
                 'Env' => $env,
-                'Get' => $res
+                'Get' => $res,
+                'Post' => $postParams
             ]);
         }
 
         // добавляем атрибуты
         $request->attributes->add($env);
         $controller = new $controllerName();
-        return $controller->handle($request,  $res);
+        return $controller->handle($request,  $res, $postParams);
     }
 
     public function handle(Request $request)

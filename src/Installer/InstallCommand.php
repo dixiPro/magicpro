@@ -1,5 +1,7 @@
 <?php
 
+// не используется перенес в старт админки
+
 namespace MagicProSrc\Installer;
 
 use Illuminate\Console\Command;

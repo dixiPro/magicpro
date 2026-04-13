@@ -27,13 +27,14 @@ class MagicServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
+        //  перенесли в index админки
         // Регистрируем artisan-команду
-        if ($this->app->runningInConsole()) {
-            $this->commands([
-                // подключаем файл в котором команда
-                InstallCommand::class,
-            ]);
-        }
+        // if ($this->app->runningInConsole()) {
+        //     $this->commands([
+        //         // подключаем файл в котором команда
+        //         InstallCommand::class,
+        //     ]);
+        // }
 
         // вьюхи
         $this->loadViewsFrom(MAGIC_VIEW_DIR, 'magic');
@@ -75,6 +76,7 @@ class MagicServiceProvider extends ServiceProvider
 
         // Регистрируем middleware под алиасом 'magic.auth'
         app('router')->aliasMiddleware('magic.auth', CheckMagicAuth::class);
+
 
         // Vite скрипты
         // Laravel будет искать dev-сервер по нашему hot-файлу
