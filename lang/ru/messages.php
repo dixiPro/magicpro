@@ -1,6 +1,6 @@
 <?php
 return [
-    'vesrsion' => '1.1.5',
+    'vesrsion' => '1.6.1',
     'title' => 'Админка',
     'start' => 'Cтарт',
     'setup' => 'Setup',
@@ -55,7 +55,7 @@ return [
     'install_start'       => 'Установка',
     'install_dir_created' => 'Папка создана',
     'install_write_ok'    => 'Тест записи: успех',
-    'install_files_copied'=> 'Файлы скопированы',
+    'install_files_copied' => 'Файлы скопированы',
     'install_error'       => 'Ошибка установки',
 
 ];

@@ -1,6 +1,6 @@
 <?php
 return [
-    'vesrsion' => '1.1.5',
+    'vesrsion' => '1.6.1',
     'title' => 'Admin panel',
     'start' => 'start',
     'setup' => 'Setup',
@@ -54,7 +54,7 @@ return [
     'install_start'       => 'Installation',
     'install_dir_created' => 'Directory created',
     'install_write_ok'    => 'Write test: success',
-    'install_files_copied'=> 'Files copied',
+    'install_files_copied' => 'Files copied',
     'install_error'       => 'Install error',
 
 ];
