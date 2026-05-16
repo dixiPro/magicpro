@@ -1,9 +1,9 @@
 {
-  "_FileManager-BGwYywbz.js": {
-    "file": "assets/FileManager-BGwYywbz.js",
+  "_FileManager-CKcB4Z2N.js": {
+    "file": "assets/FileManager-CKcB4Z2N.js",
     "name": "FileManager",
     "imports": [
-      "_translate-BQQwZCNC.js",
+      "_translate-BIns-Zmg.js",
       "__plugin-vue_export-helper-DlAUqK2U.js"
     ],
     "css": [
@@ -18,25 +18,25 @@
     "file": "assets/_plugin-vue_export-helper-DlAUqK2U.js",
     "name": "_plugin-vue_export-helper"
   },
-  "_index-Bctn7ikr.css": {
-    "file": "assets/index-Bctn7ikr.css",
-    "src": "_index-Bctn7ikr.css"
+  "_index-1JlVNC7A.css": {
+    "file": "assets/index-1JlVNC7A.css",
+    "src": "_index-1JlVNC7A.css"
   },
-  "_index-CVchmPLF.js": {
-    "file": "assets/index-CVchmPLF.js",
+  "_index-Bu2QjrqJ.js": {
+    "file": "assets/index-Bu2QjrqJ.js",
     "name": "index",
     "imports": [
-      "_translate-BQQwZCNC.js"
+      "_translate-BIns-Zmg.js"
     ]
   },
-  "_index-Cg2Daaxj.js": {
-    "file": "assets/index-Cg2Daaxj.js",
+  "_index-CTkmayAb.js": {
+    "file": "assets/index-CTkmayAb.js",
     "name": "index",
     "imports": [
-      "_translate-BQQwZCNC.js"
+      "_translate-BIns-Zmg.js"
     ],
     "css": [
-      "assets/index-Bctn7ikr.css"
+      "assets/index-1JlVNC7A.css"
     ],
     "assets": [
       "assets/primeicons-DMOk5skT.eot",
@@ -46,8 +46,8 @@
       "assets/primeicons-Dr5RGzOO.svg"
     ]
   },
-  "_translate-BQQwZCNC.js": {
-    "file": "assets/translate-BQQwZCNC.js",
+  "_translate-BIns-Zmg.js": {
+    "file": "assets/translate-BIns-Zmg.js",
     "name": "translate",
     "css": [
       "assets/translate-BrjK1KNi.css"
@@ -58,28 +58,29 @@
     "src": "_translate-BrjK1KNi.css"
   },
   "admin/js/artEditor.js": {
-    "file": "assets/artEditor-DkCJNRTc.js",
+    "file": "assets/artEditor-Af-aLEXH.js",
     "name": "artEditor",
     "src": "admin/js/artEditor.js",
     "isEntry": true,
     "imports": [
-      "_translate-BQQwZCNC.js",
-      "_index-Cg2Daaxj.js",
-      "_FileManager-BGwYywbz.js",
+      "_translate-BIns-Zmg.js",
+      "_index-CTkmayAb.js",
+      "_FileManager-CKcB4Z2N.js",
+      "_index-Bu2QjrqJ.js",
       "__plugin-vue_export-helper-DlAUqK2U.js"
     ],
     "css": [
-      "assets/artEditor-DmbN7WF6.css"
+      "assets/artEditor-DbZLuy91.css"
     ]
   },
   "admin/js/crawler.js": {
-    "file": "assets/crawler-CBAP0mSk.js",
+    "file": "assets/crawler-C8GzObkN.js",
     "name": "crawler",
     "src": "admin/js/crawler.js",
     "isEntry": true,
     "imports": [
-      "_translate-BQQwZCNC.js",
-      "_index-CVchmPLF.js",
+      "_translate-BIns-Zmg.js",
+      "_index-Bu2QjrqJ.js",
       "__plugin-vue_export-helper-DlAUqK2U.js"
     ],
     "css": [
@@ -87,39 +88,39 @@
     ]
   },
   "admin/js/editUsers.js": {
-    "file": "assets/editUsers-DJeg8Qtt.js",
+    "file": "assets/editUsers--rCpPG6J.js",
     "name": "editUsers",
     "src": "admin/js/editUsers.js",
     "isEntry": true,
     "imports": [
-      "_translate-BQQwZCNC.js",
-      "_index-CVchmPLF.js"
+      "_translate-BIns-Zmg.js",
+      "_index-Bu2QjrqJ.js"
     ],
     "css": [
       "assets/editUsers-Cktv8VuK.css"
     ]
   },
   "admin/js/fileManager.js": {
-    "file": "assets/fileManager-C9o126mg.js",
+    "file": "assets/fileManager-B0brKpT2.js",
     "name": "fileManager",
     "src": "admin/js/fileManager.js",
     "isEntry": true,
     "imports": [
-      "_translate-BQQwZCNC.js",
-      "_index-Cg2Daaxj.js",
-      "_FileManager-BGwYywbz.js",
+      "_translate-BIns-Zmg.js",
+      "_index-CTkmayAb.js",
+      "_FileManager-CKcB4Z2N.js",
       "__plugin-vue_export-helper-DlAUqK2U.js"
     ]
   },
   "admin/js/setup.js": {
-    "file": "assets/setup-GGI0sCqI.js",
+    "file": "assets/setup-DNCfb2Wi.js",
     "name": "setup",
     "src": "admin/js/setup.js",
     "isEntry": true,
     "imports": [
-      "_translate-BQQwZCNC.js",
-      "_index-Cg2Daaxj.js",
-      "_index-CVchmPLF.js"
+      "_translate-BIns-Zmg.js",
+      "_index-CTkmayAb.js",
+      "_index-Bu2QjrqJ.js"
     ],
     "css": [
       "assets/setup-DEBB25qV.css"

@@ -21,7 +21,6 @@ onMounted(() => {
   store.loadRec(Number(location.hash.slice(1)) || 1);
 
   history.pushState(articleId.value, null, '#' + articleId.value);
-  console.log('--start ediror--');
   setMagicIcon('#ff642f');
 
   window.addEventListener('popstate', onPopState);

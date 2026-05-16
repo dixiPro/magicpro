@@ -1,4 +1,4 @@
-import{a4 as a,a3 as s,a5 as r,b as c,o as g,d,a6 as o,E as h}from"./translate-BQQwZCNC.js";var u=`
+import{G as a,al as s,K as r,b as c,o as g,d,E as o,I as h}from"./translate-BIns-Zmg.js";var u=`
     .p-toggleswitch {
         display: inline-block;
         width: dt('toggleswitch.width');

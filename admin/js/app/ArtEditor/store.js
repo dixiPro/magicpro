@@ -82,7 +82,7 @@ export const useArticleStore = defineStore('article', () => {
     const {
       //
       adminOnly = false,
-      useController = true,
+      useController = false,
       getEnable = false,
       utmParamsEnable = true,
       bindKeys = false,

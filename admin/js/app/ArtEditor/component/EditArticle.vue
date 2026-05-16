@@ -113,7 +113,7 @@ onMounted(() => {
     () => store.article.routeParams.useController,
     () => {
       splitterCheckUseController();
-    }
+    },
   );
 });
 </script>
@@ -122,7 +122,7 @@ onMounted(() => {
   <div>
     <div :style="{ height: ready.y + 'px', width: ready.x + 'px' }" id="editor-layer">
       <div v-if="ready.show">
-        <Splitter :style="{ height: ready.y + 'px', width: ready.x + 'px' }" @resizeend="splitterTreeOnResizeEnd" ref="splitterTreeRef">
+        <Splitter :style="{ height: ready.y + 'px', width: ready.x + 'px' }" @resizeend="splitterTreeOnResizeEnd" ref="splitterTreeRef" class="pannels-back">
           <SplitterPanel :size="leftTreeSplitter" :minSize="0">
             <div style="position: relative">
               <button
@@ -152,4 +152,8 @@ onMounted(() => {
     </div>
   </div>
 </template>
-<style scoped></style>
+<style scoped>
+.pannels-back {
+  background: var(--bs-body-bg);
+}
+</style>

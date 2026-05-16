@@ -9,5 +9,5 @@
 @endsection
 
 @section('script')
-    @vite('admin/js/fileManager.js')
+    @vite('admin/js/fileManager.js', 'vendor/dixipro/magicpro')
 @endsection

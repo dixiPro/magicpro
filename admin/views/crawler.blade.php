@@ -8,7 +8,7 @@
 
     @if (Auth::guard('magic')->user()->role === 'admin')
         <div id="crawler"></div>
-        @vite('admin/js/crawler.js')
+        @vite('admin/js/crawler.js', 'vendor/dixipro/magicpro')
     @else
         <div>Недостаточно прав</div>
     @endif

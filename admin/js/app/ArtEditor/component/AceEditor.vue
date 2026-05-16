@@ -55,6 +55,8 @@ onMounted(() => {
     useWorker: false,
   });
 
+  editor.renderer.setScrollMargin(0, 80, 0, 0);
+
   editor.setOptions({
     enableBasicAutocompletion: true,
     enableLiveAutocompletion: true,
@@ -96,7 +98,7 @@ onMounted(() => {
         editor.find(val);
         editor.execCommand('find');
         store.searchTextController = '';
-      }
+      },
     );
 
   // ждем search для html
@@ -108,7 +110,7 @@ onMounted(() => {
         editor.find(store.searchTextView);
         editor.execCommand('find');
         store.searchTextView = '';
-      }
+      },
     );
   }
 });
@@ -123,23 +125,23 @@ onBeforeUnmount(() => editor?.destroy());
 
 watch(
   () => props.lang,
-  (v) => editor?.session.setMode(getMode(v))
+  (v) => editor?.session.setMode(getMode(v)),
 );
 watch(
   () => props.theme,
-  (v) => editor?.setTheme(getTheme(v))
+  (v) => editor?.setTheme(getTheme(v)),
 );
 watch(
   () => props.readOnly,
-  (v) => editor?.setReadOnly(v)
+  (v) => editor?.setReadOnly(v),
 );
 watch(
   () => props.tabSize,
-  (v) => editor?.session.setTabSize(v)
+  (v) => editor?.session.setTabSize(v),
 );
 watch(
   () => props.wrap,
-  (v) => editor?.session.setUseWrapMode(v)
+  (v) => editor?.session.setUseWrapMode(v),
 );
 </script>
 
@@ -148,3 +150,8 @@ watch(
     <div ref="el" :id="id" style="width: 100%; height: 100%"></div>
   </div>
 </template>
+<style>
+.ace_content {
+  padding-bottom: 100px;
+}
+</style>

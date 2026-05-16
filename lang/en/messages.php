@@ -1,6 +1,5 @@
 <?php
 return [
-    'vesrsion' => '1.6.1',
     'title' => 'Admin panel',
     'start' => 'start',
     'setup' => 'Setup',

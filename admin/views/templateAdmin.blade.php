@@ -6,16 +6,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title')</title>
-    <link rel="stylesheet" href="/vendor/magicpro/bootstrap5/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="/vendor/magicpro/fontawesome-free/css/all.min.css" />
+    <link rel="stylesheet" href="/vendor/dixipro/magicpro/bootstrap5/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="/vendor/dixipro/magicpro/fontawesome-free/css/all.min.css" />
 
-    <script src="/vendor/magicpro/emmet/emmet.js"></script>
-    <script src="/vendor/magicpro/prettier/standalone.js"></script>
-    <script src="/vendor/magicpro/prettier/plugin-html.js"></script>
-    <script src="/vendor/magicpro/prettier/plugin-php.js"></script>
-    <script src="/vendor/magicpro/prettier/postcss.js"></script>
-    <script src="/vendor/magicpro/prettier/babel.js"></script>
-    <script src="/vendor/magicpro/prettier/estree.js"></script>
+    <script src="/vendor/dixipro/magicpro/emmet/emmet.js"></script>
+    <script src="/vendor/dixipro/magicpro/prettier/standalone.js"></script>
+    <script src="/vendor/dixipro/magicpro/prettier/plugin-html.js"></script>
+    <script src="/vendor/dixipro/magicpro/prettier/plugin-php.js"></script>
+    <script src="/vendor/dixipro/magicpro/prettier/postcss.js"></script>
+    <script src="/vendor/dixipro/magicpro/prettier/babel.js"></script>
+    <script src="/vendor/dixipro/magicpro/prettier/estree.js"></script>
 </head>
 
 <body>
@@ -83,7 +83,7 @@
             </div>
         @endmproauth
 
-        <script src="/vendor/magicpro/bootstrap5/js/bootstrap.bundle.min.js"></script>
+        <script src="/vendor/dixipro/magicpro/bootstrap5/js/bootstrap.bundle.min.js"></script>
 </body>
 
 </html>

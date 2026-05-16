@@ -5,6 +5,36 @@ use MagicProDatabaseModels\Article;
 
 class TreeHelper
 {
+
+    public static function imageType(string $text): string
+    {
+        $text = match (strtolower(pathinfo($text, PATHINFO_EXTENSION))) {
+            'jpg', 'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            'webp' => 'image/webp',
+            'gif' => 'image/gif',
+            default => '',
+        };
+
+        return $text;
+    }
+
+    //
+    public static function trimAndCutText(string $text, int $limit = 0): string
+    {
+        $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $text = strip_tags($text);
+        $text = preg_replace('/[\p{So}\p{Cn}]/u', '', $text);
+        $text = preg_replace('/\s+/u', ' ', $text); // \r \n \t и лишние пробелы
+        $text = trim($text);
+
+        if ($limit > 0 && mb_strlen($text) > $limit) {
+            $text = mb_substr($text, 0, $limit + 1);
+            $text = preg_replace('/\s+\S*$/u', '', $text);
+        }
+
+        return $text;
+    }
     // продитель
     public static function getParent(int $id): array
     {

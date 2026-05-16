@@ -23,7 +23,7 @@ import 'ace-builds/src-noconflict/snippets/css';
 import 'ace-builds/src-noconflict/mode-javascript';
 import 'ace-builds/src-noconflict/snippets/javascript';
 
-ace.config.set('basePath', '/vendor/magicpro/ace');
+ace.config.set('basePath', '/vendor/dixipro/magicpro/ace');
 
 const id = ref(useId());
 
@@ -89,11 +89,11 @@ watch(
   (v) => {
     const mode = getMode();
     editor?.session.setMode(mode);
-  }
+  },
 );
 watch(
   () => props.theme,
-  (v) => editor?.setTheme(getTheme(v))
+  (v) => editor?.setTheme(getTheme(v)),
 );
 </script>
 <template>

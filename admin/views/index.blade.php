@@ -5,11 +5,11 @@
 @extends('magicAdmin::templateAdmin')
 
 @section('title')
-    @magic_msg('title') @magic_msg('vesrsion')
+    @magic_msg('title') {{ MAGIC_VERSION }}
 @endsection
 
 @section('body')
-    <h1>@magic_msg('title') @magic_msg('vesrsion')</h1>
+    <h1>@magic_msg('title') {{ MAGIC_VERSION }}</h1>
 
     {{-- Сюда про установку если будут сообщения --}}
 

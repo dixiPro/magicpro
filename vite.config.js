@@ -3,6 +3,7 @@ import laravel from 'laravel-vite-plugin';
 import vue from '@vitejs/plugin-vue';
 import path from 'path';
 import fs from 'fs-extra';
+import { execSync } from 'node:child_process';
 
 export default defineConfig({
   plugins: [
@@ -18,7 +19,7 @@ export default defineConfig({
       refresh: true,
       hotFile: path.resolve(__dirname, '../../../storage/magicpro.vite.hot'),
       publicDirectory: '../../../public',
-      buildDirectory: 'vendor/magicpro', // <— манифест будет: public/vendor/magicpro/manifest.json
+      buildDirectory: 'vendor/dixipro/magicpro', // <— манифест будет: public/vendor/dixipro/magicpro/manifest.json
     }),
 
     {
@@ -27,7 +28,8 @@ export default defineConfig({
       // удаляет старые assets, чтобы не было мусора и конфликтов
       buildStart() {
         console.log('--> Build start');
-        const assetsDir = '../../../public/vendor/magicpro/assets';
+        // чистим старые асессты
+        const assetsDir = '../../../public/vendor/dixipro/magicpro/assets';
         if (fs.existsSync(assetsDir)) {
           fs.removeSync(assetsDir);
           console.log('🧹 old assets cleaned');
@@ -41,31 +43,25 @@ export default defineConfig({
 
         // сгенерированные файлы вайтом
         // сохраняются в паблик проекта.
-        const buildDirectory = '../../../public/vendor/magicpro/';
+        const buildDirectory = '../../../public/vendor/dixipro/magicpro/';
 
         // сюда сохраняем сегенеренное для хранения в пакете
         const readyBundle = 'readyBundle/';
 
-        fs.emptyDirSync(readyBundle + 'assets'); // 🔥 очищает только папку assests
-        // что копируем, куда копируем
-        fs.copySync(
-          buildDirectory + 'assets', //
-          readyBundle + 'assets'
-        );
+        // fs.emptyDirSync(readyBundle + 'assets'); // 🔥 очищает только папку assests
+        // // что копируем, куда копируем
+        // fs.copySync(
+        //   buildDirectory + 'assets', //
+        //   readyBundle + 'assets',
+        // );
 
-        fs.copySync(
-          buildDirectory + 'manifest.json', //
-          readyBundle + 'manifest.json'
-        );
+        // fs.copySync(
+        //   buildDirectory + 'manifest.json', //
+        //   readyBundle + 'manifest.json',
+        // );
+        const cmd = `rsync -av --delete ${buildDirectory} ${readyBundle} `;
 
-        // // проверяем папку, тут лежат все файлы
-        // // которые подключаются в хеадере
-        // const externalInPublic = '../../../public/vendor/magicpro/external/';
-        // const packageExternal = 'public/vendor/magicpro/external/';
-
-        // if (!fs.existsSync(externalInPublic)) {
-        //   console.log('Папка существует');
-        // }
+        execSync(cmd, { stdio: 'inherit' });
 
         console.log('✅ MagicPro assets copied readyBundle');
       },

@@ -74,7 +74,8 @@ export function snippetsBlade(editor) {
     { tabTrigger: '', name: '_helper_getChildrenById', content: '\\$childs =TreeHelper::getChildrenById($${1:id})' },
     { tabTrigger: '', name: '_helper_getPathToRootById', content: '\\$path =TreeHelper::getPathToRootById($${1:id})' },
     { tabTrigger: '', name: '_helper_getParent', content: '\\$parent =TreeHelper::getParent($${1:parent})' },
-    { tabTrigger: '', name: '_dumpHlper', content: '{{ DumpHelper::dumpA( $${1:var} }}' },
+
+    { tabTrigger: '', name: '_dumpHelper', content: '{{ DumpHelper::dump( $${1:var} ) }}' },
     { tabTrigger: '', name: '_@mproauth', content: '@mproauth\n@endmproauth' },
 
     { tabTrigger: '', name: '_auth_magic', content: "if (!auth('magic')->check()) { \n return;\n  }" },

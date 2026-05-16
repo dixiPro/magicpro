@@ -14,5 +14,5 @@
 @endsection
 
 @section('script')
-    @vite('admin/js/artEditor.js')
+    @vite('admin/js/artEditor.js', 'vendor/dixipro/magicpro')
 @endsection

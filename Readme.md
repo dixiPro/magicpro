@@ -6,6 +6,20 @@
 
 **MagicPro — the speed of a CMS + the flexibility of Laravel 12 in one solution. Ultra-fast website development and modification.**
 
+## 🧭 Why This Exists
+
+Modern development is built around APIs. Most core operations are handled through APIs: an admin API for management tasks and a client API for the public side.
+
+In many cases, a controller does not contain real business logic anymore. It only prepares an API request, receives the data, and passes it to a Blade template.
+
+Over time, this leads to many small controllers and even more Blade files. Finding the right file, switching between folders, and keeping everything organized becomes unnecessary overhead.
+
+This project was created to simplify that workflow.
+
+Controllers and Blade templates are stored in a simple database structure, with a convenient interface on top.
+
+Instead of constantly moving between files and folders, pages, API calls, and templates can be managed from one place.
+
 ## 🚀 Features
 
 - Manage controllers, views, routes, pages, menus, structure through a single model.
@@ -35,6 +49,12 @@ php artisan migrate
 ```
 
 ### Added / Change
+
+#### 2026-04-13
+
+- Added dark theme.
+- Hotkeys for editing.
+- Improved installation: folder creation moved from model to admin panel; automatic generation of views and controllers during installation.
 
 #### 2026-04-05
 
