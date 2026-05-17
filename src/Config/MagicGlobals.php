@@ -27,7 +27,7 @@ class MagicGlobals
         // загрузить файлы из локального ини
         self::loadLocal();
 
-        define('MAGIC_VERSION', '1.6.3');
+        define('MAGIC_VERSION', '1.6.4');
 
         // 📁 Где лежат данные MagicPro
         define('MAGIC_DATA_DIR', base_path('/dataMagicPro'));

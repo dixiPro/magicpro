@@ -32,10 +32,11 @@ Instead of constantly moving between files and folders, pages, API calls, and te
 - **Admin Editor**: manage articles, routes, and settings.
 - **Frontend**: integration with Vue 3, Bootstrap 5, PrimeVue.
 - **Editor**: integration with ACE Editor.
+- **Static Generator**: generate static pages.
 
 ## 🛠 Technologies
 
-- **Backend**: Laravel 12
+- **Backend**: Laravel 12, 13
 - **Frontend**: Vue 3, Bootstrap 5, PrimeVue.
 - **DevOps**: Ubuntu, Nginx, SQLite, MySql, Postgres
 
@@ -43,12 +44,19 @@ Instead of constantly moving between files and folders, pages, API calls, and te
 
 ```bash
 # in project root
+install laravel
+
 composer require dixipro/magicpro
 php artisan migrate
 
 ```
 
 ### Added / Change
+
+#### 2026-05-17
+
+Completely redesigned the article tree. h-tree was replaced with PrimeVue.
+Bug fixes and UI polish
 
 #### 2026-04-13
 
