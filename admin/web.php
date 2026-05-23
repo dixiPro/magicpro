@@ -11,6 +11,8 @@ use MagicProSrc\Config\MagicGlobals; // Глобальные константы
 // Админка
 use MagicProAdminControllers\AdminController;
 
+
+
 Route::get('/a_dmin', [AdminController::class, 'index'])->name('magic.a_dmin');
 
 // Сетап
@@ -23,13 +25,10 @@ Route::get('/a_dmin/import_tab', function () {
     return view('magicAdmin::import_tab');
 })->name('magic.import_tab');
 
-// import_tab
+// export
 Route::get('/a_dmin/export_tab', function () {
     return view('magicAdmin::export_tab');
 })->name('magic.export_tab');
-
-
-
 
 // список статей
 Route::get('/a_dmin/artList', [AdminController::class, 'artList'])->name('magic.artList');
@@ -48,7 +47,6 @@ Route::get('/a_dmin/api/testWrite', [AdminController::class, 'testWrite'])
 Route::get('/a_dmin/phpinfo', function () {
     phpinfo();
 })->middleware('magic.auth')->withoutMiddleware([Csrf::class]);
-
 
 
 // Импорт экспорт
@@ -91,6 +89,13 @@ Route::post('/a_dmin/api/fileManager', [API_FileManagerPostController::class, 'h
 Route::get('/a_dmin/crawler', function () {
     return view('magicAdmin::crawler');
 })->where('any', '.*')->name('magic.crawler');
+
+Route::any('/a_shop/adminer', function () {
+    require __DIR__ . '/controller/adminer/index.php';
+})->middleware(['web', 'magic.auth'])
+    ->withoutMiddleware([Csrf::class])
+    ->name('magic.dataBase');
+
 
 // список админов
 Route::get('/a_dmin/adminList', [AdminController::class, 'adminList'])->name('magic.admin_list');

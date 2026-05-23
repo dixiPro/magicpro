@@ -180,7 +180,11 @@ class DynamicRouteHandler
         // добавляем атрибуты
         $request->attributes->add($env);
         $controller = new $controllerName();
-        return $controller->handle($request,  $res, $postParams);
+        return $controller->handle([
+            'request' => $request,
+            'getParams' => $res ?? [],
+            'postParams' => $postParams ?? [],
+        ]);
     }
 
     public function handle(Request $request)

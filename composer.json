@@ -13,7 +13,7 @@
       "MagicProDatabaseModels\\": "database/Models/",
       "MagicProAdminControllers\\": "admin/controller/",
       "MagicProAdminMiddleware\\": "admin/middleware/",
-      "MagicProControllers\\": "../../../dataMagicPro/controller/"
+      "MagicProControllers\\": "../../../storage/dataMagicPro/controller/"
     }
   },
   "extra": {

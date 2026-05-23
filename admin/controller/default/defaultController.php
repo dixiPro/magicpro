@@ -7,10 +7,11 @@ use MagicProSrc\MagicController;
 
 class Magic_Pro_Name_Controller extends MagicController
 {
-    protected function process(...$args): array
+    protected function process(array $params): array
     {
-        [$request, $getParams] = $args;
-
+        $request = $params['request'];
+        $getParams = $params['getParams'] ?? [];
+        $postParams = $params['postParams'] ?? [];
 
         return ["Get" => $getParams];
     }

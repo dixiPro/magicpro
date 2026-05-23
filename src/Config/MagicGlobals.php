@@ -27,10 +27,10 @@ class MagicGlobals
         // загрузить файлы из локального ини
         self::loadLocal();
 
-        define('MAGIC_VERSION', '1.6.4');
+        require_once __DIR__ . '/version.php';
 
         // 📁 Где лежат данные MagicPro
-        define('MAGIC_DATA_DIR', base_path('/dataMagicPro'));
+        define('MAGIC_DATA_DIR', base_path('/storage/dataMagicPro'));
 
         // ⚙️ Контроллеры статей (создаются композером с правами www-data)
         define('MAGIC_CONTROLLER_DIR', MAGIC_DATA_DIR . '/controller');
@@ -42,7 +42,7 @@ class MagicGlobals
         define('VENDOR_FROM', base_path('vendor/dixipro/magicpro/readyBundle/'));
 
         // 💾 Путь к папке вендор где лежить мпро
-        define('VENDOR_PUBLIC', base_path('public/vendor/magicpro/'));
+        define('VENDOR_PUBLIC', base_path('public/vendor/dixipro/magicpro'));
 
         // 💾 Каталог генерации HTML-кеша, от корня проекта
         define('STATIC_HTML_CREATE_DIR', base_path('storage/app/private/magic/html'));

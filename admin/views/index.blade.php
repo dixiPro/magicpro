@@ -22,6 +22,6 @@
     <div class="mt-4">@magic_msg('current_user')</div>
 
     @php
-        DumpHelper::dump(Auth::guard('magic')->user());
+        MproHelper::dump(Auth::guard('magic')->user());
     @endphp
 @endsection

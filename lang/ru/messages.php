@@ -1,5 +1,6 @@
 <?php
 return [
+    'dataBase' => 'dataBase',
     'title' => 'Админка',
     'start' => 'Cтарт',
     'setup' => 'Setup',
@@ -55,6 +56,7 @@ return [
     'install_dir_created' => 'Папка создана',
     'install_write_ok'    => 'Тест записи: успех',
     'install_files_copied' => 'Файлы скопированы',
+    'install_version_updated' => 'Установлена новая версия',
     'install_error'       => 'Ошибка установки',
 
 ];

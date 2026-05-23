@@ -13,19 +13,17 @@ abstract class MagicController
     protected array $headers = [];
     protected ?string $redirect = null;
 
-    public function handle(array $params)
+    public function handle(...$args)
     {
         try {
-            $request = $params['request'];
-            $getParams = $params['getParams'] ?? [];
-            $postParams = $params['postParams'] ?? [];
+            [$request, $getParams, $postParams] = $args;
 
             $view = $request->attributes->get('view');
 
             view()->share('Env', $request->attributes->all());
             view()->share('Get', $getParams);
 
-            $data = $this->process($params);
+            $data = $this->process($request, $getParams, $postParams);
 
             if ($this->redirect) {
                 return redirect($this->redirect);
@@ -60,5 +58,5 @@ abstract class MagicController
         ]);
     }
 
-    abstract protected function process(array $params): array;
+    abstract protected function process(...$args): array;
 }

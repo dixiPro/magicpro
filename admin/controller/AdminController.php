@@ -11,6 +11,7 @@ use MagicProDatabaseModels\MagicProUser;
 use MagicProSrc\MagicLang;
 
 use MagicProAdminControllers\API_ArticlesPostController;
+use MagicProSrc\Config\MagicGlobals; // global constants
 
 class AdminController extends Controller
 {
@@ -46,13 +47,29 @@ class AdminController extends Controller
                 }
             }
 
-            // 2. Проверить/создать VENDOR_PUBLIC и скопировать файлы только если папки не было
-            if (!is_dir(VENDOR_PUBLIC)) {
-                if (!mkdir(VENDOR_PUBLIC, 0775, true)) {
-                    throw new \Exception('Cannot create dir: ' . VENDOR_PUBLIC);
+            // 2. Проверить/создать VENDOR_PUBLIC и скопировать файлы если папки не было или версия изменилась
+            $versionFile = VENDOR_PUBLIC . '/version.txt';
+            $installedVersion = is_file($versionFile) ? trim(file_get_contents($versionFile)) : null;
+            $needsCopy = !is_dir(VENDOR_PUBLIC) || $installedVersion !== MAGIC_VERSION;
+
+            if ($needsCopy) {
+                if (!is_dir(VENDOR_PUBLIC)) {
+                    if (!mkdir(VENDOR_PUBLIC, 0775, true)) {
+                        throw new \Exception('Cannot create dir: ' . VENDOR_PUBLIC);
+                    }
                 }
                 File::copyDirectory(VENDOR_FROM, VENDOR_PUBLIC);
+                file_put_contents($versionFile, MAGIC_VERSION);
                 $messages[] = MagicLang::getMsg('install_files_copied') . ': ' . VENDOR_PUBLIC;
+                $messages[] = MagicLang::getMsg('install_version_updated') . ': ' . MAGIC_VERSION;
+            }
+
+            // 2. Проверить/создать PUBLIC_UPLOAD_DIR
+            $startDir = public_path(MagicGlobals::$INI['PUBLIC_UPLOAD_DIR']);
+            if (!is_dir($startDir)) {
+                if (!mkdir($startDir, 0775, true)) {
+                    throw new \Exception('Cannot create dir: ' . VENDOR_PUBLIC);
+                }
             }
         } catch (\Throwable $e) {
             $messages[] = MagicLang::getMsg('install_error') . ': ' . $e->getMessage();

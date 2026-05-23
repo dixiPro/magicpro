@@ -10,6 +10,7 @@
         ['route' => 'magic.export_tab', 'label' => 'export_tab', 'icon' => 'fas fa-file-export'],
         ['route' => 'magic.admin_list', 'label' => 'admins', 'icon' => 'fas fa-users-cog'],
         ['route' => 'magic.crawler', 'label' => 'crawler', 'icon' => 'fas fa-spider'],
+        ['route' => 'magic.dataBase', 'label' => 'dataBase', 'icon' => 'fas fa-database'],
     ];
 
     $current = Route::currentRouteName();

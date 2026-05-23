@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount, watch, useId } from 'vue';
+import { ref, onMounted, onBeforeUnmount, watch, useId, nextTick } from 'vue';
 import ace from 'ace-builds/src-noconflict/ace';
 
 import 'ace-builds/src-noconflict/mode-html';
@@ -88,6 +88,16 @@ onMounted(() => {
   editor.session.on('change', () => {
     body.value = editor.getValue();
   });
+
+  watch(
+    () => store.article.id,
+    (id) => {
+      nextTick(() => {
+        editor?.session.getUndoManager().reset();
+        console.log(`[AceEditor:${props.lang}] undo reset, article.id=${id}`);
+      });
+    },
+  );
 
   // ждем search для php
   if (props.lang === 'php')

@@ -69,13 +69,13 @@ export function snippetsBlade(editor) {
 
     { tabTrigger: '', name: '_<x-magic', content: '<x-magic::${1:anonymus} :data="$${1:value}"></x-magic::${1:anonymus}>)' },
 
-    { tabTrigger: '', name: '_helper_getArtByName', content: '\\$art =TreeHelper::getArtByName($${1:artname})' },
-    { tabTrigger: '', name: '_helper_getChildrenByName', content: '\\$childs =TreeHelper::getChildrenByName($${1:artname})' },
-    { tabTrigger: '', name: '_helper_getChildrenById', content: '\\$childs =TreeHelper::getChildrenById($${1:id})' },
-    { tabTrigger: '', name: '_helper_getPathToRootById', content: '\\$path =TreeHelper::getPathToRootById($${1:id})' },
-    { tabTrigger: '', name: '_helper_getParent', content: '\\$parent =TreeHelper::getParent($${1:parent})' },
+    { tabTrigger: '', name: '_helper_getArtByName', content: '\\$art =MproHelper::getArtByName($${1:artname})' },
+    { tabTrigger: '', name: '_helper_getChildrenByName', content: '\\$childs =MproHelper::getChildrenByName($${1:artname})' },
+    { tabTrigger: '', name: '_helper_getChildrenById', content: '\\$childs =MproHelper::getChildrenById($${1:id})' },
+    { tabTrigger: '', name: '_helper_getPathToRootById', content: '\\$path =MproHelper::getPathToRootById($${1:id})' },
+    { tabTrigger: '', name: '_helper_getParent', content: '\\$parent =MproHelper::getParent($${1:parent})' },
 
-    { tabTrigger: '', name: '_dumpHelper', content: '{{ DumpHelper::dump( $${1:var} ) }}' },
+    { tabTrigger: '', name: '_dumpHelper', content: '{{ MproHelper::dump( $${1:var} ) }}' },
     { tabTrigger: '', name: '_@mproauth', content: '@mproauth\n@endmproauth' },
 
     { tabTrigger: '', name: '_auth_magic', content: "if (!auth('magic')->check()) { \n return;\n  }" },

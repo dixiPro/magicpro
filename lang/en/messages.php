@@ -1,5 +1,6 @@
 <?php
 return [
+    'dataBase' => 'dataBase',
     'title' => 'Admin panel',
     'start' => 'start',
     'setup' => 'Setup',
@@ -54,6 +55,7 @@ return [
     'install_dir_created' => 'Directory created',
     'install_write_ok'    => 'Write test: success',
     'install_files_copied' => 'Files copied',
+    'install_version_updated' => 'New version installed',
     'install_error'       => 'Install error',
 
 ];
