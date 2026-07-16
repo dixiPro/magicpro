@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Mail;
 use Monolog\Logger;
 use Monolog\Level;
 use Monolog\Handler\RotatingFileHandler;
+use Illuminate\Support\Facades\Http;
 
 
 class MproHelper
@@ -119,7 +120,7 @@ class MproHelper
         $logger->info($data);
     }
 
-    public static function telegramSend(string $message, string $chat_id, string $botToken, string $mode = 'HTML'): bool
+    public static function telegramSend(string $message, string $chat_id, string $botToken, string $mode = 'HTML'): array
     {
         $url = 'https://api.telegram.org/bot' . $botToken . '/sendMessage';
 
@@ -135,7 +136,7 @@ class MproHelper
             'message'   => $message,
         ]);
 
-        return $response->successful();
+        return $response->json();
     }
 
 

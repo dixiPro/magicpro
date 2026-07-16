@@ -53,6 +53,10 @@ php artisan migrate
 
 ### Added / Change
 
+#### 2026-06-18
+
+Added Registration & Auth Api
+
 #### 2026-05-17
 
 Completely redesigned the article tree. h-tree was replaced with PrimeVue.

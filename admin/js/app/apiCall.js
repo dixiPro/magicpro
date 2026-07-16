@@ -71,16 +71,16 @@ export async function apiCall(params = {}) {
       },
       body: JSON.stringify(data),
     });
-
-    if (!response.ok) {
-      throw new Error(`${response.status} ${response.statusText}`);
-    }
   } catch {
     throw new Error('Ошибка сети');
   } finally {
     if (spinner !== null) {
       document.spinnerServiceHide(spinner);
     }
+  }
+
+  if (!response.ok) {
+    throw new Error(`${response.status} ${response.statusText}`);
   }
 
   // Парсинг JSON
@@ -285,68 +285,3 @@ export function copyClipBoard(fullLink) {
     document.body.removeChild(textarea);
   }
 }
-
-/*
-export async function apiCall_old(params = {}) {
-  const { url = '/', data = {}, method = 'POST', logResult = false } = params;
-
-  //
-  return new Promise(async (resolve, reject) => {
-    if (url == '') {
-      reject(new Error('Ошибка в запросе'));
-      return;
-    }
-    let response, apiResult; // Объявляем заранее, чтобы была доступна дальше
-
-    if (logResult) {
-      console.log('apiCall Start');
-      console.log('apiCall url', url);
-      console.log('apiCall data', data);
-    }
-    // Запрос
-    try {
-      response = await fetch(url, {
-        method: method,
-        headers: {
-          // 'X-Requested-With': 'XMLapiCallRequest',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        // Если HTTP-статус не 2xx (например, 500, 404)
-        reject(new Error(`${response?.status} ${response.statusText}`));
-        return;
-      }
-    } catch (error) {
-      reject(new Error('Ошибка сети'));
-      return;
-    }
-
-    // Прасинг ответа
-    try {
-      apiResult = await response.json();
-      if (logResult) {
-        console.log('apiCall apiResult', apiResult);
-      }
-    } catch (error) {
-      reject(new Error('Невалидный ответ'));
-      return;
-    } finally {
-      if (logResult) {
-        console.log('apiCall end', response);
-      }
-    }
-
-    // Анализ ответа
-    if (Boolean(apiResult.status)) {
-      resolve(apiResult); // Успех: status === 1
-      return;
-    } else {
-      reject(new Error(apiResult?.errorMsg || apiResult?.result || 'Неизвестная ошибка')); // Ошибка: status === 0
-      return;
-    }
-  });
-}
-*/

@@ -88,6 +88,11 @@ class MagicServiceProvider extends ServiceProvider
         // Override Livewire's default ComponentRegistry with a custom implementation
         // <livewire:magic::articleName />
         $this->app->extend(ComponentRegistry::class, fn($r, $app) => new LivewireComponentRegistry($app));
+
+        class_alias(
+            \MagicProSrc\Api\API_Auth::class,
+            'API_Auth'
+        );
     }
 
     public function register(): void

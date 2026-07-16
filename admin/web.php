@@ -1,17 +1,20 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken as Csrf;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use MagicProSrc\Config\MagicGlobals; // Глобальные константы
-
+use illuminate\foundation\http\middleware\preventrequestforgery;
 
 // Админка
 use MagicProAdminControllers\AdminController;
 
 
+// 12 и 13 версии
+$csrf = class_exists(\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class)
+    ? \Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class
+    : \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class;
 
 Route::get('/a_dmin', [AdminController::class, 'index'])->name('magic.a_dmin');
 
@@ -36,36 +39,36 @@ Route::get('/a_dmin/artList', [AdminController::class, 'artList'])->name('magic.
 // очистить кэш
 Route::get('/a_dmin/api/clearCache', [AdminController::class, 'clearCache'])
     ->middleware('magic.auth')
-    ->withoutMiddleware([Csrf::class])->name('magic.cleatCahe');
+    ->withoutMiddleware([$csrf])->name('magic.cleatCahe');
 
 // тест записи    
 Route::get('/a_dmin/api/testWrite', [AdminController::class, 'testWrite'])
     ->middleware('magic.auth')
-    ->withoutMiddleware([Csrf::class])->name('magic.testWrite');
+    ->withoutMiddleware([$csrf])->name('magic.testWrite');
 
 // phpInfo
 Route::get('/a_dmin/phpinfo', function () {
     phpinfo();
-})->middleware('magic.auth')->withoutMiddleware([Csrf::class]);
+})->middleware('magic.auth')->withoutMiddleware([$csrf]);
 
 
 // Импорт экспорт
 use MagicProAdminControllers\ImportExportController;
 // импорт
 Route::post('/a_dmin/importArticle', [ImportExportController::class, 'importArticle'])
-    ->withoutMiddleware([Csrf::class])->name('magic.importArticle');
+    ->withoutMiddleware([$csrf])->name('magic.importArticle');
 
 // экспорт
 Route::get('/a_dmin/api/exportArticle', [ImportExportController::class, 'exportArticle'])
     ->middleware('magic.auth')
-    ->withoutMiddleware([Csrf::class])->name('magic.exportArticle');
+    ->withoutMiddleware([$csrf])->name('magic.exportArticle');
 
 // Апи статьи 
 use MagicProAdminControllers\API_ArticlesPostController;
 
 Route::post('/a_dmin/api/articles', [API_ArticlesPostController::class, 'handle'])
     ->middleware('magic.auth')
-    ->withoutMiddleware([Csrf::class]);
+    ->withoutMiddleware([$csrf]);
 
 // страница редактирования статьи
 Route::get('/a_dmin/artEditor', function () {
@@ -82,7 +85,7 @@ use MagicProAdminControllers\API_FileManagerPostController;
 
 Route::post('/a_dmin/api/fileManager', [API_FileManagerPostController::class, 'handle'])
     ->middleware('magic.auth')
-    ->withoutMiddleware([Csrf::class]);
+    ->withoutMiddleware([$csrf]);
 
 
 // страница паука
@@ -93,7 +96,7 @@ Route::get('/a_dmin/crawler', function () {
 Route::any('/a_shop/adminer', function () {
     require __DIR__ . '/controller/adminer/index.php';
 })->middleware(['web', 'magic.auth'])
-    ->withoutMiddleware([Csrf::class])
+    ->withoutMiddleware([$csrf])
     ->name('magic.dataBase');
 
 
@@ -106,7 +109,7 @@ use MagicProAdminControllers\API_EditUsersController;
 // API редактирования юзеров доступна только админу
 Route::post('/a_dmin/api/editUsers', [API_EditUsersController::class, 'handle'])
     ->middleware('magic.auth:admin')
-    ->withoutMiddleware([Csrf::class]);
+    ->withoutMiddleware([$csrf]);
 
 
 // API настройки
@@ -114,7 +117,7 @@ use MagicProAdminControllers\API_Setup;
 
 Route::post('/a_dmin/api/setup', [API_Setup::class, 'handle'])
     ->middleware('magic.auth:admin')
-    ->withoutMiddleware([Csrf::class]);
+    ->withoutMiddleware([$csrf]);
 
 // авторизация Мпро
 use MagicProAdminControllers\AuthController;
@@ -151,5 +154,9 @@ $pattern = '^(?!(' . implode('|', array_map('preg_quote', $removeStartSlash)) . 
 
 
 // ⚙️ Динамический маршрут
+// Route::any('{any?}', [DynamicRouteHandler::class, 'handle'])
+//     ->where('any', $pattern)->withoutMiddleware([Csrf::class]);
+
 Route::any('{any?}', [DynamicRouteHandler::class, 'handle'])
-    ->where('any', $pattern)->withoutMiddleware([Csrf::class]);
+    ->where('any', $pattern)
+    ->withoutMiddleware([$csrf]);
