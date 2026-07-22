@@ -29,28 +29,37 @@ class MagicGlobals
 
         require_once __DIR__ . '/version.php';
 
+        // TODO: перевести MAGIC_* и прочие константы на config('magicpro.*').
+        // Сейчас register() может вызываться повторно (тесты PHPUnit поднимают
+        // приложение заново на каждый метод), а голый define() на второй раз
+        // роняет E_WARNING "already defined". Как временный минимальный фикс
+        // константы определяются через defined() || define(). Правильный путь —
+        // config-репозиторий: переопределяется в тестах, кэшируется, не течёт
+        // в глобальное пространство имён. Это отдельная задача (обойти все
+        // использования MAGIC_* по пакету), не делать попутно.
+
         // 📁 Где лежат данные MagicPro
-        define('MAGIC_DATA_DIR', base_path('/storage/dataMagicPro'));
+        defined('MAGIC_DATA_DIR') || define('MAGIC_DATA_DIR', base_path('/storage/dataMagicPro'));
 
         // ⚙️ Контроллеры статей (создаются композером с правами www-data)
-        define('MAGIC_CONTROLLER_DIR', MAGIC_DATA_DIR . '/controller');
+        defined('MAGIC_CONTROLLER_DIR') || define('MAGIC_CONTROLLER_DIR', MAGIC_DATA_DIR . '/controller');
 
         // 📄 Каталог вьюх статей
-        define('MAGIC_VIEW_DIR', MAGIC_DATA_DIR . '/view');
+        defined('MAGIC_VIEW_DIR') || define('MAGIC_VIEW_DIR', MAGIC_DATA_DIR . '/view');
 
         // 💾 Путь к папке вендор где лежить мпро
-        define('VENDOR_FROM', base_path('vendor/dixipro/magicpro/readyBundle/'));
+        defined('VENDOR_FROM') || define('VENDOR_FROM', base_path('vendor/dixipro/magicpro/readyBundle/'));
 
         // 💾 Путь к папке вендор где лежить мпро
-        define('VENDOR_PUBLIC', base_path('public/vendor/dixipro/magicpro'));
+        defined('VENDOR_PUBLIC') || define('VENDOR_PUBLIC', base_path('public/vendor/dixipro/magicpro'));
 
         // 💾 Каталог генерации HTML-кеша, от корня проекта
-        define('STATIC_HTML_CREATE_DIR', base_path('storage/app/private/magic/html'));
+        defined('STATIC_HTML_CREATE_DIR') || define('STATIC_HTML_CREATE_DIR', base_path('storage/app/private/magic/html'));
 
 
 
         // 🔐 Описание директорий и их прав (для проверки и отладки)
-        define('MAGIC_FILE_ROLES', [
+        defined('MAGIC_FILE_ROLES') || define('MAGIC_FILE_ROLES', [
             [
                 'value' => MAGIC_VIEW_DIR,
                 'desc'  => 'Directory for view'
@@ -65,7 +74,7 @@ class MagicGlobals
             ],
         ]);
 
-        define('ART_NAME_404', 'error404');
+        defined('ART_NAME_404') || define('ART_NAME_404', 'error404');
     }
 
     // загрузка локальных настроек

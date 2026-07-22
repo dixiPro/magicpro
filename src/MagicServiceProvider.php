@@ -19,7 +19,8 @@ use MagicProAdminMiddleware\CheckMagicAuth; // миддлваре авториз
 use Illuminate\Support\Facades\Config;
 
 use MagicProSrc\Config\MagicGlobals; // Глобальные константы
-
+use Illuminate\Console\Scheduling\Schedule;
+use MagicProSrc\Scheduling\MagicProSchedule;
 
 use MagicProSrc\MagicLang;
 
@@ -89,9 +90,21 @@ class MagicServiceProvider extends ServiceProvider
         // <livewire:magic::articleName />
         $this->app->extend(ComponentRegistry::class, fn($r, $app) => new LivewireComponentRegistry($app));
 
-        class_alias(
+        // guard: boot() может вызываться повторно (тесты PHPUnit поднимают
+        // приложение заново), а class_alias на второй раз падает
+        // "name already in use". Создаём алиас один раз. См. TODO в MagicGlobals.
+        class_exists('API_Auth', false) || class_alias(
             \MagicProSrc\Api\API_Auth::class,
             'API_Auth'
+        );
+
+        // шедулер
+
+        $this->callAfterResolving(
+            Schedule::class,
+            function (Schedule $schedule): void {
+                app(MagicProSchedule::class)->register($schedule);
+            }
         );
     }
 

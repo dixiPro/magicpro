@@ -35,6 +35,7 @@ return [
     'root' => 'Рут',
     'articles' => 'Статьи',
     'admins' => 'Админы',
+    'users' => 'Пользователи',
     'crawler' => 'Паук',
     'tables' => 'Таблицы',
     'logout' => 'Выйти',

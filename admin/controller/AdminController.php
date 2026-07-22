@@ -129,7 +129,7 @@ class AdminController extends Controller
 
     public function artList()
     {
-        $articles = Article::orderBy('parentId')->orderBy('npp')->get();
+        $articles = Article::orderBy('parentId')->orderBy('name')->get();
         return view('magicAdmin::artList', compact('articles'));
     }
 

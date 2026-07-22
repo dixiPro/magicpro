@@ -12,6 +12,8 @@ export default defineConfig({
       input: [
         'admin/js/artEditor.js', //
         'admin/js/editUsers.js',
+        'admin/js/editUsers.js',
+        'admin/js/editLaravelUsers.js',
         'admin/js/crawler.js',
         'admin/js/setup.js',
         'admin/js/fileManager.js',

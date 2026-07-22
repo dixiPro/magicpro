@@ -53,9 +53,13 @@ php artisan migrate
 
 ### Added / Change
 
+#### 2026-06-22
+
+Added an email service with immediate and scheduled email delivery.
+
 #### 2026-06-18
 
-Added Registration & Auth Api
+Added registration and authentication APIs.
 
 #### 2026-05-17
 

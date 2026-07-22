@@ -33,6 +33,22 @@ Route::get('/a_dmin/export_tab', function () {
     return view('magicAdmin::export_tab');
 })->name('magic.export_tab');
 
+// laravelUsers
+// страница
+Route::get('/a_dmin/laravelUsers', function () {
+    return view('magicAdmin::users');
+})->name('magic.users');
+
+// АПИ
+// Апи статьи 
+use MagicProSrc\Api\API_Auth;
+
+Route::post('/a_dmin/api/laravelUsers', [API_Auth::class, 'handle'])
+    ->middleware('magic.auth')
+    ->withoutMiddleware([$csrf]);
+
+
+
 // список статей
 Route::get('/a_dmin/artList', [AdminController::class, 'artList'])->name('magic.artList');
 
@@ -106,7 +122,7 @@ Route::get('/a_dmin/adminList', [AdminController::class, 'adminList'])->name('ma
 // апи админов
 use MagicProAdminControllers\API_EditUsersController;
 
-// API редактирования юзеров доступна только админу
+// API редактирования админов мппро доступна только админу
 Route::post('/a_dmin/api/editUsers', [API_EditUsersController::class, 'handle'])
     ->middleware('magic.auth:admin')
     ->withoutMiddleware([$csrf]);

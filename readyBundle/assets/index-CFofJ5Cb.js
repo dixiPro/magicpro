@@ -1,4 +1,4 @@
-import{H as a,al as s,L as r,b as c,o as g,d,G as o,J as h}from"./translate-BoFasffE.js";var u=`
+import{H as a,al as s,L as r,b as c,o as g,d,G as o,J as h}from"./translate-Md6eFPGD.js";var u=`
     .p-toggleswitch {
         display: inline-block;
         width: dt('toggleswitch.width');

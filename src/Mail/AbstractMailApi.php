@@ -1,12 +1,22 @@
 <?php
 
-namespace MagicProSrc\Api;
+namespace MagicProSrc\Mail;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
-
-abstract class AbstractApi
+/**
+ * Own copy of MagicProSrc\Api\AbstractApi for the mail subsystem.
+ *
+ * Intentionally a separate class (not extended from the shared AbstractApi):
+ * the mail API may need to diverge later, and keeping it apart means changes
+ * here never touch the rest of the code. For now it is a plain copy.
+ *
+ * Dispatches a command to a method via $map, passes params as a plain array,
+ * lets handlers throw exceptions, and always returns the standard shape:
+ * status / errorMsg / data / request.
+ */
+abstract class AbstractMailApi
 {
     protected array $map = [];
 
@@ -39,7 +49,6 @@ abstract class AbstractApi
                 'status'   => false,
                 'line'     => $e->getFile() . ' ' . $e->getLine(),
                 'errorMsg' => $e->getMessage(),
-                'data'     => $e instanceof ApiException ? $e->getData() : [],
                 'request'  => $params,
             ];
         }

@@ -29,6 +29,7 @@
                     <th>id</th>
                     <th>parent</th>
                     <th>npp</th>
+                    <th>last</th>
                 </tr>
             </thead>
             <tbody>
@@ -61,6 +62,7 @@
                         <td>{{ $a->id }}</td>
                         <td>{{ $a->parentId }}</td>
                         <td>{{ $a->npp }}</td>
+                        <td><small>{{ $a->updated_at?->format('d.m.y H:i') }}</small></td>
                     </tr>
                 @endforeach
             </tbody>

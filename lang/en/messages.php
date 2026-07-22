@@ -35,6 +35,7 @@ return [
     'root' => 'Root',
     'articles' => 'articles',
     'admins' => 'admins',
+    'users' => 'Users',
     'crawler' => 'crawler',
     'tables' => 'tables',
     'logout' => 'logout',

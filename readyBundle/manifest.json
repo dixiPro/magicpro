@@ -1,9 +1,9 @@
 {
-  "_FileManager-CeP4mS2W.js": {
-    "file": "assets/FileManager-CeP4mS2W.js",
+  "_FileManager-CS1wnZJP.js": {
+    "file": "assets/FileManager-CS1wnZJP.js",
     "name": "FileManager",
     "imports": [
-      "_translate-BoFasffE.js",
+      "_translate-Md6eFPGD.js",
       "__plugin-vue_export-helper-DlAUqK2U.js"
     ],
     "css": [
@@ -22,11 +22,18 @@
     "file": "assets/index-1JlVNC7A.css",
     "src": "_index-1JlVNC7A.css"
   },
-  "_index-B190D_ek.js": {
-    "file": "assets/index-B190D_ek.js",
+  "_index-BI6_1yWr.js": {
+    "file": "assets/index-BI6_1yWr.js",
     "name": "index",
     "imports": [
-      "_translate-BoFasffE.js"
+      "_translate-Md6eFPGD.js"
+    ]
+  },
+  "_index-CFofJ5Cb.js": {
+    "file": "assets/index-CFofJ5Cb.js",
+    "name": "index",
+    "imports": [
+      "_translate-Md6eFPGD.js"
     ],
     "css": [
       "assets/index-1JlVNC7A.css"
@@ -39,34 +46,27 @@
       "assets/primeicons-Dr5RGzOO.svg"
     ]
   },
-  "_index-DC-fiwVz.js": {
-    "file": "assets/index-DC-fiwVz.js",
-    "name": "index",
-    "imports": [
-      "_translate-BoFasffE.js"
-    ]
+  "_translate-BrjK1KNi.css": {
+    "file": "assets/translate-BrjK1KNi.css",
+    "src": "_translate-BrjK1KNi.css"
   },
-  "_translate-BoFasffE.js": {
-    "file": "assets/translate-BoFasffE.js",
+  "_translate-Md6eFPGD.js": {
+    "file": "assets/translate-Md6eFPGD.js",
     "name": "translate",
     "css": [
       "assets/translate-BrjK1KNi.css"
     ]
   },
-  "_translate-BrjK1KNi.css": {
-    "file": "assets/translate-BrjK1KNi.css",
-    "src": "_translate-BrjK1KNi.css"
-  },
   "admin/js/artEditor.js": {
-    "file": "assets/artEditor-Bpwiq6f-.js",
+    "file": "assets/artEditor-DXOjHPwt.js",
     "name": "artEditor",
     "src": "admin/js/artEditor.js",
     "isEntry": true,
     "imports": [
-      "_translate-BoFasffE.js",
-      "_index-B190D_ek.js",
-      "_FileManager-CeP4mS2W.js",
-      "_index-DC-fiwVz.js",
+      "_translate-Md6eFPGD.js",
+      "_index-CFofJ5Cb.js",
+      "_FileManager-CS1wnZJP.js",
+      "_index-BI6_1yWr.js",
       "__plugin-vue_export-helper-DlAUqK2U.js"
     ],
     "css": [
@@ -74,53 +74,66 @@
     ]
   },
   "admin/js/crawler.js": {
-    "file": "assets/crawler-DbCCnLb6.js",
+    "file": "assets/crawler-CkMU5BsT.js",
     "name": "crawler",
     "src": "admin/js/crawler.js",
     "isEntry": true,
     "imports": [
-      "_translate-BoFasffE.js",
-      "_index-DC-fiwVz.js",
+      "_translate-Md6eFPGD.js",
+      "_index-BI6_1yWr.js",
       "__plugin-vue_export-helper-DlAUqK2U.js"
     ],
     "css": [
       "assets/crawler-CaISg2NN.css"
     ]
   },
+  "admin/js/editLaravelUsers.js": {
+    "file": "assets/editLaravelUsers-JuB3iLDU.js",
+    "name": "editLaravelUsers",
+    "src": "admin/js/editLaravelUsers.js",
+    "isEntry": true,
+    "imports": [
+      "_translate-Md6eFPGD.js",
+      "_index-BI6_1yWr.js"
+    ],
+    "css": [
+      "assets/editUsers-Cktv8VuK.css"
+    ]
+  },
   "admin/js/editUsers.js": {
-    "file": "assets/editUsers-FX9LgXrx.js",
+    "file": "assets/editUsers-BmsEgXfv.js",
     "name": "editUsers",
     "src": "admin/js/editUsers.js",
     "isEntry": true,
     "imports": [
-      "_translate-BoFasffE.js",
-      "_index-DC-fiwVz.js"
+      "_translate-Md6eFPGD.js",
+      "_index-BI6_1yWr.js"
     ],
     "css": [
       "assets/editUsers-Cktv8VuK.css"
     ]
   },
   "admin/js/fileManager.js": {
-    "file": "assets/fileManager-YP-3Mtfi.js",
+    "file": "assets/fileManager-BZJjhWMm.js",
     "name": "fileManager",
     "src": "admin/js/fileManager.js",
     "isEntry": true,
     "imports": [
-      "_translate-BoFasffE.js",
-      "_index-B190D_ek.js",
-      "_FileManager-CeP4mS2W.js",
+      "_translate-Md6eFPGD.js",
+      "_index-CFofJ5Cb.js",
+      "_FileManager-CS1wnZJP.js",
       "__plugin-vue_export-helper-DlAUqK2U.js"
     ]
   },
   "admin/js/setup.js": {
-    "file": "assets/setup-DGZQQmPv.js",
+    "file": "assets/setup-JsavCXgm.js",
     "name": "setup",
     "src": "admin/js/setup.js",
     "isEntry": true,
     "imports": [
-      "_translate-BoFasffE.js",
-      "_index-B190D_ek.js",
-      "_index-DC-fiwVz.js"
+      "_translate-Md6eFPGD.js",
+      "_index-CFofJ5Cb.js",
+      "_index-BI6_1yWr.js"
     ],
     "css": [
       "assets/setup-DEBB25qV.css"
