@@ -48,6 +48,20 @@ Route::post('/a_dmin/api/laravelUsers', [API_Auth::class, 'handle'])
     ->withoutMiddleware([$csrf]);
 
 
+// Почтовая система
+use MagicProSrc\Mail\API_Mail;
+
+// страница
+Route::get('/a_dmin/mailSystem', function () {
+    return view('magicAdmin::mailSystem');
+})->name('magic.mail');
+
+// АПИ
+Route::post('/a_dmin/api/mailSystem', [API_Mail::class, 'handle'])
+    ->middleware('magic.auth')
+    ->withoutMiddleware([$csrf]);
+
+
 
 // список статей
 Route::get('/a_dmin/artList', [AdminController::class, 'artList'])->name('magic.artList');
@@ -153,8 +167,15 @@ Route::get('a_dmin/download-db', function () {
 })
     ->middleware('magic.auth:admin')
     ->name('magic.downloadDb');
-//     
 //
+//
+// AWS SES/SNS webhook
+use MagicProSrc\Mail\AwsHookHandler;
+
+Route::post('/awsHook', [AwsHookHandler::class, 'handle'])
+    ->withoutMiddleware([$csrf])
+    ->name('magic.awsHook');
+
 // Динамический раут
 use MagicProSrc\Routing\DynamicRouteHandler;
 

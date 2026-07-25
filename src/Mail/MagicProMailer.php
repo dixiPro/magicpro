@@ -90,6 +90,18 @@ class MagicProMailer
                     $mailId
                 );
 
+            $configurationSet = trim((string) env(
+                'AWS_SES_CONFIGURATION_SET',
+                ''
+            ));
+
+            if ($configurationSet !== '') {
+                $email->getHeaders()->addTextHeader(
+                    'X-SES-CONFIGURATION-SET',
+                    $configurationSet
+                );
+            }
+
             $sentMessage = Mail::getSymfonyTransport()->send(
                 $email
             );
@@ -215,8 +227,8 @@ class MagicProMailer
                 ],
             ];
 
-            $configurationSet = trim((string) config(
-                'services.ses.configuration_set',
+            $configurationSet = trim((string) env(
+                'AWS_SES_CONFIGURATION_SET',
                 ''
             ));
 

@@ -37,6 +37,7 @@ class MagicProMailMessage extends Model
         'mail_id',
         'from_email',
         'to_email',
+        'reply_to',
         'subject',
         'html',
         'raw_message',

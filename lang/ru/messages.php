@@ -36,6 +36,7 @@ return [
     'articles' => 'Статьи',
     'admins' => 'Админы',
     'users' => 'Пользователи',
+    'mail' => 'Почта',
     'crawler' => 'Паук',
     'tables' => 'Таблицы',
     'logout' => 'Выйти',

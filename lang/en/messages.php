@@ -36,6 +36,7 @@ return [
     'articles' => 'articles',
     'admins' => 'admins',
     'users' => 'Users',
+    'mail' => 'Mail',
     'crawler' => 'crawler',
     'tables' => 'tables',
     'logout' => 'logout',

@@ -18,7 +18,15 @@ return new class extends Migration
             $table->string('mail_id')->nullable()->unique();
 
             $table->string('from_email');
+
+            // имя отправителя (fromName), если не задано — берётся из системы
+            $table->string('from_name')->nullable();
+
             $table->string('to_email');
+
+            // Reply-To письма, если задан
+            $table->string('reply_to')->nullable();
+
             $table->string('subject');
 
             // отрендеренное тело письма

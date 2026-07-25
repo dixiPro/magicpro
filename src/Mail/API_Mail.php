@@ -41,9 +41,21 @@ class API_Mail extends AbstractMailApi
     protected array $map = [
         'sendNow'            => 'sendNow',
         'sendLater'          => 'sendLater',
-        'emaiQueue'          => 'emaiQueue',
+        'sendQueue'          => 'sendQueue',
+        'emailQueue'          => 'emailQueue',
+        'messagesList'       => 'messagesList',
+        'addressesList'      => 'addressesList',
         'deleteEmail'        => 'deleteEmail',
         'deleteQueueByEmail' => 'deleteQueueByEmail',
+    ];
+
+    /**
+     * Статусы «очереди» — письма, которые ещё будут отправлены (queued) или
+     * ждут ретрая (error). Всё остальное считается «отправленным» для админки.
+     */
+    protected const QUEUE_STATUSES = [
+        MagicProMailMessage::STATUS_QUEUED,
+        MagicProMailMessage::STATUS_ERROR,
     ];
 
     // ==================================================================
@@ -82,11 +94,16 @@ class API_Mail extends AbstractMailApi
             throw new \Exception(self::ERRORS['email_required']);
         }
 
-        $address = MagicProEmailAddress::where('email', $email)
-            ->where('blocked', true)
-            ->first();
+        $address = MagicProEmailAddress::where('email', $email)->first();
 
-        if ($address) {
+        if (!$address) {
+            $address = MagicProEmailAddress::create([
+                'email'      => $email,
+                'ip_address' => request()->ip(),
+            ]);
+        }
+
+        if ($address->blocked) {
             $reason = trim((string) $address->block_reason);
 
             throw new \Exception(
@@ -197,9 +214,15 @@ class API_Mail extends AbstractMailApi
         $letterParams = self::buildLetterParams($params);
         self::findDduplicates($params);
 
+        if (($params['scheduled_at'] ?? '') === '') {
+            $params['scheduled_at'] = now()->addSeconds(60);
+        }
+
         $message = MagicProMailMessage::create([
+            'from_name'    => $letterParams['fromName'],
             'from_email'   => $letterParams['from'],
             'to_email'     => $letterParams['to'],
+            'reply_to'     => $letterParams['replyTo'],
             'subject'      => $letterParams['subject'],
             'html'         => $letterParams['html'],
             'scheduled_at' => $params['scheduled_at'] ?? null,
@@ -224,13 +247,20 @@ class API_Mail extends AbstractMailApi
         $letterParams = self::buildLetterParams($params);
         self::findDduplicates($params);
 
-        $sent = MagicProMailer::send($letterParams);
+        $SesV2Client = env('AWS_SesV2Client', false);
+        if ($SesV2Client) {
+            $sent = MagicProMailer::sendByAwsApi($letterParams);
+        } else {
+            $sent = MagicProMailer::send($letterParams);
+        }
 
         if ($sent['status']) {
             $message = MagicProMailMessage::create([
                 'mail_id'              => $sent['mail_id'],
                 'from_email'           => $letterParams['from'],
+                'from_name'            => $letterParams['fromName'],
                 'to_email'             => $letterParams['to'],
+                'reply_to'             => $letterParams['replyTo'],
                 'subject'              => $letterParams['subject'],
                 'html'                 => $letterParams['html'],
                 'raw_message'          => $sent['raw_message'],
@@ -245,10 +275,107 @@ class API_Mail extends AbstractMailApi
                 'mail_id'             => $message->mail_id,
                 'provider_message_id' => $message->provider_message_id,
                 'status'              => $message->status,
+                '$SesV2Client'        => $SesV2Client
             ];
         }
 
+        MagicProMailMessage::create([
+            'mail_id'      => $sent['mail_id'],
+            'from_email'   => $letterParams['from'],
+            'from_name'    => $letterParams['fromName'],
+            'to_email'     => $letterParams['to'],
+            'reply_to'     => $letterParams['replyTo'],
+            'subject'      => $letterParams['subject'],
+            'html'         => $letterParams['html'],
+            'raw_message'  => $sent['raw_message'],
+            'status'       => MagicProMailMessage::STATUS_ERROR,
+            'attempts'     => 1,
+            'errors'       => [[
+                'ts'      => now()->toDateTimeString(),
+                'message' => $sent['errorMsg'],
+            ]],
+        ]);
+
         throw new \Exception($sent['errorMsg'] ?: self::ERRORS['send_failed']);
+    }
+
+    /**
+     * Отправляет письма из очереди: status = queued и время пришло
+     * (scheduled_at пуст или уже наступил). Каждое письмо отправляется
+     * через MagicProMailer::send(). Ошибка одного письма не прерывает
+     * обработку остальных.
+     *
+     * При ошибке отправки: attempts++, статус error, следующая попытка
+     * через nextSchedule(attempts). Когда попытки исчерпаны — статус failed.
+     */
+    protected static function sendQueue(array $params): array
+    {
+        $messages = MagicProMailMessage::query()
+            ->whereIn('status', [
+                MagicProMailMessage::STATUS_QUEUED,
+                MagicProMailMessage::STATUS_ERROR,
+            ])
+            ->where(function ($q) {
+                $q->whereNull('scheduled_at')
+                    ->orWhere('scheduled_at', '<=', now());
+            })
+            ->get();
+
+        $sentCount   = 0;
+        $failedCount = 0;
+
+        foreach ($messages as $message) {
+            $sent = MagicProMailer::send([
+                'to'      => $message->to_email,
+                'subject' => $message->subject,
+                'html'    => $message->html,
+                'from'    => $message->from_email,
+                'mail_id' => $message->mail_id ?: null,
+            ]);
+
+            if ($sent['status']) {
+                $message->update([
+                    'mail_id'              => $sent['mail_id'],
+                    'raw_message'          => $sent['raw_message'],
+                    'provider_message_id'  => $sent['provider_message_id'],
+                    'status'               => MagicProMailMessage::STATUS_SENT,
+                    'sent_at'              => now(),
+                    'attempts'             => $message->attempts + 1,
+                ]);
+
+                $sentCount++;
+                continue;
+            }
+
+            $failedCount++;
+            $attempts = $message->attempts + 1;
+
+            try {
+                $scheduledAt = self::nextSchedule($attempts);
+
+                $message->update([
+                    'status'       => MagicProMailMessage::STATUS_ERROR,
+                    'attempts'     => $attempts,
+                    'scheduled_at' => $scheduledAt,
+                ]);
+            } catch (\Throwable $e) {
+                $message->update([
+                    'status'   => MagicProMailMessage::STATUS_FAILED,
+                    'attempts' => $attempts,
+                ]);
+            }
+
+            $message->appendError([
+                'ts'      => now()->toDateTimeString(),
+                'message' => $sent['errorMsg'],
+            ]);
+        }
+
+        return [
+            'total'  => $messages->count(),
+            'sent'   => $sentCount,
+            'failed' => $failedCount,
+        ];
     }
 
     /**
@@ -256,7 +383,7 @@ class API_Mail extends AbstractMailApi
      * Очередь — письма, ещё не отправленные (queued / error).
      * Params: to (email).
      */
-    protected static function emaiQueue(array $params): array
+    protected static function emailQueue(array $params): array
     {
         $email = mb_strtolower(
             trim((string) ($params['email'] ?? ''))
@@ -289,6 +416,121 @@ class API_Mail extends AbstractMailApi
         return [
             'to'    => $email,
             'queue' => $messages->all(),
+        ];
+    }
+
+    /**
+     * Список писем для админки с разбивкой по разделам и пагинацией.
+     *   - section = 'queue'  -> статусы queued + error (см. QUEUE_STATUSES);
+     *   - section = 'sent'   -> все остальные статусы;
+     * Поиск — подстрока по to_email. Пагинация — count (по умолчанию 30,
+     * максимум 200) + offset. errors отдаём сразу, чтобы модалка ошибок
+     * не делала лишний запрос.
+     * Params: section, search?, count?, offset?.
+     */
+    protected static function messagesList(array $params): array
+    {
+        $section = ($params['section'] ?? 'sent') === 'queue' ? 'queue' : 'sent';
+        $search  = mb_strtolower(trim((string) ($params['search'] ?? '')));
+
+        $count = (int) ($params['count'] ?? 30);
+        if ($count < 1) {
+            $count = 30;
+        }
+
+        $offset = max(0, (int) ($params['offset'] ?? 0));
+
+        $query = MagicProMailMessage::query();
+
+        if ($section === 'queue') {
+            $query->whereIn('status', self::QUEUE_STATUSES);
+        } else {
+            $query->whereNotIn('status', self::QUEUE_STATUSES);
+        }
+
+        if ($search !== '') {
+            $query->where('to_email', 'like', '%' . $search . '%');
+        }
+
+        $total = (clone $query)->count();
+
+        if ($section === 'queue') {
+            $query->orderBy('scheduled_at')->orderBy('id');
+        } else {
+            $query->orderByDesc('sent_at')->orderByDesc('id');
+        }
+
+        $messages = $query
+            ->offset($offset)
+            ->limit($count)
+            ->get([
+                'id',
+                'from_email',
+                'from_name',
+                'to_email',
+                'reply_to',
+                'subject',
+                'html',
+                'raw_message',
+                'sent_at',
+                'scheduled_at',
+                'attempts',
+                'status',
+                'errors',
+                'updated_at',
+            ]);
+
+        return [
+            'section'  => $section,
+            'total'    => $total,
+            'count'    => $count,
+            'offset'   => $offset,
+            'messages' => $messages->all(),
+        ];
+    }
+
+    /**
+     * Список адресов (magicPro_email_addresses) для админки: поиск по email +
+     * пагинация. Params: search + count (по умолчанию 30) + offset.
+     */
+    protected static function addressesList(array $params): array
+    {
+        $search = mb_strtolower(trim((string) ($params['search'] ?? '')));
+
+        $count = (int) ($params['count'] ?? 30);
+        if ($count < 1) {
+            $count = 30;
+        }
+
+        $offset = max(0, (int) ($params['offset'] ?? 0));
+
+        $query = MagicProEmailAddress::query();
+
+        if ($search !== '') {
+            $query->where('email', 'like', '%' . $search . '%');
+        }
+
+        $total = (clone $query)->count();
+
+        $addresses = $query
+            ->orderBy('email')
+            ->offset($offset)
+            ->limit($count)
+            ->get([
+                'id',
+                'email',
+                'ip_address',
+                'blocked',
+                'block_reason',
+                'blocked_at',
+                'updated_at',
+            ]);
+
+        return [
+            'total'     => $total,
+            'count'     => $count,
+            'offset'    => $offset,
+            'addresses' => $addresses->all(),
         ];
     }
 

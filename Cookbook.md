@@ -1,45 +1,67 @@
-# MagicPro Cook Book
+# MagicPro Cookbook
 
-### ⚙️ Installation
+This cookbook contains practical instructions for installing and developing **MagicPro**, configuring Laravel, managing releases, and preparing the server environment.
 
-```bash
-# in project root
-composer require dixipro/magicpro
-php artisan migrate
+## Contents
 
-php artisan magicpro:install
-sudo chown -R :www-data dataMagicPro
-```
+- [MagicPro](#magicpro)
+- [Laravel](#laravel)
+- [Nginx](#nginx)
 
-### ⚙️ Installation for dev
+---
 
-Add to main composer
+## MagicPro
+
+### Development installation
+
+Add the local package repository to the main project's `composer.json`:
 
 ```json
-"repositories": [
-  {
-    "type": "path",
-    "url": "packages/dixipro/magicpro",
-    "options":{
-      "symlink": true
-   }
-  }
-]
+{
+  "repositories": [
+    {
+      "type": "path",
+      "url": "packages/dixipro/magicpro",
+      "options": {
+        "symlink": true
+      }
+    }
+  ]
+}
 ```
+
+Install MagicPro from the local repository:
 
 ```bash
-composer require dixipro/magicpro
-php artisan magicpro:install
-sudo chown -R :www-data dataMagicPro
-php artisan migrate
-##
-cd packages/dixipro/magicpro
-# install fro development
-npm i
+mkdir -p packages/dixipro
+git clone https://github.com/dixiPro/magicpro.git packages/dixipro/magicpro
+composer require dixipro/magicpro:@dev
 ```
 
-**Vite build**
-Vite is configured to build outside the project root.
+Check whether the package is installed as a symbolic link:
+
+```bash
+ls -la vendor/dixipro/magicpro
+```
+
+If ok
+
+```bash
+php artisan migrate
+
+```
+
+Install frontend dependencies:
+
+```bash
+cd packages/dixipro/magicpro
+npm install
+npm run build
+```
+
+### Vite
+
+Vite is configured to build assets outside the package directory.
 
 ```bash
 cd packages/dixipro/magicpro
@@ -47,143 +69,192 @@ npm run dev
 npm run build
 ```
 
-## Laravel installation
+### Package maintenance
+
+Remove MagicPro:
 
 ```bash
-# Install Composer (if not installed)
+composer remove dixipro/magicpro
+```
+
+Check whether the package is installed as a symbolic link:
+
+```bash
+ls -la vendor/dixipro/magicpro
+```
+
+---
+
+## Laravel
+
+### Install Composer
+
+Skip this section if Composer is already installed.
+
+Download the Composer installer:
+
+```bash
 php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+```
 
-php composer-setup.php --install-dir=/usr/local/bin --filename=composer
+Install Composer globally:
 
-# Check version
-composer -V
+```bash
+sudo php composer-setup.php \
+    --install-dir=/usr/local/bin \
+    --filename=composer
+```
 
-# Create a new Laravel project
+Remove the installer:
+
+```bash
+rm composer-setup.php
+```
+
+Check the installed Composer version:
+
+```bash
+composer --version
+```
+
+### Create a Laravel project
+
+```bash
 composer create-project laravel/laravel myapp
 
-# Go to the project folder
 cd myapp
-# Set Laravel  permissions
-# add user to  www-data group
-sudo usermod -a -G www-data $(logname)
-#
-sudo chgrp -R www-data storage bootstrap/cache public database
-sudo find . -type d -exec chmod 775 {} \;
-sudo find . -type f -exec chmod 664 {} \;
-#
-php artisan storage:link
-#
-# Configure database in .env
-# APP_URL
-# database
-# log
-#
-# APP_ENV=local
-# LOG_CHANNEL=daily
-# LOG_LEVEL=debug
-# LOG_DAILY_DAYS=5
+```
 
-# Run migrations
+### Configure permissions
+
+Add the current user to the `www-data` group:
+
+```bash
+sudo usermod -aG www-data "$(logname)"
+```
+
+Log out and sign in again to apply the new group membership.
+
+Set permissions for Laravel writable directories:
+
+```bash
+sudo chgrp -R www-data storage bootstrap/cache
+
+sudo find storage bootstrap/cache \
+    -type d \
+    -exec chmod 775 {} \;
+
+sudo find storage bootstrap/cache \
+    -type f \
+    -exec chmod 664 {} \;
+```
+
+When using SQLite, make the database directory writable:
+
+```bash
+sudo chgrp -R www-data database
+sudo chmod -R g+rwX database
+```
+
+Create the public storage symbolic link:
+
+```bash
+php artisan storage:link
+```
+
+### Configure the environment
+
+Configure the application URL, database connection, and logging in `.env`:
+
+```dotenv
+APP_ENV=local
+APP_URL=http://localhost
+
+LOG_CHANNEL=daily
+LOG_LEVEL=debug
+LOG_DAILY_DAYS=5
+```
+
+Run migrations:
+
+```bash
 php artisan migrate
-# after all
+```
+
+Protect the `.env` file after configuration:
+
+```bash
 sudo chmod 600 .env
 ```
 
-## install livewire
+---
 
-```bash
-composer require livewire/livewire
+## Nginx
+
+### Site configuration
+
+Available site configurations are stored in:
+
+```text
+/etc/nginx/sites-available
 ```
 
-### Git cookbook
+Enabled site configurations are stored in:
 
-```bash
-#generate key
-ssh-keygen -t ed25519 -C "ваш_email@пример.com"
-cat ~/.ssh/id_ed25519.pub
-# GitHub →Settings → SSH and GPG keys → New SSH key.
-# https://github.com/settings/keys
-
-ssh -T git@github.com
+```text
+/etc/nginx/sites-enabled
 ```
 
-````bash
-# del local tags
-git tag -l | xargs git tag -d
-# del repo tags
-git push origin --delete $(git tag -l)
-# add tagh
-git tag 1.0.1
-git push origin 1.0.1
+Enable a site by creating a symbolic link:
+
+```bash
+sudo ln -s \
+    /etc/nginx/sites-available/example.com \
+    /etc/nginx/sites-enabled/example.com
 ```
 
-### SQlite managment
+Check the Nginx configuration:
 
 ```bash
-# need RDP X-11
-
-sudo apt install sqlitebrowser
-sqlitebrowser
-
-````
-
-#### Setup RDP on Ubuntu Server
-
-```bash
-sudo apt update
-sudo apt install -y xrdp xfce4
-
-# Set XFCE as the default session
-echo xfce4-session > ~/.xsession
-
-# Restart RDP service
-sudo systemctl restart xrdp
-
-#
-xhost +SI:localuser:root
-
-# On Windows:
-# Run "mstsc" (Remote Desktop Connection)
-# or use MobaXterm: https://mobaxterm.mobatek.net/download.html
-```
-
-### nginx cookbook
-
-```bash
-# configs
-cd /etc/nginx/sites-available
-# active sites
-cd /etc/nginx/sites-enabled
-# make link
-sudo ln -s /etc/nginx/sites-available/example.com /etc/nginx/sites-enabled/
-# check
 sudo nginx -t
-# restart
-sudo systemctl reload nginx
-
-#certbot
-apt install certbot python3-certbot-nginx -y
-certbot --nginx -d new.magalif.ru
-certbot renew --dry-run
-
-sudo certbot --nginx -d site.com -d www.site.com
-
 ```
 
-### cookbook difff
+Reload Nginx:
 
 ```bash
-#remove
-composer remove dixipro/magicpro
-rm -rf vendor/dixipro composer.lock
-composer clear-cache
-composer require dixipro/magicpro:dev-main
-composer require dixipro/magicpro
-
-
-
-# see link page
-ls -la vendor/dixipro/magicpro
+sudo systemctl reload nginx
 ```
+
+### HTTPS with Certbot
+
+Install Certbot and the Nginx plugin:
+
+```bash
+sudo apt install -y certbot python3-certbot-nginx
+```
+
+Create a certificate for one domain:
+
+```bash
+sudo certbot --nginx -d example.com
+```
+
+Create a certificate for the root domain and the `www` subdomain:
+
+```bash
+sudo certbot --nginx \
+    -d example.com \
+    -d www.example.com
+```
+
+Test automatic certificate renewal:
+
+```bash
+sudo certbot renew --dry-run
+```
+
+---
+
+## License
 
 MIT © dixiRu

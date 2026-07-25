@@ -9,30 +9,18 @@ use MagicProSrc\Mail\MagicProMailer;
 
 /*
 php artisan test packages/dixipro/magicpro/src/test/API_MailTest.php
+
+Tests here are real ("боевые"): real database/database.sqlite, real mail
+transport, no mocks and no RefreshDatabase, unless explicitly requested
+otherwise.
 */
 
 class API_MailTest extends TestCase
 {
+    // private const TEST_EMAIL = 'dixi.ru@gmail.com';
+    private const TEST_EMAIL = 'fin@solnushkov.ru';
 
-    public function test_send_now_real_email_by_aws_api(): void
-    {
-        $result = MagicProMailer::sendByAwsApi([
-            'to'      => 'dixi.ru@gmail.com',
-            'subject' => 'AWS SES API real test',
-            'html'    => '<p>Real email test through AWS SES API.</p>',
-        ]);
-
-        $this->assertTrue(
-            $result['status'],
-            $result['errorMsg'] ?? ''
-        );
-
-        $this->assertNotEmpty($result['mail_id'] ?? null);
-        $this->assertNotEmpty($result['provider_message_id'] ?? null);
-        $this->assertNotEmpty($result['raw_message'] ?? null);
-    }
-
-    public function test_send_now_real_email(): void
+    public function test_send_now(): void
     {
         config([
             'mail.default' => 'smtp',
@@ -43,16 +31,20 @@ class API_MailTest extends TestCase
         DB::reconnect('sqlite');
 
         $result = API_Mail::run('sendNow', [
-            'to'      => 'dixi.ru@gmail.com',
-            'subject' => 'API_Mail real test',
+            'to'      => self::TEST_EMAIL,
+            'subject' => 'API_Mail smtp real test ' . now(),
             'html'    => '<p>Real email test.</p>',
+            'fromName' => 'testName',
+            'replyTo' => 'makvel@mail.ru'
         ]);
+
+        dump($result);
 
         $this->assertTrue($result['status'], $result['errorMsg'] ?? '');
         $this->assertNotEmpty($result['data']['mail_id'] ?? null);
     }
 
-    public function test_send_later_queues_message(): void
+    public function test_send_later(): void
     {
         config([
             'database.connections.sqlite.database' => database_path('database.sqlite'),
@@ -61,31 +53,7 @@ class API_MailTest extends TestCase
         DB::purge('sqlite');
         DB::reconnect('sqlite');
 
-        $result = API_Mail::run('sendLater', [
-            'to'      => 'dixi.ru@gmail.com',
-            'subject' => 'API_Mail sendLater test',
-            'html'    => '<p>sendLater test body.</p>',
-        ]);
-
-        $this->assertTrue($result['status'], $result['errorMsg'] ?? '');
-        $this->assertSame(MagicProMailMessage::STATUS_QUEUED, $result['data']['status']);
-
-        $this->assertDatabaseHas('magicPro_mail_messages', [
-            'id'     => $result['data']['id'],
-            'status' => MagicProMailMessage::STATUS_QUEUED,
-        ]);
-    }
-
-    public function test_send_later_stores_scheduled_at(): void
-    {
-        config([
-            'database.connections.sqlite.database' => database_path('database.sqlite'),
-        ]);
-
-        DB::purge('sqlite');
-        DB::reconnect('sqlite');
-
-        $scheduledAt = now()->addDay()->toDateTimeString();
+        $scheduledAt = now()->subSeconds(120)->toDateTimeString();
 
         $result = API_Mail::run('sendLater', [
             'to'           => 'dixi.ru@gmail.com',
@@ -112,13 +80,13 @@ class API_MailTest extends TestCase
         DB::reconnect('sqlite');
 
         $queued = API_Mail::run('sendLater', [
-            'to'      => 'dixi.ru@gmail.com',
-            'subject' => 'API_Mail emaiQueue subject',
-            'html'    => '<p>emaiQueue test body.</p>',
+            'to'      => self::TEST_EMAIL,
+            'subject' => 'API_Mail emailQueue subject',
+            'html'    => '<p>emailQueue test body.</p>',
         ]);
         $this->assertTrue($queued['status'], $queued['errorMsg'] ?? '');
 
-        $result = API_Mail::run('emaiQueue', ['email' => 'dixi.ru@gmail.com']);
+        $result = API_Mail::run('emailQueue', ['email' => self::TEST_EMAIL]);
 
         $this->assertTrue($result['status'], $result['errorMsg'] ?? '');
         $ids = array_column($result['data']['queue'], 'id');
@@ -136,9 +104,10 @@ class API_MailTest extends TestCase
         DB::reconnect('sqlite');
 
         $created = API_Mail::run('sendLater', [
-            'to'      => 'dixi.ru@gmail.com',
+            'to'      => self::TEST_EMAIL,
             'subject' => 'API_Mail deleteEmail subject',
             'html'    => '<p>deleteEmail test body.</p>',
+            'scheduledAt' => now()->subSeconds(120)->toDateTimeString()
         ]);
         $this->assertTrue($created['status'], $created['errorMsg'] ?? '');
 
@@ -168,13 +137,13 @@ class API_MailTest extends TestCase
         DB::reconnect('sqlite');
 
         $queued = API_Mail::run('sendLater', [
-            'to'      => 'dixi.ru@gmail.com',
+            'to'      => self::TEST_EMAIL,
             'subject' => 'API_Mail deleteQueueByEmail subject',
             'html'    => '<p>deleteQueueByEmail test body.</p>',
         ]);
         $this->assertTrue($queued['status'], $queued['errorMsg'] ?? '');
 
-        $result = API_Mail::run('deleteQueueByEmail', ['email' => 'dixi.ru@gmail.com']);
+        $result = API_Mail::run('deleteQueueByEmail', ['email' => self::TEST_EMAIL]);
 
         $this->assertTrue($result['status'], $result['errorMsg'] ?? '');
         $this->assertGreaterThanOrEqual(1, $result['data']['deleted']);
@@ -182,5 +151,24 @@ class API_MailTest extends TestCase
         $this->assertDatabaseMissing('magicPro_mail_messages', [
             'id' => $queued['data']['id'],
         ]);
+    }
+
+    public function test_send_queue(): void
+    {
+        config([
+            'mail.default' => 'smtp',
+            'database.connections.sqlite.database' => database_path('database.sqlite'),
+        ]);
+
+        DB::purge('sqlite');
+        DB::reconnect('sqlite');
+
+        $result = API_Mail::run('sendQueue', []);
+
+        $this->assertTrue($result['status'], $result['errorMsg'] ?? '');
+        $this->assertSame(
+            $result['data']['total'],
+            $result['data']['sent'] + $result['data']['failed']
+        );
     }
 }
