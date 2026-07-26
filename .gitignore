@@ -1,5 +1,6 @@
-node_modules
 .vscode
+.git
+node_modules
 tempt.txt
 notes.md
 TODO.md
