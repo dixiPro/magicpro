@@ -86,6 +86,7 @@ Route::get('/a_dmin/phpinfo', function () {
 use MagicProAdminControllers\ImportExportController;
 // импорт
 Route::post('/a_dmin/importArticle', [ImportExportController::class, 'importArticle'])
+    ->middleware('magic.auth')
     ->withoutMiddleware([$csrf])->name('magic.importArticle');
 
 // экспорт

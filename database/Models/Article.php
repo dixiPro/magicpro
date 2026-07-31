@@ -4,7 +4,6 @@ namespace MagicProDatabaseModels; // в композере прописывае�
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\ValidationException;
-use Illuminate\Support\Facades\Auth;
 
 class Article extends Model
 {
@@ -46,22 +45,6 @@ class Article extends Model
     protected static function booted(): void
     {
         static::saving(function (self $m) {
-            // проверка прав
-
-            $guard = Auth::guard('magic');
-            if (!$guard->check()) {
-                throw ValidationException::withMessages([
-                    'parentId' => 'Авторизация пффф....',
-                ]);
-            }
-            $user = $guard->user();
-            $roles = ['admin', 'editor'];
-            if (!in_array($user->role, $roles)) {
-                throw ValidationException::withMessages([
-                    'parentId' => 'Недостаточно прав',
-                ]);
-            }
-
             // Корень всегда parentId = 0
             if ($m->id == 1) {
 

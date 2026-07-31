@@ -2,10 +2,15 @@
 
 namespace MagicProSrc\Mail;
 
-use MagicProSrc\Mail\MagicProMailer;                 // makeEmail / send
+use Aws\SesV2\SesV2Client;
 use MagicProDatabaseModels\MagicProMailMessage;      // модель письма
 use MagicProDatabaseModels\MagicProEmailAddress;     // реестр адресов / блокировка
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
+use Symfony\Component\Mime\Address;
+use Symfony\Component\Mime\Email;
 
 /**
  * Mail API of the subsystem, by the example of MagicProSrc\Api\API_Auth.
@@ -14,9 +19,9 @@ use Illuminate\Support\Facades\Validator;
  * выбрасывает исключение. Родитель (AbstractMailApi::run) ловит его и
  * формирует отрицательный ответ status/errorMsg/data/request.
  *
- * Транспорт (MagicProMailer) уже готов: makeEmail() собирает MIME-письмо,
- * send() отправляет готовую строку. Ни один из них не бросает исключений —
- * они возвращают массив со status, и мы сами решаем, что делать.
+ * Транспорт: sendBySmtp() / sendByAwsApi() собирают MIME-письмо и отправляют его.
+ * Ни один из них не бросает исключений — они возвращают массив со status,
+ * и мы сами решаем, что делать.
  */
 class API_Mail extends AbstractMailApi
 {
@@ -51,11 +56,11 @@ class API_Mail extends AbstractMailApi
 
     /**
      * Статусы «очереди» — письма, которые ещё будут отправлены (queued) или
-     * ждут ретрая (error). Всё остальное считается «отправленным» для админки.
+     * ждут ретрая (retrying). Всё остальное считается «отправленным» для админки.
      */
     protected const QUEUE_STATUSES = [
         MagicProMailMessage::STATUS_QUEUED,
-        MagicProMailMessage::STATUS_ERROR,
+        MagicProMailMessage::STATUS_RETRYING,
     ];
 
     // ==================================================================
@@ -77,7 +82,6 @@ class API_Mail extends AbstractMailApi
         if (!array_key_exists($attempts, $timeAttempts)) {
             throw new \Exception(self::ERRORS['attempts_exhausted']);
         }
-
         return now()->addSeconds($timeAttempts[$attempts]);
     }
 
@@ -93,9 +97,7 @@ class API_Mail extends AbstractMailApi
         if ($email === '') {
             throw new \Exception(self::ERRORS['email_required']);
         }
-
         $address = MagicProEmailAddress::where('email', $email)->first();
-
         if (!$address) {
             $address = MagicProEmailAddress::create([
                 'email'      => $email,
@@ -110,7 +112,6 @@ class API_Mail extends AbstractMailApi
                 $reason !== '' ? $reason : self::ERRORS['email_blocked']
             );
         }
-
         return $email;
     }
 
@@ -125,8 +126,6 @@ class API_Mail extends AbstractMailApi
             'to'       => self::checkEmail($params['to']),
             'subject'  => (string) ($params['subject'] ?? ''),
             'html'     => (string) ($params['html'] ?? ''),
-            // пустая строка не запускает фолбэк на mail.from.address внутри
-            // makeEmail() (там `??`, а не `?:`), поэтому подставляем сюда сами
             'from'     => trim((string) ($params['from'] ?? '')) ?: (string) config('mail.from.address', ''),
             'fromName' => trim((string) ($params['fromName'] ?? '')) ?: (string) config('mail.from.name', ''),
             'replyTo'  => trim((string) ($params['replyTo'] ?? '')),
@@ -249,9 +248,9 @@ class API_Mail extends AbstractMailApi
 
         $SesV2Client = env('AWS_SesV2Client', false);
         if ($SesV2Client) {
-            $sent = MagicProMailer::sendByAwsApi($letterParams);
+            $sent = self::sendByAwsApi($letterParams);
         } else {
-            $sent = MagicProMailer::send($letterParams);
+            $sent = self::sendBySmtp($letterParams);
         }
 
         if ($sent['status']) {
@@ -288,7 +287,7 @@ class API_Mail extends AbstractMailApi
             'subject'      => $letterParams['subject'],
             'html'         => $letterParams['html'],
             'raw_message'  => $sent['raw_message'],
-            'status'       => MagicProMailMessage::STATUS_ERROR,
+            'status'       => MagicProMailMessage::STATUS_RETRYING,
             'attempts'     => 1,
             'errors'       => [[
                 'ts'      => now()->toDateTimeString(),
@@ -302,18 +301,37 @@ class API_Mail extends AbstractMailApi
     /**
      * Отправляет письма из очереди: status = queued и время пришло
      * (scheduled_at пуст или уже наступил). Каждое письмо отправляется
-     * через MagicProMailer::send(). Ошибка одного письма не прерывает
+     * через self::sendBySmtp(). Ошибка одного письма не прерывает
      * обработку остальных.
      *
-     * При ошибке отправки: attempts++, статус error, следующая попытка
+     * При ошибке отправки: attempts++, статус retrying, следующая попытка
      * через nextSchedule(attempts). Когда попытки исчерпаны — статус failed.
      */
     protected static function sendQueue(array $params): array
     {
+        $lock = Cache::lock('API_Mail::sendQueue', 300);
+
+        if (!$lock->get()) {
+            return [
+                'total'  => 0,
+                'sent'   => 0,
+                'failed' => 0,
+            ];
+        }
+
+        try {
+            return self::sendQueueLocked($params);
+        } finally {
+            $lock->release();
+        }
+    }
+
+    protected static function sendQueueLocked(array $params): array
+    {
         $messages = MagicProMailMessage::query()
             ->whereIn('status', [
                 MagicProMailMessage::STATUS_QUEUED,
-                MagicProMailMessage::STATUS_ERROR,
+                MagicProMailMessage::STATUS_RETRYING,
             ])
             ->where(function ($q) {
                 $q->whereNull('scheduled_at')
@@ -325,15 +343,22 @@ class API_Mail extends AbstractMailApi
         $failedCount = 0;
 
         foreach ($messages as $message) {
-            $sent = MagicProMailer::send([
-                'to'      => $message->to_email,
-                'subject' => $message->subject,
-                'html'    => $message->html,
-                'from'    => $message->from_email,
-                'mail_id' => $message->mail_id ?: null,
+            $startedAt = microtime(true);
+
+            $sent = self::sendBySmtp([
+                'to'       => $message->to_email,
+                'subject'  => $message->subject,
+                'html'     => $message->html,
+                'from'     => $message->from_email,
+                'fromName' => $message->from_name ?? '',
+                'replyTo'  => $message->reply_to ?? '',
+                'mail_id'  => $message->mail_id ?: null,
             ]);
 
+            dump('sendQueue message #' . $message->id . ': ' . round((microtime(true) - $startedAt) * 1000) . 'ms');
+
             if ($sent['status']) {
+                // успешная отправка
                 $message->update([
                     'mail_id'              => $sent['mail_id'],
                     'raw_message'          => $sent['raw_message'],
@@ -352,16 +377,22 @@ class API_Mail extends AbstractMailApi
 
             try {
                 $scheduledAt = self::nextSchedule($attempts);
+                // есть новая дата отправки
 
                 $message->update([
-                    'status'       => MagicProMailMessage::STATUS_ERROR,
+                    'mail_id'      => $sent['mail_id'],
+                    'raw_message'  => $sent['raw_message'],
+                    'status'       => MagicProMailMessage::STATUS_RETRYING,
                     'attempts'     => $attempts,
                     'scheduled_at' => $scheduledAt,
                 ]);
             } catch (\Throwable $e) {
+                // повторная отправка невозможна, например количество повторов превышено
                 $message->update([
-                    'status'   => MagicProMailMessage::STATUS_FAILED,
-                    'attempts' => $attempts,
+                    'mail_id'     => $sent['mail_id'],
+                    'raw_message' => $sent['raw_message'],
+                    'status'      => MagicProMailMessage::STATUS_FAILED,
+                    'attempts'    => $attempts,
                 ]);
             }
 
@@ -380,7 +411,7 @@ class API_Mail extends AbstractMailApi
 
     /**
      * Список писем в очереди для указанного email.
-     * Очередь — письма, ещё не отправленные (queued / error).
+     * Очередь — письма, ещё не отправленные (queued / retrying).
      * Params: to (email).
      */
     protected static function emailQueue(array $params): array
@@ -398,7 +429,7 @@ class API_Mail extends AbstractMailApi
             ->where('to_email', $email)
             ->whereIn('status', [
                 MagicProMailMessage::STATUS_QUEUED,
-                MagicProMailMessage::STATUS_ERROR,
+                MagicProMailMessage::STATUS_RETRYING,
             ])
             ->orderBy('scheduled_at')
             ->orderBy('id')
@@ -415,13 +446,13 @@ class API_Mail extends AbstractMailApi
 
         return [
             'to'    => $email,
-            'queue' => $messages->all(),
+            'queue' => $messages->toArray(),
         ];
     }
 
     /**
      * Список писем для админки с разбивкой по разделам и пагинацией.
-     *   - section = 'queue'  -> статусы queued + error (см. QUEUE_STATUSES);
+     *   - section = 'queue'  -> статусы queued + retrying (см. QUEUE_STATUSES);
      *   - section = 'sent'   -> все остальные статусы;
      * Поиск — подстрока по to_email. Пагинация — count (по умолчанию 30,
      * максимум 200) + offset. errors отдаём сразу, чтобы модалка ошибок
@@ -575,7 +606,7 @@ class API_Mail extends AbstractMailApi
     }
 
     /**
-     * Удалить все письма в очереди (queued / error) для указанного email.
+     * Удалить все письма в очереди (queued / retrying) для указанного email.
      * Params: to (email).
      */
     protected static function deleteQueueByEmail(array $params): array
@@ -602,5 +633,177 @@ class API_Mail extends AbstractMailApi
             'to'      => $email,
             'deleted' => $deleted,
         ];
+    }
+
+    /**
+     * Создаёт и немедленно отправляет письмо.
+     *
+     * @param array{
+     *     to: string,
+     *     subject: string,
+     *     html: string,
+     *     from?: string,
+     *     fromName?: string,
+     *     replyTo?: string,
+     *     mail_id?: string
+     * } $params
+     *
+     * @return array{
+     *     status: bool,
+     *     mail_id: string,
+     *     provider_message_id: string,
+     *     raw_message: string,
+     *     errorMsg: string
+     * }
+     */
+    protected static function sendBySmtp(array $params): array
+    {
+        $mailId = (string) (
+            $params['mail_id']
+            ?? Str::uuid()
+        );
+
+        try {
+            $email = (new Email())
+                ->from(new Address($params['from'], $params['fromName']))
+                ->to($params['to'])
+                ->subject($params['subject'])
+                ->html($params['html']);
+
+            if ($params['replyTo'] !== '') {
+                $email->replyTo($params['replyTo']);
+            }
+
+            $email
+                ->getHeaders()
+                ->addTextHeader(
+                    'X-MagicPro-Mail-ID',
+                    $mailId
+                );
+
+            $configurationSet = trim((string) env(
+                'AWS_SES_CONFIGURATION_SET',
+                ''
+            ));
+
+            if ($configurationSet !== '') {
+                $email->getHeaders()->addTextHeader(
+                    'X-SES-CONFIGURATION-SET',
+                    $configurationSet
+                );
+            }
+
+            $sentMessage = Mail::getSymfonyTransport()->send(
+                $email
+            );
+
+            return [
+                'status'              => true,
+                'mail_id'             => $mailId,
+                'provider_message_id' => $sentMessage->getMessageId(),
+                'raw_message'         => $sentMessage->toString(),
+                'errorMsg'            => '',
+            ];
+        } catch (\Throwable $e) {
+            return [
+                'status'              => false,
+                'mail_id'             => $mailId,
+                'provider_message_id' => '',
+                'raw_message'         => '',
+                'errorMsg'            => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Создаёт и немедленно отправляет письмо через Amazon SES API v2.
+     *
+     * @param array{
+     *     to: string,
+     *     subject: string,
+     *     html: string,
+     *     from?: string,
+     *     fromName?: string,
+     *     replyTo?: string,
+     *     mail_id?: string
+     * } $params
+     *
+     * @return array{
+     *     status: bool,
+     *     mail_id: string,
+     *     provider_message_id: string,
+     *     raw_message: string,
+     *     errorMsg: string
+     * }
+     */
+    protected static function sendByAwsApi(array $params): array
+    {
+        $mailId = (string) (
+            $params['mail_id']
+            ?? Str::uuid()
+        );
+
+        try {
+            $email = (new Email())
+                ->from(new Address($params['from'], $params['fromName']))
+                ->to($params['to'])
+                ->subject($params['subject'])
+                ->html($params['html']);
+
+            if ($params['replyTo'] !== '') {
+                $email->replyTo($params['replyTo']);
+            }
+
+            $email
+                ->getHeaders()
+                ->addTextHeader('X-MagicPro-Mail-ID', $mailId);
+
+            $rawMessage = $email->toString();
+
+            $ses = new SesV2Client([
+                'version' => 'latest',
+                'region'  => (string) config('services.ses.region'),
+                'credentials' => [
+                    'key'    => (string) config('services.ses.key'),
+                    'secret' => (string) config('services.ses.secret'),
+                ],
+            ]);
+
+            $request = [
+                'FromEmailAddress' => $params['from'],
+                'Destination' => [
+                    'ToAddresses' => [$params['to']],
+                ],
+                'Content' => [
+                    'Raw' => [
+                        'Data' => $rawMessage,
+                    ],
+                ],
+            ];
+
+            $configurationSet = trim((string) env('AWS_SES_CONFIGURATION_SET', ''));
+
+            if ($configurationSet !== '') {
+                $request['ConfigurationSetName'] = $configurationSet;
+            }
+
+            $result = $ses->sendEmail($request);
+
+            return [
+                'status'              => true,
+                'mail_id'             => $mailId,
+                'provider_message_id' => (string) $result->get('MessageId'),
+                'raw_message'         => $rawMessage,
+                'errorMsg'            => '',
+            ];
+        } catch (\Throwable $e) {
+            return [
+                'status'              => false,
+                'mail_id'             => $mailId,
+                'provider_message_id' => '',
+                'raw_message'         => '',
+                'errorMsg'            => $e->getMessage(),
+            ];
+        }
     }
 }

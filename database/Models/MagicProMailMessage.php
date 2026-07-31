@@ -28,7 +28,7 @@ class MagicProMailMessage extends Model
     public const STATUS_SENT         = 'sent';         // транспорт принял письмо (SES вернул MessageId)
     public const STATUS_DELIVERED    = 'delivered';    // доставлено (вебхук)
     public const STATUS_OPEN         = 'open';         // открыто пользователем (вебхук)
-    public const STATUS_ERROR        = 'error';        // ошибка доставки, будет ретрай
+    public const STATUS_RETRYING     = 'retrying';      // ошибка доставки, будет ретрай
     public const STATUS_FAILED       = 'failed';       // исчерпаны попытки отправки
     public const STATUS_EMAILBLOCKED = 'emailblocked'; // адрес заблокирован
 
@@ -36,6 +36,7 @@ class MagicProMailMessage extends Model
         'provider_message_id',
         'mail_id',
         'from_email',
+        'from_name',
         'to_email',
         'reply_to',
         'subject',

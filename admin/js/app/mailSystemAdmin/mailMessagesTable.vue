@@ -131,7 +131,7 @@ const MAIL_STATUS_ICONS = {
   sent: { icon: 'fa-envelope', class: 'text-secondary' },
   delivered: { icon: 'fa-check-circle', class: 'text-success' },
   open: { icon: 'fa-envelope-open-text', class: 'text-info' },
-  error: { icon: 'fa-exclamation-triangle', class: 'text-warning' },
+  retrying: { icon: 'fa-exclamation-triangle', class: 'text-warning' },
   failed: { icon: 'fa-times-circle', class: 'text-danger' },
   emailblocked: { icon: 'fa-ban', class: 'text-danger' },
 };

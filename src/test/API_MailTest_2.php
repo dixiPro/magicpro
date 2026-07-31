@@ -57,8 +57,8 @@ class API_MailTest extends TestCase
         $scheduledAt = now()->subSeconds(120)->toDateTimeString();
 
         $result = API_Mail::run('sendLater', [
-            'to'           => self::TEST_EMAIL,
-            'subject'      => 'API_Mail sendLater scheduled_at ' . now(),
+            'to'           => 'dixi.ru@gmail.com',
+            'subject'      => 'API_Mail sendLater scheduled_at',
             'html'         => '<p>sendLater scheduled_at test.</p>',
             'scheduled_at' => $scheduledAt,
         ]);
@@ -80,14 +80,19 @@ class API_MailTest extends TestCase
         DB::purge('sqlite');
         DB::reconnect('sqlite');
 
-        $result = API_Mail::run('emailQueue', ['email' => self::TEST_EMAIL]);
+        $queued = API_Mail::run('sendLater', [
+            'to'      => self::TEST_EMAIL,
+            'subject' => 'API_Mail emailQueue subject',
+            'html'    => '<p>emailQueue test body.</p>',
+        ]);
+        $this->assertTrue($queued['status'], $queued['errorMsg'] ?? '');
 
-        dump('======= START ======');
-        dump($result);
-        dump('=======STOP ==========');
+        $result = API_Mail::run('emailQueue', ['email' => self::TEST_EMAIL]);
 
         $this->assertTrue($result['status'], $result['errorMsg'] ?? '');
         $ids = array_column($result['data']['queue'], 'id');
+
+        $this->assertContains($queued['data']['id'], $ids);
     }
 
     public function test_send_queue(): void
@@ -107,5 +112,65 @@ class API_MailTest extends TestCase
             $result['data']['total'],
             $result['data']['sent'] + $result['data']['failed']
         );
+    }
+
+
+    public function test_delete_email_by_id(): void
+    {
+        config([
+            'database.connections.sqlite.database' => database_path('database.sqlite'),
+        ]);
+
+        DB::purge('sqlite');
+        DB::reconnect('sqlite');
+
+        $created = API_Mail::run('sendLater', [
+            'to'      => self::TEST_EMAIL,
+            'subject' => 'API_Mail deleteEmail subject',
+            'html'    => '<p>deleteEmail test body.</p>',
+            'scheduledAt' => now()->subSeconds(120)->toDateTimeString()
+        ]);
+        $this->assertTrue($created['status'], $created['errorMsg'] ?? '');
+
+        $result = API_Mail::run('deleteEmail', ['id' => $created['data']['id']]);
+
+        $this->assertTrue($result['status'], $result['errorMsg'] ?? '');
+        $this->assertDatabaseMissing('magicPro_mail_messages', [
+            'id' => $created['data']['id'],
+        ]);
+    }
+
+    public function test_delete_email_fails_when_no_identifier(): void
+    {
+        $result = API_Mail::run('deleteEmail', []);
+
+        $this->assertFalse($result['status']);
+        $this->assertSame('id or MessageId required', $result['errorMsg']);
+    }
+
+    public function test_delete_queue_by_email_removes_queued(): void
+    {
+        config([
+            'database.connections.sqlite.database' => database_path('database.sqlite'),
+        ]);
+
+        DB::purge('sqlite');
+        DB::reconnect('sqlite');
+
+        $queued = API_Mail::run('sendLater', [
+            'to'      => self::TEST_EMAIL,
+            'subject' => 'API_Mail deleteQueueByEmail subject',
+            'html'    => '<p>deleteQueueByEmail test body.</p>',
+        ]);
+        $this->assertTrue($queued['status'], $queued['errorMsg'] ?? '');
+
+        $result = API_Mail::run('deleteQueueByEmail', ['email' => self::TEST_EMAIL]);
+
+        $this->assertTrue($result['status'], $result['errorMsg'] ?? '');
+        $this->assertGreaterThanOrEqual(1, $result['data']['deleted']);
+
+        $this->assertDatabaseMissing('magicPro_mail_messages', [
+            'id' => $queued['data']['id'],
+        ]);
     }
 }

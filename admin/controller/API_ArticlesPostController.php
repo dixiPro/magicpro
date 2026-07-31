@@ -28,7 +28,6 @@ class API_ArticlesPostController extends AbstractApiHandler
         'saveById'                     => 'saveById',
         'regenerateAll'                => 'regenerateAll',
         'search'                       => 'search',
-        'checkUrlByPhp'                => 'checkUrlByPhp',
     ];
 
 
@@ -71,9 +70,10 @@ class API_ArticlesPostController extends AbstractApiHandler
         $article = $request->input('article', []);
         $id = $article['id'] ?? 0;
 
-        if ($id == 1) {
-            $article['parentId'] = 0;
-        }
+        // Position in the tree is owned by the move command: it renumbers npp among
+        // the siblings and maintains the directory flag of both parents. Writing the
+        // fields here would skip all of that, so they are never taken from the payload.
+        unset($article['parentId'], $article['npp']);
 
         $record = Article::find($id);
         if (!$record) {

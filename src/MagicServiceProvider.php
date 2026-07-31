@@ -106,6 +106,9 @@ class MagicServiceProvider extends ServiceProvider
                 app(MagicProSchedule::class)->register($schedule);
             }
         );
+
+        // МСП сервер
+        $this->loadRoutesFrom(__DIR__ . '/Mcp/ai.php');
     }
 
     public function register(): void

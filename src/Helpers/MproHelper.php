@@ -2,6 +2,7 @@
 
 use MagicProDatabaseModels\Article;
 use Illuminate\Support\Facades\Mail;
+use MagicProSrc\Mail\API_Mail;
 use Monolog\Logger;
 use Monolog\Level;
 use Monolog\Handler\RotatingFileHandler;
@@ -34,26 +35,15 @@ class MproHelper
     {
         try {
 
-            $required = ['email', 'subj', 'html'];
+            $res = API_Mail::run('sendNow', [
+                'to'      => $params['email'] ?? '',
+                'subject' => $params['subj'] ?? '',
+                'html'    => $params['html'] ?? '',
+            ]);
 
-            foreach ($required as $field) {
-                if (empty($params[$field])) {
-                    throw new \Exception($field . ' require');
-                }
+            if (!$res['status']) {
+                throw new \Exception($res['errorMsg']);
             }
-
-            Mail::html($params['html'], function ($message) use ($params) {
-
-                $message->to($params['email']);
-                $message->subject($params['subj']);
-
-                $configSet = env('AWS_SES_CONFIGURATION_SET');
-
-                if ($configSet) {
-                    $message->getSymfonyMessage()->getHeaders()
-                        ->addTextHeader('X-SES-CONFIGURATION-SET', $configSet);
-                }
-            });
 
             self::addLog('mail', [
                 'status' => true,
@@ -64,7 +54,7 @@ class MproHelper
             return [
                 'status'   => true,
                 'errorMsg' => '',
-                'data'     => [],
+                'data'     => $res['data'] ?? [],
             ];
         } catch (\Throwable $e) {
 
@@ -204,11 +194,18 @@ class MproHelper
 
         return $text;
     }
-    // продитель
+    // Parent article of the given one. Empty array for the root and for a missing id.
     public static function getParent(int $id): array
     {
-        // TODO: запрос к БД, вернуть parent
-        return ['parent' => 'родитель'];
+        $parentId = Article::query()
+            ->where('id', $id)
+            ->value('parentId');
+
+        if (empty($parentId)) {
+            return [];
+        }
+
+        return self::getArtById((int) $parentId);
     }
 
 
@@ -243,6 +240,16 @@ class MproHelper
     {
         $result = Article::query()
             ->where('name', $name)
+            ->select('*')
+            ->get()
+            ->toArray();
+        return $result[0] ?? [];
+    }
+
+    public static function getArtById(int $id): array
+    {
+        $result = Article::query()
+            ->where('id', $id)
             ->select('*')
             ->get()
             ->toArray();

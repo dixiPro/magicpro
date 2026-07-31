@@ -71,7 +71,11 @@ For dev see [Cookbook.md](Cookbook.md#magicpro).
 
 ## Added / Change
 
-### 2026-06-25
+### 2026-07-31
+
+Start of development of MSP server
+
+### 2026-07-25
 
 Added an email service with immediate and scheduled email delivery.
 
