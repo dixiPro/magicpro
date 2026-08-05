@@ -37,6 +37,7 @@ return [
     'admins' => 'admins',
     'users' => 'Users',
     'mail' => 'Mail',
+    'feed' => 'Feeds',
     'crawler' => 'crawler',
     'tables' => 'tables',
     'logout' => 'logout',

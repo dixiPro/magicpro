@@ -12,7 +12,11 @@ use Livewire\Mechanisms\ComponentRegistry;
 
 use MagicProSrc\LivewireComponentRegistry; // magicLiveWare
 
+use Illuminate\Foundation\AliasLoader;
+
 use MagicProDatabaseModels\MagicProUser; // таблица авторизации админки
+use MagicProDatabaseModels\Feed; // лента
+use MagicProDatabaseModels\FeedItem; // запись ленты
 
 use MagicProAdminMiddleware\CheckMagicAuth; // миддлваре авторизации
 
@@ -34,6 +38,12 @@ class MagicServiceProvider extends ServiceProvider
 
         // Include helper functions
         require_once __DIR__ . '/Helpers/MproHelper.php';
+
+        // Feed models under short names, so that blades and article controllers
+        // write Feed:: and FeedItem:: instead of the full namespace. The alias
+        // loader resolves them lazily, on first use.
+        AliasLoader::getInstance()->alias('Feed', Feed::class);
+        AliasLoader::getInstance()->alias('FeedItem', FeedItem::class);
 
         // админка
         // Load admin routes with "web" middleware

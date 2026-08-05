@@ -2,33 +2,79 @@
 
 use MagicProDatabaseModels\Article;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
+use MagicProSrc\Api\API_Auth;
+use MagicProSrc\Config\MagicGlobals;
 use MagicProSrc\Mail\API_Mail;
 use Monolog\Logger;
 use Monolog\Level;
 use Monolog\Handler\RotatingFileHandler;
-use Illuminate\Support\Facades\Http;
 
 
 class MproHelper
 {
+    // language the documentation is written in, the one translations fall back to
+    private const DOC_SOURCE_LANG = 'ru';
 
-    public static function verifyRecapture(string $response, string $secret): bool
+    // Documentation page rendered to html. The markdown source lives in the package
+    // docs directory, one subdirectory per language: docs/ru/routing.md. Without an
+    // explicit language the one from the MagicPro settings is used.
+    // Both parts of the path are validated, they come from route parameters.
+    // With $renderHtml = false the markdown source is returned untouched, which is
+    // what a download or a translation job needs.
+    public static function getDoc(string $name, string $lang = '', bool $renderHtml = true): string
     {
-        $url = 'https://www.google.com/recaptcha/api/siteverify';
-
-        //
-        $res = Http::asForm()->post($url, [
-            'secret'   => $secret,
-            'response' => $response,
-        ]);
-
-        if (!$res->successful()) {
-            return false;
+        if ($lang === '') {
+            $lang = (string) (MagicGlobals::$INI['LANGUAGE'] ?? 'ru');
         }
 
-        $data = $res->json();
+        if (!preg_match('/^[A-Za-z0-9_-]+$/', $name) || !preg_match('/^[A-Za-z-]+$/', $lang)) {
+            self::addLog('doc', ['error' => 'invalid name or lang', 'name' => $name, 'lang' => $lang]);
+            return '';
+        }
 
-        return ($data['success'] ?? false) === true;
+        $file = __DIR__ . '/../../docs/' . $lang . '/' . $name . '.md';
+
+        // translations lag behind, so a missing one shows the source language
+        // instead of an empty page
+        if (!is_file($file) && $lang !== self::DOC_SOURCE_LANG) {
+            $lang = self::DOC_SOURCE_LANG;
+            $file = __DIR__ . '/../../docs/' . $lang . '/' . $name . '.md';
+        }
+
+        if (!is_file($file)) {
+            self::addLog('doc', ['error' => 'file not found', 'file' => $file]);
+            return '';
+        }
+
+        if (!$renderHtml) {
+            return (string) file_get_contents($file);
+        }
+
+        // the markdown is converted once per file version: mtime is part of the key
+        return Cache::rememberForever(
+            'magicDoc:' . $lang . ':' . $name . ':' . filemtime($file),
+            fn() => Str::markdown(file_get_contents($file))
+        );
+    }
+
+    // Public site key of Google reCAPTCHA, the one that goes into the form and
+    // is visible in the page source. Kept here so blades never read env directly
+    // and the key lives in .env only.
+    public static function getRecaptureKey(): string
+    {
+        return (string) env('RECAPTCHA_SITE_KEY');
+    }
+
+    // The secret key is read from RECAPTCHA_SECRET_KEY inside the api and is
+    // never passed in. run() is used instead of runOrFail() to keep the bool
+    // result the calling articles expect.
+    public static function verifyRecapture(string $response): bool
+    {
+        return API_Auth::run('checkGoogleCapture', [
+            'token' => $response,
+        ])['status'];
     }
 
     public static function sendMail(array $params): array

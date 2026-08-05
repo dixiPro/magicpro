@@ -61,6 +61,19 @@ Route::post('/a_dmin/api/mailSystem', [API_Mail::class, 'handle'])
     ->middleware('magic.auth')
     ->withoutMiddleware([$csrf]);
 
+// Ленты
+use MagicProSrc\Lenta\API_Feeds;
+
+// страница
+Route::get('/a_dmin/feed', function () {
+    return view('magicAdmin::feed');
+})->name('magic.feed');
+
+// АПИ
+Route::post('/a_dmin/api/feed', [API_Feeds::class, 'handle'])
+    ->middleware('magic.auth')
+    ->withoutMiddleware([$csrf]);
+
 
 
 // список статей

@@ -71,6 +71,12 @@ For dev see [Cookbook.md](Cookbook.md#magicpro).
 
 ## Added / Change
 
+### 2026-08-05
+
+Feeds: Development Begins
+
+The MCP server can now build pages. I’m as excited as a little kid.
+
 ### 2026-07-31
 
 Start of development of MSP server

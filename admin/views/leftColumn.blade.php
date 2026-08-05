@@ -11,6 +11,7 @@
         ['route' => 'magic.admin_list', 'label' => 'admins', 'icon' => 'fas fa-users-cog'],
         ['route' => 'magic.users', 'label' => 'users', 'icon' => 'fas fa-users'],
         ['route' => 'magic.mail', 'label' => 'mail', 'icon' => 'fas fa-envelope'],
+        ['route' => 'magic.feed', 'label' => 'feed', 'icon' => 'fas fa-stream'],
         ['route' => 'magic.crawler', 'label' => 'crawler', 'icon' => 'fas fa-spider'],
         ['route' => 'magic.dataBase', 'label' => 'dataBase', 'icon' => 'fas fa-database'],
     ];

@@ -3,6 +3,12 @@
 Product, architecture and domain rules. Workflow and methodology rules live in the root
 `CLAUDE.md` of the host application.
 
+The articles table, route parameters, blade constructs, controller kinds and site helpers are
+described in detail in the reference imported below. Read it before touching articles,
+routing or generated files.
+
+@docs/ru/common.md
+
 ## MagicPro
 
 **MagicPro** is a CMS that combines the speed of a CMS with the flexibility of Laravel 13.

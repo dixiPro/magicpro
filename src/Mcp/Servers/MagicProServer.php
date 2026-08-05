@@ -12,7 +12,9 @@ use MagicProSrc\Mcp\Tools\GetArticleTool;
 use MagicProSrc\Mcp\Tools\GetArticleTreeTool;
 use MagicProSrc\Mcp\Tools\GetProjectNameTool;
 use MagicProSrc\Mcp\Tools\MoveArticleTool;
+use MagicProSrc\Mcp\Tools\ReadFileTool;
 use MagicProSrc\Mcp\Tools\SaveArticleTool;
+use MagicProSrc\Mcp\Tools\SaveFileTool;
 use MagicProSrc\Mcp\Tools\SearchArticlesTool;
 
 class MagicProServer extends Server
@@ -35,5 +37,9 @@ class MagicProServer extends Server
         CreateArticleTool::class,
         SaveArticleTool::class,
         MoveArticleTool::class,
+
+        // файлы
+        ReadFileTool::class,
+        SaveFileTool::class,
     ];
 }

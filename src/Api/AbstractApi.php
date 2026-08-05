@@ -39,10 +39,27 @@ abstract class AbstractApi
                 'status'   => false,
                 'line'     => $e->getFile() . ' ' . $e->getLine(),
                 'errorMsg' => $e->getMessage(),
-                'data'     => $e instanceof ApiException ? $e->getData() : [],
+                'data'     => [],
                 'request'  => $params,
             ];
         }
+    }
+
+    /**
+     * Same as run(), but for internal calls that must succeed: an error is
+     * rethrown instead of being reported through the status flag, and only
+     * the data part is returned. run() itself never throws, so calling it
+     * directly and ignoring the status silently continues on failure.
+     */
+    public static function runOrFail(string $command, array $params = []): array
+    {
+        $result = static::run($command, $params);
+
+        if (!$result['status']) {
+            throw new \Exception($result['errorMsg']);
+        }
+
+        return $result['data'];
     }
 
     public function handle(Request $request): JsonResponse

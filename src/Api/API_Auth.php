@@ -147,7 +147,7 @@ class API_Auth extends AbstractApi
     */
         // если нет гугл выкинет исключение
         $token = $params['token'];
-        $res = self::run("checkGoogleCapture", [
+        self::runOrFail("checkGoogleCapture", [
             "token" => $token,
         ]);
 
@@ -164,7 +164,7 @@ class API_Auth extends AbstractApi
 
         // Пользователь зарегистрирован — пробуем авторизовать
         if ($userInfo['status']) {
-            $resAuth = self::run('authEmailPassword', [
+            self::runOrFail('authEmailPassword', [
                 'email' => $email,
                 'password' => $password,
                 'ip' => request()->ip(),
@@ -184,14 +184,14 @@ class API_Auth extends AbstractApi
 
         // сгенерить ключ
         $back = trim((string) ($params['back'] ?? '')) ?: '/';
-        $resKey = self::run('cryptEmailPass', [
+        $resKey = self::runOrFail('cryptEmailPass', [
             'email' => $email,
             'password' => $password,
             'back' => $back,
         ]);
 
         // рендерить шаблон
-        $key = $resKey['data']['key'];
+        $key = $resKey['key'];
         try {
             $html = view($params['blade'], [
                 'key' => $key,
@@ -273,11 +273,9 @@ class API_Auth extends AbstractApi
         $key = (string) ($params['key'] ?? '');
 
         // Расшифровать входные параметры
-        $res = self::run('decryptEmailPass', [
+        $data = self::runOrFail('decryptEmailPass', [
             'key' => $key,
         ]);
-
-        $data = $res['data'];
 
         // Проверить, зарегистрирован ли пользователь
         $userInfo = self::run('userInfo', [
@@ -286,7 +284,7 @@ class API_Auth extends AbstractApi
 
         // Пользователь зарегистрирован — пробуем авторизовать
         if ($userInfo['status']) {
-            $resAuth = self::run('authEmailPassword', [
+            self::runOrFail('authEmailPassword', [
                 'email' => $data['email'],
                 'password' => $data['password'],
                 'ip' => request()->ip(),
@@ -298,14 +296,14 @@ class API_Auth extends AbstractApi
         }
 
         // Зарегистрировать пользователя
-        $resCreate = self::run('createUser', [
+        self::runOrFail('createUser', [
             'email' => $data['email'],
             'password' => $data['password'],
         ]);
         // если ошибка выкинет исключение, если нет доберется сюда
 
         // Авторизовать нового пользователя
-        $resAuth = self::run('authEmailPassword', [
+        self::runOrFail('authEmailPassword', [
             'email' => $data['email'],
             'password' => $data['password'],
             'ip' => request()->ip(),
@@ -588,7 +586,7 @@ class API_Auth extends AbstractApi
 
         // пустой пароль — не меняем, непустой — меняем через chagePassword
         if ($password !== '') {
-            self::run('chagePassword', [
+            self::runOrFail('chagePassword', [
                 'id' => $user->id,
                 'password' => $password,
             ]);
