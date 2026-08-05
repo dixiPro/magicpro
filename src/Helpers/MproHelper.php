@@ -224,6 +224,23 @@ class MproHelper
         return $text;
     }
 
+    // Markdown of a feed record rendered to html. Unlike getDoc, the source here
+    // is written by an operator, so raw html inside it is stripped rather than
+    // passed through, and links that carry javascript are dropped.
+    // The admin preview calls this through the api, the site calls it directly,
+    // so both show the same thing.
+    public static function mdToHtml(string $md): string
+    {
+        if (trim($md) === '') {
+            return '';
+        }
+
+        return Str::markdown($md, [
+            'html_input'         => 'strip',
+            'allow_unsafe_links' => false,
+        ]);
+    }
+
     //
     public static function trimAndCutText(string $text, int $limit = 0): string
     {

@@ -44,6 +44,7 @@ function getMode() {
   const modeExt = {
     js: 'ace/mode/javascript',
     css: 'ace/mode/css',
+    html: 'ace/mode/html',
   };
   return modeExt[props.fileExtention] ? modeExt[props.fileExtention] : 'ace/mode/text';
 }

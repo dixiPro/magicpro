@@ -47,8 +47,8 @@ class API_Feeds extends AbstractFeedApi
         'editor_unknown'    => 'Неизвестный редактор',
         'data_type_unknown' => 'Неизвестный тип поля в __data',
         'data_unique'       => 'unique нельзя для поля в __data',
-        'code_field_empty'  => 'У поля схемы нет code',
-        'label_empty'       => 'У поля схемы нет label',
+        'code_field_empty'  => 'У %s нет code',
+        'label_empty'       => 'У %s нет label',
         'code_field_format' => 'Code поля: латинские буквы, цифры, дефис и подчёркивание',
         'code_reserved'     => 'Такое имя занято системой',
         'code_field_taken'  => 'Два поля с одним code',
@@ -134,6 +134,8 @@ class API_Feeds extends AbstractFeedApi
 
         'imageUpload' => 'imageUpload',
         'imageDelete' => 'imageDelete',
+
+        'mdToHtml'    => 'mdToHtml',
     ];
 
     // === Группы ===
@@ -479,8 +481,7 @@ class API_Feeds extends AbstractFeedApi
             $column = (string) ($field['column'] ?? '');
             $code   = (string) ($field['code'] ?? '');
 
-            $this->checkCode($code, $takenCodes);
-            $this->checkLabel($field, $code);
+            $this->checkCode($code, $takenCodes, $column !== '' ? $column : 'поля схемы');
 
             if (! in_array($column, $slots, true)) {
                 throw new Exception(self::ERRORS['column_unknown'] . ': ' . ($column ?: $code));
@@ -493,12 +494,15 @@ class API_Feeds extends AbstractFeedApi
             $takenColumns[] = $column;
 
             if ($column === '__data') {
+                // у контейнера нет ни значения, ни подписи: оператор видит не
+                // его, а вложенные поля
                 $this->checkDataFields($field['data'] ?? [], $takenCodes);
 
                 // the container itself has no value, so nothing else applies
                 continue;
             }
 
+            $this->checkLabel($field, $column);
             $this->checkSlotField($field, $column, $code);
 
             $codeByColumn[$column] = $code;
@@ -578,15 +582,15 @@ class API_Feeds extends AbstractFeedApi
      */
     protected function checkDataFields(array $dataFields, array &$takenCodes): void
     {
-        foreach ($dataFields as $field) {
+        foreach ($dataFields as $index => $field) {
             if (! is_array($field)) {
                 throw new Exception(self::ERRORS['field_not_object'] . ': __data');
             }
 
             $code = (string) ($field['code'] ?? '');
 
-            $this->checkCode($code, $takenCodes);
-            $this->checkLabel($field, $code);
+            $this->checkCode($code, $takenCodes, '__data #' . ((int) $index + 1));
+            $this->checkLabel($field, '__data ' . $code);
 
             $type = (string) ($field['type'] ?? '');
 
@@ -609,10 +613,10 @@ class API_Feeds extends AbstractFeedApi
      * every column of the module starts with __, and four more names come from
      * Laravel itself.
      */
-    protected function checkCode(string $code, array &$takenCodes): void
+    protected function checkCode(string $code, array &$takenCodes, string $where): void
     {
         if ($code === '') {
-            throw new Exception(self::ERRORS['code_field_empty']);
+            throw new Exception(sprintf(self::ERRORS['code_field_empty'], $where));
         }
 
         if (! preg_match('/^[A-Za-z0-9_-]+$/', $code)) {
@@ -630,11 +634,16 @@ class API_Feeds extends AbstractFeedApi
         $takenCodes[] = $code;
     }
 
-    /** Подпись поля для админки. Без неё оператор видит в форме голый code. */
-    protected function checkLabel(array $field, string $code): void
+    /**
+     * Подпись поля для админки. Без неё оператор видит в форме голый code.
+     *
+     * В ошибке называется колонка, а не code: строку в таблице оператор узнаёт
+     * по слоту, и code у неё может быть уже заполнен.
+     */
+    protected function checkLabel(array $field, string $where): void
     {
         if (trim((string) ($field['label'] ?? '')) === '') {
-            throw new Exception(self::ERRORS['label_empty'] . ': ' . $code);
+            throw new Exception(sprintf(self::ERRORS['label_empty'], $where));
         }
     }
 
@@ -964,6 +973,18 @@ class API_Feeds extends AbstractFeedApi
         $item->save();
 
         return true;
+    }
+
+    /**
+     * Markdown to html, for the preview under the editor.
+     *
+     * The work itself is MproHelper::mdToHtml, the same call the site makes when
+     * it renders the record. Kept that way on purpose: a preview that converted
+     * the text on its own would sooner or later disagree with the page.
+     */
+    protected function mdToHtml(array $params): array
+    {
+        return ['html' => \MproHelper::mdToHtml((string) ($params['md'] ?? ''))];
     }
 
     /** The field has to exist in the schema and be an image. */

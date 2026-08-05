@@ -28,10 +28,20 @@ use MagicProSrc\Scheduling\MagicProSchedule;
 
 use MagicProSrc\MagicLang;
 
+use MagicProSrc\Lenta\FeedPathGenerator; // папка картинок лент внутри диска
+use Spatie\MediaLibrary\Support\PathGenerator\DefaultPathGenerator;
+
 class MagicServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
+        // Картинки лент — в подпапку magicFeed, а не в корень диска.
+        // Генератор путей в медиатеке один на всё приложение, поэтому забираем
+        // его только пока он стандартный: чужую настройку не перебиваем.
+        if (config('media-library.path_generator') === DefaultPathGenerator::class) {
+            config(['media-library.path_generator' => FeedPathGenerator::class]);
+        }
+
         // вьюхи
         $this->loadViewsFrom(MAGIC_VIEW_DIR, 'magic');
 

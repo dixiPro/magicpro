@@ -42,6 +42,10 @@ app.use(ToastService);
 import i18n from './app/CommonCom/translate.js';
 app.use(i18n);
 
+// общее состояние экрана ленты
+import { createPinia } from 'pinia';
+app.use(createPinia());
+
 // экраны разведены по адресам через хеш: #/, #/group/2, #/feed/3
 import router from './app/feedAdmin/router.js';
 app.use(router);

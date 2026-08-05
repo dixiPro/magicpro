@@ -16,6 +16,7 @@
     <script src="/vendor/dixipro/magicpro/prettier/postcss.js"></script>
     <script src="/vendor/dixipro/magicpro/prettier/babel.js"></script>
     <script src="/vendor/dixipro/magicpro/prettier/estree.js"></script>
+
 </head>
 
 <body>
