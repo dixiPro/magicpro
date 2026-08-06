@@ -3,6 +3,9 @@ import { ref, toRaw, computed } from 'vue';
 import { useArticleStore } from '../store';
 import { storeToRefs } from 'pinia';
 
+import { useI18n } from 'vue-i18n';
+const { t } = useI18n();
+
 const store = useArticleStore();
 
 // const leftPannel = ref('tree');
@@ -29,7 +32,7 @@ async function goArticle(id) {
     <div class="row my-1">
       <div class="input-group input-group-sm">
         <button class="btn btn-primary fas fa-times" @click="store.statusLeftPannel = 'tree'"></button>
-        <input placeholder="найти" type="text" class="form-control" v-model="findText" />
+        <input :placeholder="t('art_find')" type="text" class="form-control" v-model="findText" />
         <button class="btn btn-primary fas fa-angle-right" @click="findInBase()"></button>
       </div>
     </div>

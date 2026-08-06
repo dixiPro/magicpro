@@ -3,6 +3,7 @@
 namespace MagicProSrc\Lenta;
 
 use Exception;
+use MagicProSrc\MagicLang;
 
 /**
  * Validation of a record failed.
@@ -21,9 +22,10 @@ class FeedValidationException extends Exception
     /** @var array<string, array<int, string>> logical field name => messages */
     protected array $errors;
 
-    public function __construct(array $errors, string $message = 'Проверьте заполнение полей')
+    public function __construct(array $errors, string $message = '')
     {
-        parent::__construct($message);
+        // текст берётся из словаря пакета, поэтому идёт на языке админки
+        parent::__construct($message !== '' ? $message : MagicLang::getMsg('feed_err_values'));
 
         $this->errors = $errors;
     }

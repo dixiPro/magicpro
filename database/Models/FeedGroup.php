@@ -45,12 +45,12 @@ class FeedGroup extends Model
     {
         static::deleting(function (self $group): void {
             if ((int) $group->id === self::DEFAULT_ID) {
-                throw new RuntimeException('Группа по умолчанию не удаляется');
+                throw new RuntimeException(\MagicProSrc\MagicLang::getMsg('feed_err_group_default'));
             }
 
             // feeds are moved to another group or deleted first
             if ($group->feeds()->exists()) {
-                throw new RuntimeException('В группе есть ленты, она не удаляется');
+                throw new RuntimeException(\MagicProSrc\MagicLang::getMsg('feed_err_group_not_empty'));
             }
         });
     }

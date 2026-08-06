@@ -196,14 +196,20 @@ onUnmounted(() => {
     @update:visible="close()"
   >
     <div class="row mb-3">
-      <div class="col-8">
-        <input
-          ref="input"
-          type="file"
-          accept="image/*"
-          class="form-control form-control-sm"
-          @change="onFileSelect"
-        />
+      <!--
+        Свой выбор файла вместо родного контрола: тот подписывает себя сам,
+        языком браузера, и в английской админке остаётся русским.
+      -->
+      <div class="col-8 d-flex align-items-center gap-2">
+        <input ref="input" type="file" accept="image/*" class="d-none" @change="onFileSelect" />
+
+        <button class="btn btn-sm btn-outline-secondary" @click="input.click()">
+          {{ t('feed_image_choose') }}
+        </button>
+
+        <span class="text-muted small text-truncate">
+          {{ file ? file.name : t('feed_image_not_chosen') }}
+        </span>
       </div>
       <div class="col-4 text-muted small pt-1">{{ t('feed_image_paste') }}</div>
     </div>

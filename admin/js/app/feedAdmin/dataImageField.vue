@@ -39,7 +39,9 @@ const alt = computed({
 const size = computed(() => {
   const bytes = value.value?.size ?? 0;
 
-  return bytes > 1024 * 1024 ? (bytes / 1024 / 1024).toFixed(1) + ' МБ' : Math.round(bytes / 1024) + ' КБ';
+  return bytes > 1024 * 1024
+    ? (bytes / 1024 / 1024).toFixed(1) + ' ' + t('feed_size_mb')
+    : Math.round(bytes / 1024) + ' ' + t('feed_size_kb');
 });
 
 async function remove() {

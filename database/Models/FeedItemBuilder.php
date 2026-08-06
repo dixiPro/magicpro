@@ -237,11 +237,13 @@ class FeedItemBuilder extends Builder
 
         if (in_array($name, $this->dataCodes, true)) {
             throw new RuntimeException(
-                "Поле «{$name}» лежит в __data: по нему нельзя искать и сортировать"
+                sprintf(\MagicProSrc\MagicLang::getMsg('feed_err_field_in_data'), $name)
             );
         }
 
-        throw new RuntimeException("Поле «{$name}» не описано в схеме ленты");
+        throw new RuntimeException(
+            sprintf(\MagicProSrc\MagicLang::getMsg('feed_err_field_no_schema'), $name)
+        );
     }
 
     /** Column names of a where() called with an array of conditions. */

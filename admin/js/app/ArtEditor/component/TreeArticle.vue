@@ -158,7 +158,7 @@ function onRightClick(event, node) {
       icon: 'fas fa-cut',
       command: () => {
         cutNode = node;
-        document.showToast('Вырезано: ' + node.label);
+        document.showToast(t('art_cut') + ' ' + node.label);
       },
     },
     ...(cutNode && cutNode.key !== node.key
@@ -185,7 +185,7 @@ async function pasteRec(node) {
     });
     cutNode = null;
     await makeTree(currentNodeId.value);
-    document.showToast('Вставлено');
+    document.showToast(t('art_pasted'));
   } catch (e) {
     return;
   }
@@ -210,7 +210,7 @@ async function createRec(node) {
     expandedKeys.value = { ...expandedKeys.value, [node.key]: true };
     currentNodeId.value = article.id;
     selectionKeys.value = { [article.id]: true };
-    document.showToast('Создано');
+    document.showToast(t('art_created'));
   } catch (e) {
     return;
   }
@@ -218,14 +218,14 @@ async function createRec(node) {
 
 async function deleteRec(node) {
   if (node.key == 1) {
-    document.showToast('Не стоит удалять root');
+    document.showToast(t('art_root_keep'));
     return;
   }
-  if (!(await document.confirmDialog('Удалить ?' + node.key))) return;
+  if (!(await document.confirmDialog(t('art_delete_ask') + ' ' + node.key))) return;
 
   const parent = findParent(treeData.value, node.key);
   if (!parent) {
-    document.showToast('Ошибка удаления parent не найден', 'error');
+    document.showToast(t('art_delete_no_parent'), 'error');
     return;
   }
 
@@ -238,7 +238,7 @@ async function deleteRec(node) {
 
   const idx = parent.children.findIndex((c) => c.key === node.key);
   if (idx === -1) {
-    document.showToast('Ошибка удаления элемента, перезагрузите', 'error');
+    document.showToast(t('art_delete_failed'), 'error');
     return;
   }
   parent.children.splice(idx, 1);
@@ -249,7 +249,7 @@ async function deleteRec(node) {
 
   currentNodeId.value = parent.key;
   selectionKeys.value = { [parent.key]: true };
-  document.showToast('Удалено');
+  document.showToast(t('art_deleted'));
 }
 
 async function copyRec(node) {
@@ -271,7 +271,7 @@ async function copyRec(node) {
     }
     currentNodeId.value = article.id;
     selectionKeys.value = { [article.id]: true };
-    document.showToast('Скопировано');
+    document.showToast(t('art_copied'));
   } catch (e) {
     return;
   }

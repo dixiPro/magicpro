@@ -3,6 +3,9 @@ import { createRouter, createWebHashHistory } from 'vue-router';
 import groupList from './groupList.vue';
 import feedList from './feedList.vue';
 import feedEdit from './feedEdit.vue';
+import feedStructure from './feedStructure.vue';
+import feedListColumns from './feedListColumns.vue';
+import feedBuilder from './feedBuilder.vue';
 import dataGroups from './dataGroups.vue';
 import dataFeeds from './dataFeeds.vue';
 import dataItems from './dataItems.vue';
@@ -20,6 +23,11 @@ import dataItem from './dataItem.vue';
  *   /a_dmin/feed#/groups      структура: список групп
  *   /a_dmin/feed#/group/2     ленты группы
  *   /a_dmin/feed#/feed/3      схема ленты
+ *   /a_dmin/feed#/feed/3/list колонки списка
+ *   /a_dmin/feed#/feed/3/builder
+ *
+ * Ленту читает feedEdit, вкладки — его дети: лента одна, а экранов над ней
+ * несколько.
  */
 const routes = [
   { path: '/', name: 'data', component: dataGroups },
@@ -28,7 +36,16 @@ const routes = [
   { path: '/data/item/:itemId', name: 'dataItem', component: dataItem, props: true },
   { path: '/groups', name: 'groups', component: groupList },
   { path: '/group/:groupId', name: 'feeds', component: feedList, props: true },
-  { path: '/feed/:feedId', name: 'feed', component: feedEdit, props: true },
+  {
+    path: '/feed/:feedId',
+    component: feedEdit,
+    props: true,
+    children: [
+      { path: '', name: 'feed', component: feedStructure },
+      { path: 'list', name: 'feedList', component: feedListColumns },
+      { path: 'builder', name: 'feedBuilder', component: feedBuilder },
+    ],
+  },
   { path: '/:pathMatch(.*)*', redirect: { name: 'data' } },
 ];
 

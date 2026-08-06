@@ -2,6 +2,9 @@
 import { ref, onMounted, onBeforeUnmount, watch, useId, nextTick } from 'vue';
 import ace from 'ace-builds/src-noconflict/ace';
 
+import { useI18n } from 'vue-i18n';
+const { t } = useI18n();
+
 import 'ace-builds/src-noconflict/mode-html';
 import 'ace-builds/src-noconflict/mode-php';
 import 'ace-builds/src-noconflict/ext-language_tools';
@@ -73,7 +76,7 @@ onMounted(() => {
     exec(ed) {
       const selection = ed.session.getTextRange(ed.getSelectionRange());
       if (selection.trim() === '') {
-        document.showToast('Статья не выделена');
+        document.showToast(t('art_not_selected'));
         return;
       }
       store.gotoArticleByName(selection);

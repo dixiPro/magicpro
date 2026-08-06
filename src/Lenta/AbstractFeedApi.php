@@ -48,7 +48,9 @@ abstract class AbstractFeedApi
         } catch (FeedValidationException $e) {
             return [
                 'status'   => false,
-                'errorMsg' => $e->getMessage(),
+                // разбор по полям идёт и в текст: клиент показывает тостом
+                // errorMsg, и без этого видно «проверьте поля», но не какие
+                'errorMsg' => $e->getMessage() . ': ' . self::errorsText($e->errors()),
                 'errors'   => $e->errors(),
                 'data'     => [],
                 'request'  => $params,
@@ -62,6 +64,18 @@ abstract class AbstractFeedApi
                 'request'  => $params,
             ];
         }
+    }
+
+    /** Errors per field as one line: «title — обязательно; price — число». */
+    protected static function errorsText(array $errors): string
+    {
+        $parts = [];
+
+        foreach ($errors as $code => $messages) {
+            $parts[] = $code . ' — ' . implode(', ', (array) $messages);
+        }
+
+        return implode('; ', $parts);
     }
 
     /**

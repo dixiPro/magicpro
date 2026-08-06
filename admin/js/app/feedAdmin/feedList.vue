@@ -86,6 +86,25 @@ async function createFeed() {
   } catch (error) {}
 }
 
+/**
+ * Удаление ленты. Разрешено только пустой: записи оператор убирает сам, чтобы
+ * не потерять их одним нажатием.
+ */
+async function removeFeed(feed) {
+  if (feed.itemsCount > 0) {
+    document.showToast(t('feed_feed_not_empty'), 'error');
+
+    return;
+  }
+
+  if (!(await document.confirmDialog(t('feed_feed_delete_ask') + ' ' + feed.title))) return;
+
+  try {
+    await apiFeed({ command: 'feedDelete', id: feed.id });
+    await load();
+  } catch (error) {}
+}
+
 async function onFeedReorder(event) {
   const feed = event.value[event.dropIndex];
   feeds.value = event.value;
@@ -167,13 +186,24 @@ onMounted(() => {
         </template>
       </Column>
       <Column field="itemsCount" :header="t('feed_items_count')" headerStyle="width: 6rem" />
-      <Column headerStyle="width: 6rem">
+      <Column headerStyle="width: 8rem">
         <template #body="{ data }">
           <template v-if="editingId === data.id">
             <i class="fas fa-check me-3" role="button" :title="t('save')" @click="saveEdit(data)"></i>
             <i class="fas fa-times" role="button" :title="t('cancel')" @click="cancelEdit()"></i>
           </template>
-          <i v-else class="fas fa-pen" role="button" :title="t('rename')" @click="startEdit(data)"></i>
+          <template v-else>
+            <i class="fas fa-pen me-3" role="button" :title="t('rename')" @click="startEdit(data)"></i>
+
+            <!-- лента с записями не удаляется, поэтому корзинка у неё гаснет -->
+            <i
+              class="fas fa-trash"
+              :class="data.itemsCount > 0 ? 'text-muted' : ''"
+              role="button"
+              :title="data.itemsCount > 0 ? t('feed_feed_not_empty') : t('delete')"
+              @click="removeFeed(data)"
+            ></i>
+          </template>
         </template>
       </Column>
     </DataTable>

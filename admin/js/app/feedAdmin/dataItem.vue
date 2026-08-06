@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
 import { apiFeed } from './api.js';
+import { formatDate } from '../CommonCom/formatDate.js';
 import InputText from 'primevue/inputtext';
 import dataTextField from './dataTextField.vue';
 import dataImageField from './dataImageField.vue';
@@ -45,8 +46,16 @@ function typeOf(column) {
   return null;
 }
 
-// в базе дата с пробелом, инпуту нужна буква T
+/**
+ * Дата в инпут.
+ *
+ * В базе дата с пробелом, инпуту нужна буква T. Пустое поле заполняется текущей
+ * датой: умолчания в схеме у дат нет, а новая запись создаётся пустой, и чаще
+ * всего оператору нужно именно сегодня. Не нужно — правит руками.
+ */
 function toInput(value) {
+  if (!value) return formatDate(new Date(), 'Y-m-dTH:i');
+
   return typeof value === 'string' ? value.replace(' ', 'T').slice(0, 16) : value;
 }
 

@@ -1,3 +1,13 @@
+/**
+ * Тексты берутся из того же словаря, что и в компонентах.
+ *
+ * translate.js сам зовёт отсюда apiSetup, то есть импорт кольцевой. Обращение
+ * идёт только внутри функций, к этому моменту оба модуля уже готовы.
+ */
+import i18n from './CommonCom/translate.js';
+
+const t = (key) => i18n.global.t(key);
+
 export async function apiFile(data, logResult = false) {
   const url = '/a_dmin/api/fileManager';
   try {
@@ -9,7 +19,7 @@ export async function apiFile(data, logResult = false) {
     return response.data;
   } catch (e) {
     document.showToast(e, 'error');
-    throw new Error('ошибка');
+    throw new Error(t('api_error'));
   }
 }
 
@@ -24,7 +34,7 @@ export async function apiArt(data, logResult = false) {
     return response.data;
   } catch (e) {
     document.showToast(e, 'error');
-    throw new Error('ошибка');
+    throw new Error(t('api_error'));
   }
 }
 
@@ -39,7 +49,7 @@ export async function apiSetup(data, logResult = false) {
     return response.data;
   } catch (e) {
     document.showToast(e, 'error');
-    throw new Error('ошибка');
+    throw new Error(t('api_error'));
   }
 }
 
@@ -47,7 +57,7 @@ export async function apiCall(params = {}) {
   const { url = '/', data = {}, method = 'POST', logResult = false } = params;
 
   if (!url) {
-    throw new Error('Ошибка в запросе');
+    throw new Error(t('api_bad_request'));
   }
 
   if (logResult) {
@@ -72,7 +82,7 @@ export async function apiCall(params = {}) {
       body: JSON.stringify(data),
     });
   } catch {
-    throw new Error('Ошибка сети');
+    throw new Error(t('api_network'));
   } finally {
     if (spinner !== null) {
       document.spinnerServiceHide(spinner);
@@ -92,7 +102,7 @@ export async function apiCall(params = {}) {
       console.log('apiCall apiResult', apiResult);
     }
   } catch {
-    throw new Error('Невалидный ответ');
+    throw new Error(t('api_bad_answer'));
   } finally {
     if (logResult) {
       console.log('apiCall end', response);
@@ -104,7 +114,7 @@ export async function apiCall(params = {}) {
     return apiResult;
   }
 
-  throw new Error(apiResult?.errorMsg || apiResult?.result || 'Неизвестная ошибка');
+  throw new Error(apiResult?.errorMsg || apiResult?.result || t('api_unknown'));
 }
 
 export function translitString(input) {
@@ -278,9 +288,9 @@ export function copyClipBoard(fullLink) {
   textarea.setSelectionRange(0, textarea.value.length); // для мобильных
   try {
     const ok = document.execCommand('copy');
-    document.showToast(ok ? 'Скопирована ссылка ' + fullLink : 'Ошибка копирования ссылки', ok ? 'success' : 'error');
+    document.showToast(ok ? t('api_link_copied') + ' ' + fullLink : t('api_link_copy_error'), ok ? 'success' : 'error');
   } catch (e) {
-    document.showToast('Ошибка копирования ссылки', 'error');
+    document.showToast(t('api_link_copy_error'), 'error');
   } finally {
     document.body.removeChild(textarea);
   }

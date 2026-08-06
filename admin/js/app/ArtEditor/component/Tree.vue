@@ -4,6 +4,9 @@ import { useApi } from '../../composables/useApi.js';
 import Tree from 'primevue/tree';
 import { goUrl } from '@/router';
 import { useStore } from '@/store';
+
+import { useI18n } from 'vue-i18n';
+const { t } = useI18n();
 const store = useStore();
 
 const treeData = ref([]);
@@ -89,7 +92,7 @@ async function onNodeDrop(event) {
   // console.log(toRaw(event));
   const dragNode = toRaw(event.dragNode);
   if (!dragNode) {
-    document.showToast('Ошибка перетаскивания', 'error');
+    document.showToast(t('art_drag_error'), 'error');
     return;
   }
   const newPos = findParentAndPosition(dragNode.key, treeData.value);

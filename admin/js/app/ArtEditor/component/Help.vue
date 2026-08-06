@@ -7,7 +7,7 @@ const { t } = useI18n();
 </script>
 
 <template>
-  <Dialog v-model:visible="store.statusHelp" header="Справка" modal class="w-50">
+  <Dialog v-model:visible="store.statusHelp" :header="t('art_help')" modal class="w-50">
     <ul class="list-unstyled m-0">
       <li>
         <kbd>Ctrl+S</kbd> <span class="ms-2">{{ t('save') }}</span>

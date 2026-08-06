@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Validator;
 use MagicProDatabaseModels\Feed;
 use MagicProDatabaseModels\FeedItem;
 use MagicProDatabaseModels\FeedGroup;
+use MagicProSrc\MagicLang;
 
 /**
  * Commands of the feeds api, after the example of MagicProSrc\Mail\API_Mail.
@@ -22,57 +23,6 @@ use MagicProDatabaseModels\FeedGroup;
  */
 class API_Feeds extends AbstractFeedApi
 {
-    /**
-     * Centralized error messages, so that the admin panel shows them
-     * consistently. Dynamic details are appended at the throw site.
-     */
-    protected const ERRORS = [
-        'group_id_required' => 'Не передан id группы',
-        'group_not_found'   => 'Группа не найдена',
-        'title_required'    => 'Название группы не может быть пустым',
-        'position_required' => 'Не передана позиция',
-        'feed_id_required'  => 'Не передан id ленты',
-        'feed_not_found'    => 'Лента не найдена',
-        'feed_title_empty'  => 'Название ленты не может быть пустым',
-        'code_empty'        => 'Код ленты не может быть пустым',
-        'code_format'       => 'Код ленты: латинские буквы, цифры, дефис и подчёркивание',
-        'code_taken'        => 'Лента с таким кодом уже есть',
-
-        'schema_required'   => 'Не передана схема',
-        'fields_required'   => 'В схеме нет массива fields',
-        'field_not_object'  => 'Поле схемы должно быть объектом',
-        'column_unknown'    => 'Неизвестная колонка поля',
-        'column_taken'      => 'Колонка занята другим полем',
-        'type_mismatch'     => 'Тип не подходит колонке',
-        'editor_unknown'    => 'Неизвестный редактор',
-        'data_type_unknown' => 'Неизвестный тип поля в __data',
-        'data_unique'       => 'unique нельзя для поля в __data',
-        'code_field_empty'  => 'У %s нет code',
-        'label_empty'       => 'У %s нет label',
-        'code_field_format' => 'Code поля: латинские буквы, цифры, дефис и подчёркивание',
-        'code_reserved'     => 'Такое имя занято системой',
-        'code_field_taken'  => 'Два поля с одним code',
-        'relation_required' => 'У поля связи нет relation',
-        'relation_feed'     => 'Лента связи не найдена',
-        'relation_column'   => 'Колонка display_code в целевой ленте не занята полем',
-        'code_locked'       => 'В ленте есть записи, переименовать поле нельзя',
-
-        'item_id_required'  => 'Не передан id записи',
-        'item_not_found'    => 'Запись не найдена',
-        'fields_object'     => 'fields должен быть объектом «поле: значение»',
-        'field_unknown'     => 'Поля нет в схеме ленты',
-        'value_taken'       => 'Такое значение уже есть в ленте',
-        'link_not_found'    => 'Связанная запись не найдена',
-        'link_wrong_feed'   => 'Связанная запись из другой ленты',
-        'link_cycle'        => 'Связи замыкаются в кольцо',
-        'filter_shape'      => 'Условие фильтра: field, op, value',
-        'filter_op'         => 'Операция фильтра — только like или =',
-        'lookup_column'     => 'Колонка не занята полем этой ленты',
-        'file_required'     => 'Не передан файл',
-        'file_not_image'    => 'Файл не изображение',
-        'field_not_image'   => 'Поле не типа image',
-    ];
-
     /** Records per page when the caller did not say. */
     protected const PER_PAGE = 20;
 
@@ -99,12 +49,6 @@ class API_Feeds extends AbstractFeedApi
     /** Column names Laravel brings; the rest of ours all start with __. */
     protected const RESERVED = ['id', 'feed_id', 'created_at', 'updated_at'];
 
-    /** Title a new group starts with; the operator renames it right away. */
-    protected const NEW_GROUP_TITLE = 'Новая группа';
-
-    /** The same for a feed. Its code is generated, since it has to be unique. */
-    protected const NEW_FEED_TITLE = 'Новая лента';
-
     protected array $map = [
         'groupsList'  => 'groupsList',
         'groupCreate' => 'groupCreate',
@@ -129,6 +73,7 @@ class API_Feeds extends AbstractFeedApi
         'itemSave'    => 'itemSave',
         'itemMove'    => 'itemMove',
         'itemDelete'  => 'itemDelete',
+        'itemsDelete' => 'itemsDelete',
         'itemLinks'   => 'itemLinks',
         'itemsLookup' => 'itemsLookup',
 
@@ -137,6 +82,20 @@ class API_Feeds extends AbstractFeedApi
 
         'mdToHtml'    => 'mdToHtml',
     ];
+
+    /**
+     * Error message by key, from the dictionary of the package.
+     *
+     * Texts live in lang/{locale}/messages.php under the feed_err_ prefix, so
+     * they follow the language of the admin panel. Dynamic details are appended
+     * at the throw site. An unknown key comes back as the key itself: a missing
+     * message must be visible, not silently empty.
+     */
+    protected static function err(string $key): string
+    {
+        return MagicLang::getMsg('feed_err_' . $key) ?: $key;
+    }
+
 
     // === Группы ===
 
@@ -156,7 +115,7 @@ class API_Feeds extends AbstractFeedApi
     protected function groupCreate(array $params): array
     {
         $group = FeedGroup::create([
-            'title'    => self::NEW_GROUP_TITLE,
+            'title'    => MagicLang::getMsg('feed_new_group'),
             'position' => (int) FeedGroup::max('position') + 1,
         ]);
 
@@ -171,7 +130,7 @@ class API_Feeds extends AbstractFeedApi
         $title = trim((string) ($params['title'] ?? ''));
 
         if ($title === '') {
-            throw new Exception(self::ERRORS['title_required']);
+            throw new Exception(self::err('title_required'));
         }
 
         $group->title = $title;
@@ -192,7 +151,7 @@ class API_Feeds extends AbstractFeedApi
         $group = $this->group($params);
 
         if (! isset($params['position'])) {
-            throw new Exception(self::ERRORS['position_required']);
+            throw new Exception(self::err('position_required'));
         }
 
         $target = max(0, (int) $params['position']);
@@ -279,7 +238,7 @@ class API_Feeds extends AbstractFeedApi
 
         $feed = Feed::create([
             'code'     => 'feed_' . (int) (microtime(true) * 1000),
-            'title'    => self::NEW_FEED_TITLE,
+            'title'    => MagicLang::getMsg('feed_new_feed'),
             'group_id' => $group->id,
             'position' => (int) Feed::where('group_id', $group->id)->max('position') + 1,
         ]);
@@ -306,7 +265,7 @@ class API_Feeds extends AbstractFeedApi
             $title = trim((string) $params['title']);
 
             if ($title === '') {
-                throw new Exception(self::ERRORS['feed_title_empty']);
+                throw new Exception(self::err('feed_title_empty'));
             }
 
             $feed->title = $title;
@@ -331,7 +290,7 @@ class API_Feeds extends AbstractFeedApi
         $feed = $this->feed($params);
 
         if (! isset($params['position'])) {
-            throw new Exception(self::ERRORS['position_required']);
+            throw new Exception(self::err('position_required'));
         }
 
         $target = max(0, (int) $params['position']);
@@ -441,7 +400,7 @@ class API_Feeds extends AbstractFeedApi
         $schema = $params['schema'] ?? null;
 
         if (! is_array($schema)) {
-            throw new Exception(self::ERRORS['schema_required']);
+            throw new Exception(self::err('schema_required'));
         }
 
         $feed->schema = $this->checkSchema($schema, $feed);
@@ -462,7 +421,7 @@ class API_Feeds extends AbstractFeedApi
         $fields = $schema['fields'] ?? null;
 
         if (! is_array($fields)) {
-            throw new Exception(self::ERRORS['fields_required']);
+            throw new Exception(self::err('fields_required'));
         }
 
         $slots = array_merge(FeedItem::slotColumns(), ['__data']);
@@ -475,20 +434,20 @@ class API_Feeds extends AbstractFeedApi
 
         foreach ($fields as $index => $field) {
             if (! is_array($field)) {
-                throw new Exception(self::ERRORS['field_not_object'] . ': ' . $index);
+                throw new Exception(self::err('field_not_object') . ': ' . $index);
             }
 
             $column = (string) ($field['column'] ?? '');
             $code   = (string) ($field['code'] ?? '');
 
-            $this->checkCode($code, $takenCodes, $column !== '' ? $column : 'поля схемы');
+            $this->checkCode($code, $takenCodes, $column !== '' ? $column : MagicLang::getMsg('feed_err_schema_field'));
 
             if (! in_array($column, $slots, true)) {
-                throw new Exception(self::ERRORS['column_unknown'] . ': ' . ($column ?: $code));
+                throw new Exception(self::err('column_unknown') . ': ' . ($column ?: $code));
             }
 
             if (in_array($column, $takenColumns, true)) {
-                throw new Exception(self::ERRORS['column_taken'] . ': ' . $column);
+                throw new Exception(self::err('column_taken') . ': ' . $column);
             }
 
             $takenColumns[] = $column;
@@ -510,8 +469,13 @@ class API_Feeds extends AbstractFeedApi
 
         $this->checkCodesKept($feed, $codeByColumn);
 
+        // order строит админка из полей с showOnList, поэтому проверять в нём
+        // нечего: сюда он приходит уже согласованным со схемой
+        $order = $schema['order'] ?? [];
+
         return [
             'version' => (int) ($schema['version'] ?? 1),
+            'order'   => is_array($order) ? array_values(array_filter($order, 'is_string')) : [],
             'fields'  => array_values($fields),
         ];
     }
@@ -548,7 +512,8 @@ class API_Feeds extends AbstractFeedApi
             }
 
             throw new Exception(
-                self::ERRORS['code_locked'] . ": {$column}, было {$code}, пришло {$codeByColumn[$column]}"
+                self::err('code_locked') . ": {$column}, " . self::err('was') . " {$code}, "
+                    . self::err('got') . " {$codeByColumn[$column]}"
             );
         }
     }
@@ -562,12 +527,13 @@ class API_Feeds extends AbstractFeedApi
 
         if (isset($field['type']) && $field['type'] !== $type) {
             throw new Exception(
-                self::ERRORS['type_mismatch'] . ": {$code}, {$column} — {$type}, пришло {$field['type']}"
+                self::err('type_mismatch') . ": {$code}, {$column} — {$type}, "
+                    . self::err('got') . " {$field['type']}"
             );
         }
 
         if (isset($field['editor']) && ! in_array($field['editor'], self::EDITORS, true)) {
-            throw new Exception(self::ERRORS['editor_unknown'] . ": {$code}, {$field['editor']}");
+            throw new Exception(self::err('editor_unknown') . ": {$code}, {$field['editor']}");
         }
 
         if ($type === 'link') {
@@ -584,7 +550,7 @@ class API_Feeds extends AbstractFeedApi
     {
         foreach ($dataFields as $index => $field) {
             if (! is_array($field)) {
-                throw new Exception(self::ERRORS['field_not_object'] . ': __data');
+                throw new Exception(self::err('field_not_object') . ': __data');
             }
 
             $code = (string) ($field['code'] ?? '');
@@ -595,15 +561,15 @@ class API_Feeds extends AbstractFeedApi
             $type = (string) ($field['type'] ?? '');
 
             if (! in_array($type, self::DATA_TYPES, true)) {
-                throw new Exception(self::ERRORS['data_type_unknown'] . ": {$code}, {$type}");
+                throw new Exception(self::err('data_type_unknown') . ": {$code}, {$type}");
             }
 
             if (isset($field['editor']) && ! in_array($field['editor'], self::EDITORS, true)) {
-                throw new Exception(self::ERRORS['editor_unknown'] . ": {$code}, {$field['editor']}");
+                throw new Exception(self::err('editor_unknown') . ": {$code}, {$field['editor']}");
             }
 
             if (! empty($field['unique'])) {
-                throw new Exception(self::ERRORS['data_unique'] . ': ' . $code);
+                throw new Exception(self::err('data_unique') . ': ' . $code);
             }
         }
     }
@@ -616,19 +582,19 @@ class API_Feeds extends AbstractFeedApi
     protected function checkCode(string $code, array &$takenCodes, string $where): void
     {
         if ($code === '') {
-            throw new Exception(sprintf(self::ERRORS['code_field_empty'], $where));
+            throw new Exception(sprintf(self::err('code_field_empty'), $where));
         }
 
         if (! preg_match('/^[A-Za-z0-9_-]+$/', $code)) {
-            throw new Exception(self::ERRORS['code_field_format'] . ': ' . $code);
+            throw new Exception(self::err('code_field_format') . ': ' . $code);
         }
 
         if (str_starts_with($code, '__') || in_array($code, self::RESERVED, true)) {
-            throw new Exception(self::ERRORS['code_reserved'] . ': ' . $code);
+            throw new Exception(self::err('code_reserved') . ': ' . $code);
         }
 
         if (in_array($code, $takenCodes, true)) {
-            throw new Exception(self::ERRORS['code_field_taken'] . ': ' . $code);
+            throw new Exception(self::err('code_field_taken') . ': ' . $code);
         }
 
         $takenCodes[] = $code;
@@ -643,7 +609,7 @@ class API_Feeds extends AbstractFeedApi
     protected function checkLabel(array $field, string $where): void
     {
         if (trim((string) ($field['label'] ?? '')) === '') {
-            throw new Exception(sprintf(self::ERRORS['label_empty'], $where));
+            throw new Exception(sprintf(self::err('label_empty'), $where));
         }
     }
 
@@ -651,13 +617,13 @@ class API_Feeds extends AbstractFeedApi
     protected function checkRelation(mixed $relation, string $code): void
     {
         if (! is_array($relation)) {
-            throw new Exception(self::ERRORS['relation_required'] . ': ' . $code);
+            throw new Exception(self::err('relation_required') . ': ' . $code);
         }
 
         $target = Feed::find((int) ($relation['feed_id'] ?? 0));
 
         if (! $target) {
-            throw new Exception(self::ERRORS['relation_feed'] . ": {$code}, " . ($relation['feed_id'] ?? ''));
+            throw new Exception(self::err('relation_feed') . ": {$code}, " . ($relation['feed_id'] ?? ''));
         }
 
         $displayColumn = (string) ($relation['display_code'] ?? '');
@@ -667,7 +633,7 @@ class API_Feeds extends AbstractFeedApi
         $occupied = in_array($displayColumn, $target->schemaMap()[0], true);
 
         if (! $occupied) {
-            throw new Exception(self::ERRORS['relation_column'] . ": {$code}, {$displayColumn}");
+            throw new Exception(self::err('relation_column') . ": {$code}, {$displayColumn}");
         }
     }
 
@@ -762,7 +728,7 @@ class API_Feeds extends AbstractFeedApi
         $fields = $params['fields'] ?? [];
 
         if (! is_array($fields)) {
-            throw new Exception(self::ERRORS['fields_object']);
+            throw new Exception(self::err('fields_object'));
         }
 
         return DB::transaction(function () use ($item, $feed, $fields, $params): array {
@@ -773,7 +739,7 @@ class API_Feeds extends AbstractFeedApi
             $unknown = array_diff(array_keys($fields), array_keys($known));
 
             if ($unknown !== []) {
-                throw new Exception(self::ERRORS['field_unknown'] . ': ' . implode(', ', $unknown));
+                throw new Exception(self::err('field_unknown') . ': ' . implode(', ', $unknown));
             }
 
             $this->checkValues($feed, $item, $fields, $known);
@@ -801,7 +767,7 @@ class API_Feeds extends AbstractFeedApi
         $item = $this->item($params);
 
         if (! isset($params['position'])) {
-            throw new Exception(self::ERRORS['position_required']);
+            throw new Exception(self::err('position_required'));
         }
 
         $target = max(0, (int) $params['position']);
@@ -849,6 +815,44 @@ class API_Feeds extends AbstractFeedApi
         return true;
     }
 
+    /**
+     * Group delete: everything nobody links to.
+     *
+     * Records held by links are not an error here — the group delete removes
+     * what it can and reports the rest, so one held record does not stop the
+     * whole run. They come back by title: id alone tells the operator nothing.
+     *
+     * Only records of this feed are touched: ids come from the list of one
+     * feed, and a stray id from elsewhere has to miss rather than delete.
+     */
+    protected function itemsDelete(array $params): array
+    {
+        $feed = $this->feed(['id' => $params['feedId'] ?? 0]);
+
+        $ids = array_values(array_unique(array_filter(
+            array_map('intval', (array) ($params['ids'] ?? []))
+        )));
+
+        if ($ids === []) {
+            return ['deleted' => 0, 'skipped' => []];
+        }
+
+        $deleted = $feed->items()->whereIn('id', $ids)->deleteEach();
+
+        // что осталось из отмеченного — то и удержали ссылки
+        $skipped = $feed->items()
+            ->whereIn('id', $ids)
+            ->orderBy('__position')
+            ->get()
+            ->map(fn (FeedItem $item) => [
+                'id'    => (int) $item->id,
+                'title' => $this->firstValue($item),
+            ])
+            ->all();
+
+        return ['deleted' => $deleted, 'skipped' => $skipped];
+    }
+
     /** Who links to this record — the list behind the recursive delete dialog. */
     protected function itemLinks(array $params): array
     {
@@ -884,7 +888,7 @@ class API_Feeds extends AbstractFeedApi
         $column = (string) ($params['column'] ?? '');
 
         if (! in_array($column, $feed->schemaMap()[0], true)) {
-            throw new Exception(self::ERRORS['lookup_column'] . ': ' . $column);
+            throw new Exception(self::err('lookup_column') . ': ' . $column);
         }
 
         $search = trim((string) ($params['search'] ?? ''));
@@ -922,11 +926,11 @@ class API_Feeds extends AbstractFeedApi
         $file = $params['file'] ?? null;
 
         if (! $file instanceof UploadedFile) {
-            throw new Exception(self::ERRORS['file_required']);
+            throw new Exception(self::err('file_required'));
         }
 
         if (! str_starts_with((string) $file->getMimeType(), 'image/')) {
-            throw new Exception(self::ERRORS['file_not_image'] . ': ' . $file->getMimeType());
+            throw new Exception(self::err('file_not_image') . ': ' . $file->getMimeType());
         }
 
         $item->clearMediaCollection($code);
@@ -993,11 +997,11 @@ class API_Feeds extends AbstractFeedApi
         $field = $feed ? ($this->schemaFields($feed)[$code] ?? null) : null;
 
         if (! $field) {
-            throw new Exception(self::ERRORS['field_unknown'] . ': ' . $code);
+            throw new Exception(self::err('field_unknown') . ': ' . $code);
         }
 
         if (($field['type'] ?? '') !== 'image') {
-            throw new Exception(self::ERRORS['field_not_image'] . ': ' . $code);
+            throw new Exception(self::err('field_not_image') . ': ' . $code);
         }
 
         return $code;
@@ -1009,7 +1013,7 @@ class API_Feeds extends AbstractFeedApi
     protected function applyFilter($query, mixed $condition): void
     {
         if (! is_array($condition) || ! isset($condition['field'], $condition['op'])) {
-            throw new Exception(self::ERRORS['filter_shape']);
+            throw new Exception(self::err('filter_shape'));
         }
 
         $field = (string) $condition['field'];
@@ -1019,7 +1023,12 @@ class API_Feeds extends AbstractFeedApi
         match ((string) $condition['op']) {
             'like'  => $query->where($field, 'like', '%' . $value . '%'),
             '='     => $query->where($field, $value),
-            default => throw new Exception(self::ERRORS['filter_op'] . ': ' . $condition['op']),
+            '<>'    => $query->where($field, '<>', $value),
+            '>'     => $query->where($field, '>', $value),
+            '>='    => $query->where($field, '>=', $value),
+            '<'     => $query->where($field, '<', $value),
+            '<='    => $query->where($field, '<=', $value),
+            default => throw new Exception(self::err('filter_op') . ': ' . $condition['op']),
         };
     }
 
@@ -1115,7 +1124,7 @@ class API_Feeds extends AbstractFeedApi
                     ->exists();
 
                 if ($taken) {
-                    $errors[$code][] = self::ERRORS['value_taken'] . ': ' . $value;
+                    $errors[$code][] = self::err('value_taken') . ': ' . $value;
                 }
             }
 
@@ -1139,17 +1148,17 @@ class API_Feeds extends AbstractFeedApi
         $target = FeedItem::find($targetId);
 
         if (! $target) {
-            return self::ERRORS['link_not_found'] . ': ' . $targetId;
+            return self::err('link_not_found') . ': ' . $targetId;
         }
 
         if ((int) $target->feed_id !== (int) ($field['relation']['feed_id'] ?? 0)) {
-            return self::ERRORS['link_wrong_feed'] . ': ' . $targetId;
+            return self::err('link_wrong_feed') . ': ' . $targetId;
         }
 
         $path = $this->linkPath($target, (int) $item->id);
 
         if ($path !== []) {
-            return self::ERRORS['link_cycle'] . ': ' . implode(' → ', array_merge([(int) $item->id], $path));
+            return self::err('link_cycle') . ': ' . implode(' → ', array_merge([(int) $item->id], $path));
         }
 
         return null;
@@ -1215,13 +1224,13 @@ class API_Feeds extends AbstractFeedApi
         $id = (int) ($params['id'] ?? 0);
 
         if ($id <= 0) {
-            throw new Exception(self::ERRORS['item_id_required']);
+            throw new Exception(self::err('item_id_required'));
         }
 
         $item = FeedItem::find($id);
 
         if (! $item) {
-            throw new Exception(self::ERRORS['item_not_found'] . ': ' . $id);
+            throw new Exception(self::err('item_not_found') . ': ' . $id);
         }
 
         return $item;
@@ -1241,11 +1250,11 @@ class API_Feeds extends AbstractFeedApi
             : ($code !== '' ? Feed::where('code', $code)->first() : null);
 
         if ($id <= 0 && $code === '') {
-            throw new Exception(self::ERRORS['feed_id_required']);
+            throw new Exception(self::err('feed_id_required'));
         }
 
         if (! $feed) {
-            throw new Exception(self::ERRORS['feed_not_found'] . ': ' . ($id > 0 ? $id : $code));
+            throw new Exception(self::err('feed_not_found') . ': ' . ($id > 0 ? $id : $code));
         }
 
         return $feed;
@@ -1257,11 +1266,11 @@ class API_Feeds extends AbstractFeedApi
         $code = trim($code);
 
         if ($code === '') {
-            throw new Exception(self::ERRORS['code_empty']);
+            throw new Exception(self::err('code_empty'));
         }
 
         if (! preg_match('/^[A-Za-z0-9_-]+$/', $code)) {
-            throw new Exception(self::ERRORS['code_format'] . ': ' . $code);
+            throw new Exception(self::err('code_format') . ': ' . $code);
         }
 
         $taken = Feed::where('code', $code)
@@ -1269,7 +1278,7 @@ class API_Feeds extends AbstractFeedApi
             ->exists();
 
         if ($taken) {
-            throw new Exception(self::ERRORS['code_taken'] . ': ' . $code);
+            throw new Exception(self::err('code_taken') . ': ' . $code);
         }
 
         return $code;
@@ -1289,13 +1298,13 @@ class API_Feeds extends AbstractFeedApi
         $id = (int) ($params['id'] ?? 0);
 
         if ($id <= 0) {
-            throw new Exception(self::ERRORS['group_id_required']);
+            throw new Exception(self::err('group_id_required'));
         }
 
         $group = FeedGroup::find($id);
 
         if (! $group) {
-            throw new Exception(self::ERRORS['group_not_found'] . ': ' . $id);
+            throw new Exception(self::err('group_not_found') . ': ' . $id);
         }
 
         return $group;

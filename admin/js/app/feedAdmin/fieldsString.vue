@@ -19,20 +19,19 @@ async function removeRow(row) {
 
 <template>
   <div class="mb-4">
-    <h2 class="h6 mb-2">{{ t('feed_group_string') }}</h2>
-
     <table class="table table-sm align-middle" style="max-width: 60rem">
       <thead>
         <tr>
           <th style="width: 12rem">
-            <button class="btn btn-sm btn-success py-0 me-2" :title="t('add')" @click="store.addRow(KEY)">
-              <i class="fas fa-plus small"></i>
+            <code>{{ t('feed_group_string') }}</code> Code
+            <button class="btn btn-success py-0 px-1 ms-1 lh-1" :title="t('add')" @click="store.addRow(KEY)">
+              <i class="fas fa-plus" style="font-size: 0.7rem"></i>
             </button>
-            Code
           </th>
           <th style="width: 12rem">Label</th>
           <th style="width: 12rem">default</th>
           <th style="width: 4rem">Unic</th>
+          <th style="width: 5rem">{{ t('feed_show_on_list') }}</th>
           <th>validation</th>
           <th style="width: 6rem"></th>
         </tr>
@@ -45,6 +44,7 @@ async function removeRow(row) {
           <td><InputText v-model="row.label" class="form-control form-control-sm" /></td>
           <td><InputText v-model="row.default" class="form-control form-control-sm" /></td>
           <td class="text-center"><input type="checkbox" v-model="row.unique" /></td>
+          <td class="text-center"><input type="checkbox" v-model="row.showOnList" /></td>
           <td><InputText v-model="row.validation" class="form-control form-control-sm" /></td>
           <td class="text-muted small text-nowrap">
             <code>{{ row.column }}</code>
@@ -56,4 +56,9 @@ async function removeRow(row) {
   </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+th {
+  font-weight: normal;
+  font-size: 0.9rem;
+}
+</style>

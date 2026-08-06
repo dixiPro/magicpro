@@ -47,6 +47,9 @@ export const useFeedStore = defineStore('feed', () => {
   const jsonText = ref('');
   const containerCode = ref('content');
 
+  // порядок колонок списка: имена полей, у слота колонка, у поля __data его code
+  const order = ref([]);
+
   // типы полей __data, порядок как в ТЗ
   const DATA_TYPES = ['string', 'text', 'integer', 'decimal', 'boolean', 'datetime', 'json', 'code', 'image'];
 
@@ -57,15 +60,6 @@ export const useFeedStore = defineStore('feed', () => {
     if (typeof column !== 'string') return null;
 
     return Object.keys(PREFIX).find((key) => column.startsWith(PREFIX[key])) ?? null;
-  }
-
-  // datetime-local отдаёт 2026-08-04T12:30, в базе формат с пробелом
-  function toStored(value) {
-    return typeof value === 'string' ? value.replace('T', ' ') : value;
-  }
-
-  function toInput(value) {
-    return typeof value === 'string' ? value.replace(' ', 'T').slice(0, 16) : value;
   }
 
   async function load(id) {
@@ -92,8 +86,13 @@ export const useFeedStore = defineStore('feed', () => {
           column: field.column,
           code: field.code ?? '',
           label: field.label ?? '',
-          default: key === 'date' ? toInput(field.default ?? '') : field.default ?? (key === 'bool' ? false : ''),
+          // у дат умолчания нет: записанная в схему дата через год протухнет
+          default: key === 'date' ? '' : field.default ?? (key === 'bool' ? false : ''),
           unique: field.unique === true,
+          // ключа нет — поле показывается: лишняя колонка заметна, пропавшая нет
+          showOnList: field.showOnList !== false,
+          // маска даты в списке, буквами PHP. Пусто — как лежит в базе
+          listFormat: field.listFormat ?? '',
           validation: field.validation ?? '',
           relationFeedId: field.relation?.feed_id ?? null,
           relationColumn: field.relation?.display_code ?? '',
@@ -105,6 +104,8 @@ export const useFeedStore = defineStore('feed', () => {
 
       containerCode.value = container?.code ?? 'content';
       jsonText.value = JSON.stringify(container?.data ?? [], null, 2);
+
+      order.value = Array.isArray(schema.value.order) ? schema.value.order.slice() : [];
 
       groupFeeds.value = await apiFeed({ command: 'feedsList', groupId: feed.group_id });
 
@@ -166,6 +167,8 @@ export const useFeedStore = defineStore('feed', () => {
           label: '',
           default: key === 'bool' ? false : '',
           unique: false,
+          showOnList: true,
+          listFormat: '',
           validation: VALIDATION[key],
           relationFeedId: null,
           relationColumn: '',
@@ -224,8 +227,9 @@ export const useFeedStore = defineStore('feed', () => {
         feed_id: row.relationFeedId,
         display_code: row.relationColumn,
       };
-    } else {
-      const value = key === 'date' ? toStored(row.default) : row.default;
+    } else if (key !== 'date') {
+      // дата умолчания не имеет: пустое поле формы заполняется текущей
+      const value = row.default;
 
       if (value !== '' && value !== null) {
         field.default = key === 'bigint' ? Number(value) : value;
@@ -235,6 +239,16 @@ export const useFeedStore = defineStore('feed', () => {
     // уникальность есть только у строк
     if (key === 'string' && row.unique) {
       field.unique = true;
+    }
+
+    // в схему уходит только отказ: показ — умолчание, писать его незачем
+    if (!row.showOnList) {
+      field.showOnList = false;
+    }
+
+    // маска есть только у дат, пустую в схему не пишем
+    if (key === 'date' && row.listFormat.trim() !== '') {
+      field.listFormat = row.listFormat.trim();
     }
 
     if (row.validation.trim() !== '') {
@@ -249,6 +263,10 @@ export const useFeedStore = defineStore('feed', () => {
    *
    * label ставится равным code, а не пустым: схема с пустым label не сохранится,
    * и кнопка выдавала бы заведомо битую заготовку.
+   *
+   * showOnList в заготовке false, хотя умолчание схемы — true: поле только что
+   * появилось, в списке ему делать нечего, а ключ на виду и включается правкой
+   * одного слова.
    */
   function dataFieldTemplate(type, code) {
     const field = { type: type, code: code, label: code };
@@ -258,6 +276,8 @@ export const useFeedStore = defineStore('feed', () => {
     } else if (type !== 'image') {
       field.default = null;
     }
+
+    field.showOnList = false;
 
     const validation = {
       string: 'required|string|max:255',
@@ -277,6 +297,11 @@ export const useFeedStore = defineStore('feed', () => {
 
     if (type === 'text') {
       field.editor = 'html';
+    }
+
+    // маска списка буквами PHP: в списке нужна дата, а не время до секунды
+    if (type === 'datetime') {
+      field.listFormat = 'y-m-d';
     }
 
     // ограничения кропа: ширина в пикселях, пропорции строкой «ширина/высота»
@@ -326,6 +351,118 @@ export const useFeedStore = defineStore('feed', () => {
     jsonText.value = JSON.stringify(data, null, 2);
 
     return true;
+  }
+
+  /**
+   * Поля __data как объекты. Пока JSON не разбирается, их просто нет: его в
+   * этот момент и правят, ошибку показывать рано.
+   */
+  const dataFields = computed(() => {
+    try {
+      const data = JSON.parse(jsonText.value.trim() || '[]');
+
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      return [];
+    }
+  });
+
+  /**
+   * Все поля ленты одним списком, как они сейчас на экране.
+   *
+   * Имя — то, чем поле зовётся в order: у слота физическая колонка, у поля
+   * __data его code. Колонка потому, что code слота разрешено менять, а внутри
+   * __data code и есть опознавательный признак.
+   */
+  const allFields = computed(() => {
+    const list = [];
+
+    for (const key of Object.keys(rows)) {
+      for (const row of rows[key]) {
+        list.push({
+          name: row.column,
+          type: key,
+          code: row.code,
+          label: row.label,
+          showOnList: row.showOnList,
+        });
+      }
+    }
+
+    for (const field of dataFields.value) {
+      list.push({
+        name: field?.code ?? '',
+        type: field?.type ?? '',
+        code: field?.code ?? '',
+        label: field?.label ?? '',
+        showOnList: field?.showOnList !== false,
+      });
+    }
+
+    return list;
+  });
+
+  // видимые поля в порядке order; чего в нём нет — в конец, как в схеме
+  const inList = computed(() => {
+    const left = new Map(allFields.value.filter((field) => field.showOnList).map((field) => [field.name, field]));
+
+    const sorted = [];
+
+    for (const name of order.value) {
+      if (left.has(name)) {
+        sorted.push(left.get(name));
+        left.delete(name);
+      }
+    }
+
+    return [...sorted, ...left.values()];
+  });
+
+  const notInList = computed(() => allFields.value.filter((field) => !field.showOnList));
+
+  // флаг живёт там же, где поле: у слота в строке таблицы, у __data в JSON
+  function setShowOnList(name, value) {
+    for (const key of Object.keys(rows)) {
+      const row = rows[key].find((row) => row.column === name);
+
+      if (row) {
+        row.showOnList = value;
+
+        return;
+      }
+    }
+
+    const data = dataFields.value;
+    const field = data.find((item) => item?.code === name);
+
+    if (!field) return;
+
+    field.showOnList = value;
+
+    jsonText.value = JSON.stringify(data, null, 2);
+  }
+
+  /**
+   * Перенести поле: в список на нужное место или из списка вон.
+   *
+   * Порядок пересобирается от того, что сейчас на экране, а не правится внутри
+   * order: в order могут лежать поля, которых уже нет, и позиции разошлись бы.
+   */
+  function moveField(name, toList, index) {
+    const names = inList.value.map((field) => field.name).filter((item) => item !== name);
+
+    if (toList) {
+      names.splice(index, 0, name);
+    }
+
+    setShowOnList(name, toList);
+
+    order.value = names;
+  }
+
+  // порядок так, как он уедет в схему: только видимые поля, все и ровно они
+  function buildOrder() {
+    return inList.value.map((field) => field.name);
   }
 
   // контейнер из текстового поля. Кривой JSON бросает исключение
@@ -406,7 +543,10 @@ export const useFeedStore = defineStore('feed', () => {
   // таблицы разошлись со считанной схемой — есть что сохранять
   const dirty = computed(() => {
     try {
-      return canon(buildFields()) !== canon(schema.value.fields);
+      if (canon(buildFields()) !== canon(schema.value.fields)) return true;
+
+      // перетащенная колонка тоже правка, хотя поля при этом те же
+      return JSON.stringify(buildOrder()) !== JSON.stringify(schema.value.order ?? []);
     } catch {
       // JSON пока не разбирается — считаем, что есть что сохранять
       return true;
@@ -427,12 +567,15 @@ export const useFeedStore = defineStore('feed', () => {
 
   async function saveSchema() {
     const fields = buildFields();
+    const names = buildOrder();
 
     schema.value = await apiFeed({
       command: 'schemaSave',
       feedId: feedId.value,
-      schema: { version: schema.value.version ?? 1, fields: fields },
+      schema: { version: schema.value.version ?? 1, order: names, fields: fields },
     });
+
+    order.value = Array.isArray(schema.value.order) ? schema.value.order.slice() : [];
   }
 
   return {
@@ -447,6 +590,11 @@ export const useFeedStore = defineStore('feed', () => {
     schema,
     rows,
     jsonText,
+    order,
+    allFields,
+    inList,
+    notInList,
+    moveField,
     groupFeeds,
     dirty,
     load,

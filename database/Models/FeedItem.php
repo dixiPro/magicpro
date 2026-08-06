@@ -252,6 +252,44 @@ class FeedItem extends Model implements HasMedia
     }
 
     /**
+     * The record under its logical names: what the application works with.
+     *
+     * toArray() is left alone on purpose — it feeds json responses, toJson()
+     * and collections, and quietly changing its shape would change all of them
+     * at once. This is a separate method for reading and for dumps.
+     *
+     * Values are given as they are: a date stays a Carbon, an image field stays
+     * an array. Both turn into readable json by themselves.
+     *
+     * System columns come along too: in a dump the question is usually "which
+     * record is this and is it visible", and they answer it.
+     */
+    public function fields(): array
+    {
+        [$fields, $dataCodes] = $this->logicalNames();
+
+        $out = [
+            'id'      => $this->getKey(),
+            'feed_id' => $this->getAttribute('feed_id'),
+        ];
+
+        foreach (array_keys($fields) as $code) {
+            $out[$code] = $this->getAttribute($code);
+        }
+
+        foreach ($dataCodes as $code) {
+            $out[$code] = ($this->__data ?? [])[$code] ?? null;
+        }
+
+        return $out + [
+            '__position' => $this->getAttribute('__position'),
+            '__visible'  => $this->getAttribute('__visible'),
+            'created_at' => $this->getAttribute('created_at'),
+            'updated_at' => $this->getAttribute('updated_at'),
+        ];
+    }
+
+    /**
      * feed_id is filled before everything else: it decides which schema the
      * other names are read with, and an array does not promise any order.
      * Without this, new FeedItem(['name' => …, 'feed_id' => …]) would drop the
@@ -381,7 +419,7 @@ class FeedItem extends Model implements HasMedia
     {
         return DB::transaction(function (): bool {
             if ($this->hasIncomingLinks()) {
-                throw new RuntimeException('На запись ссылаются, она не удаляется');
+                throw new RuntimeException(\MagicProSrc\MagicLang::getMsg('feed_err_item_held'));
             }
 
             return (bool) parent::delete();
