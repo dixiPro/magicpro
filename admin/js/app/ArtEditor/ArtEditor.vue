@@ -76,7 +76,7 @@ const onPopState = (event) => {
 }
 .tree-pannel {
   overflow-y: auto;
-  height: 95%;
+  height: 99%;
   overflow-x: hidden;
   white-space: nowrap;
 }

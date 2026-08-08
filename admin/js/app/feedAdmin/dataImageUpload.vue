@@ -3,7 +3,7 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import Dialog from 'primevue/dialog';
 import { Cropper } from 'vue-advanced-cropper';
 import 'vue-advanced-cropper/dist/style.css';
-import { apiFeedFile } from './api.js';
+import { apiFeed, apiFeedFile } from './api.js';
 import { translitString } from '../apiCall.js';
 
 import { useI18n } from 'vue-i18n';
@@ -21,7 +21,8 @@ const { t } = useI18n();
  * ratio — пропорции обрезки. Нет ratio — рамка свободная.
  *
  * Обрезка необязательна. Оригинал уходит как есть, со своим форматом; вырезанный
- * кусок — всегда webp, потому что берётся с canvas.
+ * кусок берётся с canvas, поэтому уходит png или jpeg — как задано в настройках, —
+ * а в рабочий формат его кодирует сервер.
  */
 const props = defineProps({
   itemId: { type: [String, Number], required: true },
@@ -42,6 +43,9 @@ const extension = ref('');
 
 const imageWidth = ref(0);
 const imageHeight = ref(0);
+
+// чем отправлять обрезанный кусок, приходит из настроек: png или jpeg
+const uploadFormat = ref('png');
 
 const cropperRef = ref(null);
 const cropperActive = ref(false);
@@ -127,30 +131,35 @@ function onCropChange({ canvas }) {
   cropHeight.value = canvas.height;
 }
 
-// вырезанный кусок берётся с canvas, а это всегда картинка заново
+// вырезанный кусок берётся с canvas, а это всегда картинка заново. Браузер шлёт
+// голые пиксели — png или jpeg, как сказал сервер, — а в рабочий формат кодирует
+// сервер сам, командой imageCropUpload
 function croppedFile() {
   const { canvas } = cropperRef.value.getResult();
 
   if (!canvas) return null;
 
+  const type = 'image/' + uploadFormat.value;
+  const name = fileName.value + '.' + (uploadFormat.value === 'jpeg' ? 'jpg' : uploadFormat.value);
+
   return new Promise((resolve) => {
-    canvas.toBlob(
-      (blob) => resolve(new File([blob], fileName.value + '.webp', { type: 'image/webp' })),
-      'image/webp',
-      0.9,
-    );
+    canvas.toBlob((blob) => resolve(new File([blob], name, { type })), type, 0.95);
   });
 }
 
 async function save() {
-  const ready = cropperActive.value
+  const cropped = cropperActive.value;
+
+  const ready = cropped
     ? await croppedFile()
     : new File([file.value], fileName.value + '.' + extension.value, { type: file.value.type });
 
   if (!ready) return;
 
   try {
-    const data = await apiFeedFile({ command: 'imageUpload', id: props.itemId, code: props.code }, ready);
+    const command = cropped ? 'imageCropUpload' : 'imageUpload';
+
+    const data = await apiFeedFile({ command, id: props.itemId, code: props.code }, ready);
 
     emit('uploaded', data);
 
@@ -173,8 +182,13 @@ function close() {
   cropHeight.value = 0;
 }
 
-onMounted(() => {
+onMounted(async () => {
   window.addEventListener('paste', onPaste);
+
+  // не ответил — останется png: без формата отправлять всё равно надо чем-то
+  try {
+    uploadFormat.value = await apiFeed({ command: 'uploadFormat' });
+  } catch (error) {}
 });
 
 onUnmounted(() => {
@@ -232,7 +246,7 @@ onUnmounted(() => {
         <label class="form-label mb-0 small">{{ t('feed_image_name') }}</label>
         <div class="input-group input-group-sm mb-2">
           <input v-model="fileName" class="form-control form-control-sm" />
-          <span class="input-group-text">.{{ cropperActive ? 'webp' : extension }}</span>
+          <span class="input-group-text">.{{ cropperActive ? uploadFormat : extension }}</span>
         </div>
 
         <div v-if="minWidth" class="small text-muted">

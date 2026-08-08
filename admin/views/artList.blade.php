@@ -9,13 +9,13 @@
 @endsection
 
 @section('body')
-    <h2>Список статей</h2>
+    <h2>@magic_msg('articles_list')</h2>
     @if (session('status'))
         <div class="alert alert-success">{{ session('status') }}</div>
     @endif
 
-    @if ($articles->isEmpty())
-        <p>Записей нет.</p>
+    @if ($articles->total() === 0)
+        <p>@magic_msg('no_records')</p>
     @else
         <table class="table table-striped  table-sm">
             <thead>
@@ -67,6 +67,27 @@
                 @endforeach
             </tbody>
         </table>
+
+        {{-- своя разметка страниц: links() отдаёт tailwind, а админка на bootstrap --}}
+        @if ($articles->hasPages())
+            <nav>
+                <ul class="pagination pagination-sm">
+                    <li class="page-item @if ($articles->onFirstPage()) disabled @endif">
+                        <a class="page-link" href="{{ $articles->previousPageUrl() }}">&laquo;</a>
+                    </li>
+
+                    @foreach ($articles->getUrlRange(1, $articles->lastPage()) as $number => $url)
+                        <li class="page-item @if ($number == $articles->currentPage()) active @endif">
+                            <a class="page-link" href="{{ $url }}">{{ $number }}</a>
+                        </li>
+                    @endforeach
+
+                    <li class="page-item @if (!$articles->hasMorePages()) disabled @endif">
+                        <a class="page-link" href="{{ $articles->nextPageUrl() }}">&raquo;</a>
+                    </li>
+                </ul>
+            </nav>
+        @endif
     @endif
 
 @endsection

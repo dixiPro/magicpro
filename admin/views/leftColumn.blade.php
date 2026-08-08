@@ -14,6 +14,7 @@
         ['route' => 'magic.feed', 'label' => 'feed', 'icon' => 'fas fa-stream'],
         ['route' => 'magic.crawler', 'label' => 'crawler', 'icon' => 'fas fa-spider'],
         ['route' => 'magic.dataBase', 'label' => 'dataBase', 'icon' => 'fas fa-database'],
+        ['route' => 'magic.other', 'label' => 'other', 'icon' => 'fas fa-ellipsis-h'],
     ];
 
     $current = Route::currentRouteName();

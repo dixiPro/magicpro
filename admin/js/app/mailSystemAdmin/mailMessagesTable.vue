@@ -221,7 +221,7 @@ onMounted(() => {
 
     <!-- список -->
     <div class="table-responsive">
-      <table class="table table-sm align-top small">
+      <table class="table table-sm align-top">
         <thead>
           <tr>
             <!-- <th>{{ t('mail_from') }}</th> -->

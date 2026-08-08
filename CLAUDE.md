@@ -9,6 +9,21 @@ routing or generated files.
 
 @docs/ru/common.md
 
+Feeds ("Ленты") are described the same way: how to read and write them from blades, article
+controllers and the api. Read it before touching feed data or writing a page over a feed.
+
+@docs/ru/feed/use.md
+
+How the feeds module itself is built — slots, the layer of logical names, transactions,
+deletion rules — is a separate document, `docs/ru/feed/inside.md`. It is not imported here:
+read it only when changing the module.
+
+On-the-fly image resizing: the helper methods, the settings group, the cache and its file
+names, which encoder handles which format. Read it before touching images, the cache under
+`storage/app/public/magic/images/` or the feed cropper.
+
+@docs/ru/image.md
+
 ## MagicPro
 
 **MagicPro** is a CMS that combines the speed of a CMS with the flexibility of Laravel 13.

@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Validator;
 use MagicProDatabaseModels\Feed;
 use MagicProDatabaseModels\FeedItem;
 use MagicProDatabaseModels\FeedGroup;
+use MagicProSrc\Image\ImageEncoder;
+use MagicProSrc\Image\ImageJob;
 use MagicProSrc\MagicLang;
 
 /**
@@ -77,8 +79,10 @@ class API_Feeds extends AbstractFeedApi
         'itemLinks'   => 'itemLinks',
         'itemsLookup' => 'itemsLookup',
 
-        'imageUpload' => 'imageUpload',
-        'imageDelete' => 'imageDelete',
+        'uploadFormat'    => 'uploadFormat',
+        'imageUpload'     => 'imageUpload',
+        'imageCropUpload' => 'imageCropUpload',
+        'imageDelete'     => 'imageDelete',
 
         'mdToHtml'    => 'mdToHtml',
     ];
@@ -936,6 +940,83 @@ class API_Feeds extends AbstractFeedApi
         $item->clearMediaCollection($code);
 
         $media = $item->addMedia($file)->toMediaCollection($code);
+
+        [$width, $height] = getimagesize($media->getPath());
+
+        $data = $item->__data ?? [];
+
+        $data[$code] = array_merge($data[$code] ?? [], [
+            'url'  => $media->getUrl(),
+            'size' => $media->size,
+            'mime' => $media->mime_type,
+            'x'    => $width,
+            'y'    => $height,
+        ]);
+
+        $item->__data = $data;
+        $item->save();
+
+        return $data[$code];
+    }
+
+    /**
+     * How the cropper should send its result: png or jpeg.
+     *
+     * The browser encodes the crop before sending, so it has to know this before
+     * the upload. The working format is not asked about: it is chosen and applied
+     * by the server alone.
+     */
+    protected function uploadFormat(array $params): string
+    {
+        return (string) ImageJob::setting('UPLOAD_FORMAT', 'png');
+    }
+
+    /**
+     * Same as imageUpload, but for a crop: the file is re-encoded into the format
+     * of the resize settings first.
+     *
+     * The browser cannot produce that format itself, so the cropper sends plain
+     * pixels — png or jpeg — and the server turns them into the working format.
+     * A separate command on purpose: the caller says what it wants instead of
+     * passing a flag that imageUpload would have to interpret.
+     */
+    protected function imageCropUpload(array $params): array
+    {
+        $item = $this->item($params);
+        $code = $this->imageField($item->feed, (string) ($params['code'] ?? ''));
+        $file = $params['file'] ?? null;
+
+        if (! $file instanceof UploadedFile) {
+            throw new Exception(self::err('file_required'));
+        }
+
+        if (! str_starts_with((string) $file->getMimeType(), 'image/')) {
+            throw new Exception(self::err('file_not_image') . ': ' . $file->getMimeType());
+        }
+
+        $format = (string) ImageJob::setting('RESIZE_FORMAT', 'webp');
+        $source = $file->getRealPath();
+        $name   = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME) . '.' . $format;
+
+        // расширение обязательно: libvips выбирает кодировщик по нему. И имя не
+        // от tempnam — тот создаёт файл, который потом остался бы в /tmp пустым
+        $target = sys_get_temp_dir() . '/' . uniqid('crop_', true) . '.' . $format;
+
+        // размер тот же, что пришёл: кадрирование сделал браузер, здесь только
+        // перекодирование
+        [$width] = getimagesize($source);
+
+        $made = ImageEncoder::make($source, $target, 'x', $width, $format, ImageJob::defaultQuality($format));
+
+        if ($made['error'] !== '') {
+            @unlink($target);
+
+            throw new Exception(self::err('file_not_image') . ': ' . $made['error']);
+        }
+
+        $item->clearMediaCollection($code);
+
+        $media = $item->addMedia($target)->usingFileName($name)->toMediaCollection($code);
 
         [$width, $height] = getimagesize($media->getPath());
 

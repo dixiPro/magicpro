@@ -10,7 +10,8 @@ const tab = ref('messages'); // 'messages' | 'addresses'
 </script>
 
 <template>
-  <div class="container my-3">
+  <!-- не container: он центрируется и съедает ширину, отступы даёт шаблон админки -->
+  <div class="my-3">
     <!-- разделы верхнего уровня -->
     <div class="btn-group my-3" role="group">
       <button type="button" class="btn btn-sm text-nowrap" :class="tab === 'messages' ? 'btn-primary' : 'btn-outline-primary'" @click="tab = 'messages'">

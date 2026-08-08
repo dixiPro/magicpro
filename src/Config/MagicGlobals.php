@@ -89,9 +89,21 @@ class MagicGlobals
     // сохранить параметры по умолчанию
     private static function saveDefaultIniFile(): void
     {
-        $schema = require self::$dataSchema;
-        $defaults = array_map(fn($item) => $item['default'], $schema);
-        self::$INI = self::saveIniFile($defaults);
+        self::$INI = self::saveIniFile(self::defaults(require self::$dataSchema));
+    }
+
+    /** Умолчания схемы. Группа отдаёт вложенный массив своих полей. */
+    private static function defaults(array $schema): array
+    {
+        $out = [];
+
+        foreach ($schema as $key => $item) {
+            $out[$key] = ($item['type'] ?? '') === 'group'
+                ? self::defaults($item['data'] ?? [])
+                : $item['default'];
+        }
+
+        return $out;
     }
 
     // сохранить параметры
@@ -100,10 +112,7 @@ class MagicGlobals
         self::validate(($allVars));
 
         // заменяем mutable true на установленные значения
-        $savedParams = require self::$dataSchema;
-        foreach ($savedParams as $key => $value) {
-            $allVars[$key] = $value['mutable'] ? $allVars[$key] : $value['default'];
-        }
+        $allVars = self::applyMutable(require self::$dataSchema, $allVars);
 
         MagicFile::make()
             ->base()
@@ -113,9 +122,33 @@ class MagicGlobals
         return require  base_path(self::$localIniFile);
     }
 
+    /**
+     * Немутабельному параметру возвращается умолчание, чем бы его ни пытались
+     * заменить. Значения, которого в файле ещё нет, тоже берутся из умолчаний:
+     * так добавленный в схему параметр начинает работать сразу.
+     */
+    private static function applyMutable(array $schema, array $values): array
+    {
+        foreach ($schema as $key => $item) {
+            if (($item['type'] ?? '') === 'group') {
+                $values[$key] = self::applyMutable($item['data'] ?? [], (array) ($values[$key] ?? []));
+
+                continue;
+            }
+
+            $values[$key] = $item['mutable'] ? ($values[$key] ?? $item['default']) : $item['default'];
+        }
+
+        return $values;
+    }
+
     private static function validate(array $data): void
     {
-        $schema = require self::$dataSchema;
+        self::validateAgainst(require self::$dataSchema, $data);
+    }
+
+    private static function validateAgainst(array $schema, array $data): void
+    {
         foreach ($data as $key => $value) {
 
             if (!array_key_exists($key, $schema)) {
@@ -142,9 +175,48 @@ class MagicGlobals
                         throw new \Exception("$key должно быть массивом");
                     }
                     break;
+
+                    // группа: значение — массив своих полей, каждое проверяется
+                    // по вложенной схеме
+                case 'group':
+                    if (!is_array($value)) {
+                        throw new \Exception("$key должно быть массивом");
+                    }
+
+                    self::validateAgainst($schema[$key]['data'] ?? [], $value);
+                    break;
                 case 'string':
                     if (!is_string($value)) {
                         throw new \Exception("$key должно быть строкой");
+                    }
+                    break;
+
+                    // выбор из готового списка: значение вне списка означает
+                    // настройку, которой в системе нет, и молча принимать её нельзя
+                case 'list':
+                    $values = $schema[$key]['values'] ?? [];
+
+                    if (!in_array($value, $values, true)) {
+                        throw new \Exception("$key должно быть одним из: " . implode(', ', $values));
+                    }
+                    break;
+
+                    // с экрана число приходит строкой, поэтому сравниваем по значению,
+                    // а не по типу
+                case 'integer':
+                    if (!is_numeric($value) || (int) $value != $value) {
+                        throw new \Exception("$key должно быть целым числом");
+                    }
+
+                    $min = $schema[$key]['min'] ?? null;
+                    $max = $schema[$key]['max'] ?? null;
+
+                    if ($min !== null && (int) $value < $min) {
+                        throw new \Exception("$key не меньше $min");
+                    }
+
+                    if ($max !== null && (int) $value > $max) {
+                        throw new \Exception("$key не больше $max");
                     }
                     break;
 

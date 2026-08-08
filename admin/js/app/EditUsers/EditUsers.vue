@@ -125,7 +125,8 @@ onMounted(() => {
 onUnmounted(() => {});
 </script>
 <template>
-  <div class="container my-3">
+  <!-- не container: он центрируется и съедает ширину, отступы даёт шаблон админки -->
+  <div class="my-3">
     <template v-for="(user, index) in allUsers" :key="index">
       <div class="row my-2">
         <div class="col-1">

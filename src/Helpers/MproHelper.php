@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use MagicProSrc\Api\API_Auth;
 use MagicProSrc\Config\MagicGlobals;
+use MagicProSrc\Image\ImageJob;
 use MagicProSrc\Mail\API_Mail;
 use Monolog\Logger;
 use Monolog\Level;
@@ -209,6 +210,24 @@ class MproHelper
         } catch (\Throwable $e) {
             echo '<pre style="color:red">Ошибка дампа: ' . '</pre>';
         }
+    }
+
+    // Ресайз на лету. Логика в MagicProSrc\Image\ImageJob, здесь только вход
+    // для блейдов: в них пишут без use и коротко.
+    public static function imageReduceX(string $file, int $width, ?string $format = null, ?int $quality = null): array
+    {
+        return ImageJob::make($file, 'x', $width, $format, $quality);
+    }
+
+    public static function imageReduceY(string $file, int $height, ?string $format = null, ?int $quality = null): array
+    {
+        return ImageJob::make($file, 'y', $height, $format, $quality);
+    }
+
+    // Убирает все производные исходника, независимо от размера и формата.
+    public static function imageCacheClear(string $file): int
+    {
+        return ImageJob::clear($file);
     }
 
     public static function imageType(string $text): string

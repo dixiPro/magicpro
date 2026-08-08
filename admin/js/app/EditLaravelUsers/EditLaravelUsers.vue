@@ -125,7 +125,8 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="container my-3">
+  <!-- не container: он центрируется и съедает ширину, отступы даёт шаблон админки -->
+  <div class="my-3">
     <div class="row my-3">
       <div class="col-6">
         <input

@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="en">
 
 <head>
@@ -17,6 +16,11 @@
     <script src="/vendor/dixipro/magicpro/prettier/babel.js"></script>
     <script src="/vendor/dixipro/magicpro/prettier/estree.js"></script>
 
+    <style>
+        html {
+            font-size: 15px;
+        }
+    </style>
 </head>
 
 <body>
@@ -24,66 +28,38 @@
         <div class="d-flex flex-column">
             <div class="bg-primary py-2">
                 <div class="d-flex flex-wrap justify-content-center m-0 p-0">
-                    <div class="px-2">
-                        <a class="text-white" href="/">@magic_msg('site')</a>
-                    </div>
-                    <div class="px-2">
-                        <a class="text-white" href="/a_dmin/">@magic_msg('title')</a>
-                    </div>
-                    <div class="px-2">
-                        <a class="text-white" href="/a_dmin/artEditor#1">@magic_msg('root')</a>
-                    </div>
-                    <div class="px-2">
-                        <a href="{{ route('magic.logout') }}" type="submit" class="btn btn-sm btn-success">
-                            @magic_msg('logout')
-                        </a>
-                    </div>
+                    <div class="px-2"><a class="text-white" href="/">@magic_msg('site')</a></div>
+                    <div class="px-2"><a class="text-white" href="/a_dmin/">@magic_msg('title')</a></div>
+                    <div class="px-2"><a class="text-white" href="/a_dmin/artEditor#1">@magic_msg('root')</a></div>
+                    <div class="px-2"><a href="{{ route('magic.logout') }}" type="submit"
+                            class="btn btn-sm btn-success">@magic_msg('logout') </a></div>
                 </div>
             </div>
-
             @if ($GLOBALS['nolfetMenu'] ?? false == true)
-                @yield('body')
-                @hasSection('script')
+                @yield('body') @hasSection('script')
                     @yield('script')
                 @endif
             @else
                 <div class="d-flex">
-                    <div class="px-3">
-                        @include('magicAdmin::leftColumn')
-
-                    </div>
-                    <div class="flex-grow-1 mx-3">
-                        @yield('body')
-                        @hasSection('script')
+                    <div class="px-3">@include('magicAdmin::leftColumn') </div>
+                    <div class="flex-grow-1 mx-3">@yield('body') @hasSection('script')
                             @yield('script')
                         @endif
-
                     </div>
                 </div>
             @endif
         @else
             <div class="container my-5">
                 <h1>MagicPro</h1>
-
                 @if (session('mpro_error'))
                     <div style="color:red">{{ session('mpro_error') }}</div>
                 @endif
-
-                <form method="POST" action="{{ route('magic.login') }}">
-                    @csrf
-
-                    <input type="text" name="email" placeholder="Email" required value="">
-                    <input type="password" name="password" placeholder="@magic_msg('password')" required value="">
-
-                    <label>
-                        <input type="checkbox" name="remember"> @magic_msg('remember_me')
-                    </label>
-
-                    <button type="submit">@magic_msg('login')</button>
+                <form method="POST" action="{{ route('magic.login') }}">@csrf <input type="text" name="email"
+                        placeholder="Email" required value=""><input type="password" name="password"
+                        placeholder="@magic_msg('password')" required value=""><label><input type="checkbox"
+                            name="remember">@magic_msg('remember_me') </label><button type="submit">@magic_msg('login')</button>
                 </form>
-            </div>
-        @endmproauth
-
+        </div>@endmproauth
         <script src="/vendor/dixipro/magicpro/bootstrap5/js/bootstrap.bundle.min.js"></script>
 </body>
 

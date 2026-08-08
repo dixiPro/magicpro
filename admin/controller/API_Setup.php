@@ -206,9 +206,18 @@ class API_Setup extends Controller
     private function getParamsAttr(): array
     {
         $schema = require MagicGlobals::$dataSchema;
+
         foreach ($schema as $key => $value) {
             $schema[$key]['label'] = MagicLang::getMsg($value['label']);
+
+            // у группы переводим и подписи вложенных полей
+            if (($value['type'] ?? '') === 'group') {
+                foreach ($value['data'] ?? [] as $code => $field) {
+                    $schema[$key]['data'][$code]['label'] = MagicLang::getMsg($field['label']);
+                }
+            }
         }
+
         return  $schema;
     }
 

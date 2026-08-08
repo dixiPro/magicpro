@@ -4,31 +4,11 @@ return [
 
     'LANGUAGE' => [
         'label'   => 'language',
-        'type'    => 'string',
+        'type'    => 'list',
+        'values'  => ['ru', 'en'],
         'default' => 'ru',
         'mutable' => true,
     ],
-
-    // 'ADMIN_LINK' => [
-    //     'label'   => 'admin_link',
-    //     'type'    => 'array',
-    //     'default' => [
-    //         ['Редаткор статей', '/a_dmin/artEditor#1'],
-    //         ['Администраторы', '/a_dmin/adminList'],
-    //     ],
-    //     'mutable' => false,
-    // ],
-
-    // 'ADDITIONAL_LINK' => [
-    //     'label'   => 'admin_link',
-    //     'type'    => 'array',
-    //     'default' => [
-    //         ['Редаткор статей', '/a_dmin/artEditor#1'],
-    //         ['Администраторы', '/a_dmin/adminList'],
-    //     ],
-    //     'mutable' => true,
-    // ],
-
 
     'PUBLIC_UPLOAD_DIR' => [
         'label'   => 'public_upload_dir',
@@ -91,4 +71,83 @@ return [
         'mutable' => true,
     ],
 
+
+    'RESIZE' => [
+        'label'   => 'resize_params',
+        'type'    => 'group',
+        'data'    => [
+
+            'MAX_RESIZE' => [
+                'label'   => 'image_max_size',
+                'type'    => 'integer',
+                'min'     => 10,
+                'max'     => 1000,
+                'default' => 1000,
+                'mutable' => true,
+            ],
+
+            'RESIZE_FORMAT' => [
+                'label'   => 'image_resize_format',
+                'type'    => 'list',
+                'values'  => ['webp', 'avif', 'jpg', 'png'],
+                'default' => 'webp',
+                'mutable' => true,
+            ],
+
+            // чем кроппер отправляет обрезанный кусок на сервер. Кодирует в
+            // рабочий формат всегда сервер, браузер только доставляет пиксели
+            'UPLOAD_FORMAT' => [
+                'label'   => 'image_upload_format',
+                'type'    => 'list',
+                'values'  => ['png', 'jpeg'],
+                'default' => 'png',
+                'mutable' => true,
+            ],
+
+            'WEBP_DEF_QUALITY' => [
+                'label'   => 'default_webp_quality',
+                'type'    => 'integer',
+                'min'     => 10,
+                'max'     => 100,
+                'default' => 82,
+                'mutable' => true,
+            ],
+
+            'AVIF_DEF_QUALITY' => [
+                'label'   => 'default_avif_quality',
+                'type'    => 'integer',
+                'min'     => 10,
+                'max'     => 100,
+                'default' => 50,
+                'mutable' => true,
+            ],
+
+            'JPG_DEF_QUALITY' => [
+                'label'   => 'default_jpg_quality',
+                'type'    => 'integer',
+                'min'     => 10,
+                'max'     => 100,
+                'default' => 70,
+                'mutable' => true,
+            ],
+
+            // у png качества нет, есть уровень сжатия: 0 быстро и крупно,
+            // 9 медленно и мелко, картинка при этом одна и та же
+            'PNG_COMPRESSION' => [
+                'label'   => 'png_compression',
+                'type'    => 'integer',
+                'min'     => 0,
+                'max'     => 9,
+                'default' => 6,
+                'mutable' => true,
+            ],
+
+            'IMAGE_ERROR' => [
+                'label'   => 'image_error',
+                'type'    => 'string',
+                'default' => '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600"><rect width="100%" height="100%" fill="#eee"/> <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle"> Image not found </text></svg>',
+                'mutable' => true,
+            ],
+        ],
+    ],
 ];

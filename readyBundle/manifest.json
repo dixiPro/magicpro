@@ -104,7 +104,7 @@
     ]
   },
   "admin/js/artEditor.js": {
-    "file": "assets/artEditor-B1an4Lqo.js",
+    "file": "assets/artEditor-2vbZGBZC.js",
     "name": "artEditor",
     "src": "admin/js/artEditor.js",
     "isEntry": true,
@@ -121,7 +121,7 @@
       "_ModalWindow-DlzNjIng.js"
     ],
     "css": [
-      "assets/artEditor-Bi4pevt_.css"
+      "assets/artEditor-BXBOEGIj.css"
     ]
   },
   "admin/js/crawler.js": {
@@ -141,7 +141,7 @@
     ]
   },
   "admin/js/editLaravelUsers.js": {
-    "file": "assets/editLaravelUsers-CBe-Sqys.js",
+    "file": "assets/editLaravelUsers-CLtXzLnY.js",
     "name": "editLaravelUsers",
     "src": "admin/js/editLaravelUsers.js",
     "isEntry": true,
@@ -156,7 +156,7 @@
     ]
   },
   "admin/js/editUsers.js": {
-    "file": "assets/editUsers-BQMo9AGs.js",
+    "file": "assets/editUsers-_jw3Srks.js",
     "name": "editUsers",
     "src": "admin/js/editUsers.js",
     "isEntry": true,
@@ -171,7 +171,7 @@
     ]
   },
   "admin/js/feedAdmin.js": {
-    "file": "assets/feedAdmin-CKPmpNRJ.js",
+    "file": "assets/feedAdmin-dSjMYShC.js",
     "name": "feedAdmin",
     "src": "admin/js/feedAdmin.js",
     "isEntry": true,
@@ -207,7 +207,7 @@
     ]
   },
   "admin/js/mailSystemAdmin.js": {
-    "file": "assets/mailSystemAdmin-EbiBAcZ1.js",
+    "file": "assets/mailSystemAdmin-B96Kccs2.js",
     "name": "mailSystemAdmin",
     "src": "admin/js/mailSystemAdmin.js",
     "isEntry": true,
@@ -218,11 +218,11 @@
       "__plugin-vue_export-helper-DlAUqK2U.js"
     ],
     "css": [
-      "assets/mailSystemAdmin-PC2uAWPJ.css"
+      "assets/mailSystemAdmin-Di9IHIo_.css"
     ]
   },
   "admin/js/setup.js": {
-    "file": "assets/setup-DrSEEF7-.js",
+    "file": "assets/setup-BouVbl5e.js",
     "name": "setup",
     "src": "admin/js/setup.js",
     "isEntry": true,
