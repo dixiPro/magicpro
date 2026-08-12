@@ -343,8 +343,6 @@ class API_Mail extends AbstractMailApi
         $failedCount = 0;
 
         foreach ($messages as $message) {
-            $startedAt = microtime(true);
-
             $sent = self::sendBySmtp([
                 'to'       => $message->to_email,
                 'subject'  => $message->subject,
@@ -354,8 +352,6 @@ class API_Mail extends AbstractMailApi
                 'replyTo'  => $message->reply_to ?? '',
                 'mail_id'  => $message->mail_id ?: null,
             ]);
-
-            dump('sendQueue message #' . $message->id . ': ' . round((microtime(true) - $startedAt) * 1000) . 'ms');
 
             if ($sent['status']) {
                 // успешная отправка

@@ -47,6 +47,29 @@
         @endforeach
     </div>
 
+    {{-- планировщик: крон снаружи, видно его только по отметке --}}
+    <div class="mt-4">
+        <div>
+            <strong>@magic_msg('cron_title')</strong>
+        </div>
+
+        <div>
+            <i class="fas {{ $cron['ok'] ? 'fa-check text-success' : 'fa-times text-danger' }}"></i>
+            @if ($cron['ok'])
+                <small class="text-muted">{{ $cron['note'] }}</small>
+            @else
+                <span class="text-danger">{{ $cron['note'] }}</span>
+            @endif
+        </div>
+
+        @if (!$cron['ok'])
+            <div class="mt-1">
+                <small class="text-danger">@magic_msg('cron_fix')</small>
+                <div><code class="small text-break">{{ $cron['command'] }}</code></div>
+            </div>
+        @endif
+    </div>
+
     <div class="mt-4">@magic_msg('current_user')</div>
     @php
         MproHelper::dump(Auth::guard('magic')->user());

@@ -1,3 +1,3 @@
 <?php
 
-define('MAGIC_VERSION', '1.8.1');
+define('MAGIC_VERSION', '1.8.2');

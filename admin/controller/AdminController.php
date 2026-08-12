@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\File;
 use MagicProDatabaseModels\Article;
 use MagicProDatabaseModels\MagicProUser;
 use MagicProSrc\MagicLang;
+use MagicProSrc\Scheduling\Heartbeat;
 
 use MagicProAdminControllers\API_ArticlesPostController;
 use MagicProSrc\Config\MagicGlobals; // global constants
@@ -28,11 +29,13 @@ class AdminController extends Controller
         'vips'  => ['version' => 'vips --version', 'hint' => 'apt install libvips-tools'],
     ];
 
-    /** То же для php-расширений. */
+    /** То же для php-расширений. gd разворачивает снимки по exif перед cwebp. */
     private const PHP_EXTENSIONS = [
-        'gd'      => 'apt install php-gd && systemctl reload php-fpm',
-        'imagick' => 'apt install php-imagick && systemctl reload php-fpm',
+        'gd' => 'apt install php-gd && systemctl reload php-fpm',
     ];
+
+    /** Планировщик считаем живым, пока отметке меньше этого числа секунд. */
+    private const CRON_MAX_AGE = 120;
 
     /**
      * Главная админки: она же установка и она же проверка.
@@ -48,6 +51,7 @@ class AdminController extends Controller
         return view('magicAdmin::index', [
             'steps' => $this->install(),
             'tools' => $this->imageTools(),
+            'cron'  => $this->cron(),
         ]);
     }
 
@@ -256,6 +260,40 @@ class AdminController extends Controller
         }
 
         return $tools;
+    }
+
+    /**
+     * Жив ли планировщик.
+     *
+     * Спрашивать не у кого: крон снаружи и о себе не сообщает. Зато раз в минуту
+     * он переписывает файл отметки, и возраст этого файла — единственный честный
+     * ответ. Смотрим mtime, а не то, что внутри: так проверка не зависит от
+     * формата записи.
+     *
+     * Это отметка самого планировщика. Уходят ли из очереди письма, она не знает.
+     */
+    private function cron(): array
+    {
+        $file = storage_path(Heartbeat::FILE);
+
+        // Та же команда, что в Readme, показывается только при мёртвом кроне.
+        // Строка дописывается в crontab www-data, уже стоящие задачи остаются на
+        // месте. php полным путём — у крона своего PATH почти нет.
+        $command = '(sudo crontab -u www-data -l 2>/dev/null; echo "* * * * * cd ' . base_path()
+            . ' && /usr/bin/php artisan schedule:run >> /dev/null 2>&1") | sort -u | sudo crontab -u www-data -';
+
+        if (!is_file($file)) {
+            return ['ok' => false, 'note' => MagicLang::getMsg('cron_never'), 'command' => $command];
+        }
+
+        $time = (int) filemtime($file);
+        $ok   = (time() - $time) <= self::CRON_MAX_AGE;
+
+        return [
+            'ok'      => $ok,
+            'note'    => MagicLang::getMsg($ok ? 'cron_alive' : 'cron_dead') . ': ' . date('Y-m-d H:i:s', $time),
+            'command' => $command,
+        ];
     }
 
     public function testWrite()

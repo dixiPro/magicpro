@@ -1,0 +1,129 @@
+# Хелперы: как пользоваться
+
+Все методы статические, класс лежит в глобальном пространстве имён и подключается
+сам. В блейдах и контроллерах статей пишется сразу, без `use`:
+
+```php
+MproHelper::getArtById(139);
+```
+
+## Дерево статей
+
+| Метод | Что делает |
+| --- | --- |
+| `getArtById(int $id)` | статья целиком, все поля. Не найдена — пустой массив |
+| `getArtByName(string $name)` | то же по имени |
+| `getParent(int $id)` | родительская статья целиком. Для корня и несуществующего id — пустой массив, а не ошибка |
+| `getChildrenById(int $artId)` | дети по id, **только `menuOn = true`**, по порядку `npp` |
+| `getChildrenByName(string $name)` | то же, но родитель ищется по имени |
+| `getPathToRootById(int $id)` | путь до корня массивом имён, от корня к статье. Ограничен 100 шагами от зацикливания |
+
+Разница между семействами: `getArt*` и `getParent` отдают статью со всеми полями,
+`getChildren*` — короткие записи для меню и отсеивают всё, у чего `menuOn = false`.
+
+```blade
+<ul>
+@foreach (MproHelper::getChildrenByName('topMenu') as $child)
+    <li><a href="/{{ $child['name'] }}">{{ $child['title'] }}</a></li>
+@endforeach
+</ul>
+
+@php( $parent = MproHelper::getParent($Env['artId']) )
+
+@if ($parent)
+    <a href="/{{ $parent['name'] }}">Вверх: {{ $parent['title'] }}</a>
+@endif
+```
+
+Поля у детей: `id`, `title`, `name`, `menuOn`, `updated_at`, а у `getChildrenById`
+ещё и `npp`.
+
+## Почта и логи
+
+| Метод | Что делает |
+| --- | --- |
+| `sendMail(array $params)` | отправляет письмо сразу. Ключи: `email`, `subj`, `html`. Возвращает `status / errorMsg / data`, исключений не бросает |
+| `addLog(string $logName, string\|array $data)` | пишет в `storage/logs/{$logName}.log` с ротацией за 14 дней |
+
+Каждая попытка отправки, удачная и нет, попадает в лог `mail`. Массив в `addLog`
+раскладывается построчно в `ключ: значение`, вложенные — в JSON.
+
+```php
+$res = MproHelper::sendMail([
+    'email' => 'user@example.com',
+    'subj'  => 'Тема письма',
+    'html'  => '<h1>Привет</h1>',
+]);
+
+if (! $res['status']) {
+    MproHelper::addLog('myLog', ['error' => $res['errorMsg']]);
+}
+```
+
+Отложенная отправка и очередь — не сюда, это `docs/ru/mail/`.
+
+## Внешние сервисы
+
+| Метод | Что делает |
+| --- | --- |
+| `telegramSend($message, $chat_id, $botToken, $mode = 'HTML')` | шлёт сообщение ботом, возвращает ответ API массивом, попытку пишет в лог `telegram` |
+| `getRecaptureKey()` | публичный site key reCAPTCHA из `RECAPTCHA_SITE_KEY` |
+| `verifyRecapture(string $response)` | проверяет токен. `true` только при успехе, любая ошибка сети даёт `false` |
+
+Site key виден в исходнике страницы, так и задумано. Секретный ключ сюда не
+попадает: его читает API при проверке токена.
+
+## Шифрование
+
+AES-256-CBC со случайным IV. Удобно для токенов в ссылках подтверждения.
+
+| Метод | Что делает |
+| --- | --- |
+| `crypt(array $data, string $key)` | шифрует массив в строку base64, IV кладётся в начало |
+| `decrypt(string $data, string $key)` | обратно. При неверном ключе или битых данных — пустой массив, а не ошибка |
+
+```php
+$token = MproHelper::crypt(['id' => 42, 'email' => $email], $key);
+$data  = MproHelper::decrypt($token, $key);   // ['id' => 42, 'email' => ...]
+```
+
+## Текст и файлы
+
+| Метод | Что делает |
+| --- | --- |
+| `trimAndCutText(string $text, int $limit = 0)` | чистит текст под мета-теги: снимает HTML, раскодирует сущности, убирает эмодзи и лишние пробелы. При `$limit > 0` режет по границе слова |
+| `imageType(string $text)` | MIME по расширению: jpg, jpeg, png, webp, gif. Прочее — пустая строка. Нужен для `og:image:type` |
+| `mdToHtml(string $md)` | markdown в html. Сырой html внутри вырезается, javascript-ссылки выбрасываются |
+| `getDoc(string $name, string $lang = '', bool $renderHtml = true)` | страница документации пакета в html |
+
+`mdToHtml` рассчитан на текст, который написал оператор в ленте, поэтому и режет
+html. `getDoc` читает файлы самого пакета и им доверяет.
+
+У `getDoc` имя — это файл `docs/{язык}/{имя}.md` без расширения. Язык не указан —
+берётся из настроек, перевода нет — покажется русский оригинал.
+
+```blade
+{!! MproHelper::getDoc('common') !!}
+```
+
+## Картинки
+
+| Метод | Что делает |
+| --- | --- |
+| `imageReduceX(string $file, int $width, ?string $format = null, ?int $quality = null)` | уменьшить по ширине |
+| `imageReduceY(string $file, int $height, ?string $format = null, ?int $quality = null)` | уменьшить по высоте |
+| `imageCacheClear(string $file)` | снести производные исходника |
+
+Это входы в ресайзер, подробности — `docs/ru/image/use.md`.
+
+## Отладка
+
+| Метод | Что делает |
+| --- | --- |
+| `dump($var, bool $showXmp = true)` | печатает переменную как JSON с отступами. При `$showXmp = true` оборачивает в `<xmp>`, чтобы разметка внутри не рендерилась |
+
+Ничего не возвращает, выводит сразу.
+
+```blade
+{{ MproHelper::dump($Env) }}
+```

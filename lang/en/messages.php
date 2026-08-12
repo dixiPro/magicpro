@@ -83,6 +83,11 @@ return [
     'cannot_create_dir'     => 'Cannot create directory',
     'image_tools'           => 'Image processing',
     'tool_not_found'        => 'not found',
+    'cron_title'            => 'Scheduler',
+    'cron_alive'            => 'running, last tick',
+    'cron_dead'             => 'Cron is not running. Last tick',
+    'cron_never'            => 'Cron is not set up: the scheduler has never run.',
+    'cron_fix'              => 'Run this command on the server:',
 
     'install_start'       => 'Installation',
     'install_dir_created' => 'Directory created',
