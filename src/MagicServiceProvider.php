@@ -28,6 +28,8 @@ use MagicProSrc\Scheduling\MagicProSchedule;
 
 use MagicProSrc\MagicLang;
 
+use MagicProSrc\Console\AdminCommand; // команда создания админа
+
 use MagicProSrc\Lenta\FeedPathGenerator; // папка картинок лент внутри диска
 use Spatie\MediaLibrary\Support\PathGenerator\DefaultPathGenerator;
 
@@ -129,6 +131,11 @@ class MagicServiceProvider extends ServiceProvider
 
         // МСП сервер
         $this->loadRoutesFrom(__DIR__ . '/Mcp/ai.php');
+
+        // консольные команды пакета
+        if ($this->app->runningInConsole()) {
+            $this->commands([AdminCommand::class]);
+        }
     }
 
     public function register(): void

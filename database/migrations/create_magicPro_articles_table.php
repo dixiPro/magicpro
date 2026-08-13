@@ -3,7 +3,6 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\DB;
 
 
 return new class extends Migration
@@ -29,53 +28,9 @@ return new class extends Migration
                 $table->timestamps();
             });
 
-            DB::table('articles')->insert([
-                'parentId'     => 0,
-                'name'         => 'root',
-                'title'        => 'root',
-                'controller'   => '',
-                'body'         => '',
-                'templateName' => '',
-                'directory'    => false,
-                'menuOn'       => false,
-                'isRoute'      => false,
-                'routeParams'  => '{}',
-            ]);
-
-            DB::table('articles')->insert([
-                'parentId'     => 1,
-                'npp'          => 0,
-                'name'         => ART_NAME_404,
-                'title'        => ART_NAME_404,
-                'controller'   => '',
-                'body'         => '<p>Error 404</p>',
-                'templateName' => '',
-                'directory'    => false,
-                'menuOn'       => false,
-                'isRoute'      => false,
-                'routeParams'  => '{}',
-            ]);
-
-            DB::table('articles')->insert([
-                'parentId'     => 1,
-                'npp'          => 1,
-                'name'         => 'index',
-                'title'        => 'index',
-                'controller'   => '',
-                'body'         => '<p>Index page</p>',
-                'templateName' => '',
-                'directory'    => false,
-                'menuOn'       => false,
-                'isRoute'      => true,
-                'routeParams'  => '{
-                                "useController": false,
-                                "adminOnly": false,
-                                "getEnable": false,
-                                "utmParamsEnable": true,
-                                "bindKeys": false,
-                                "keysArr": []
-                            }',
-            ]);
+            // Стартовые статьи (root, error404, index) создаёт Installer при
+            // заходе в /a_dmin: миграция отрабатывает один раз и молчит, если
+            // её вставка пропущена, а проверка нужна на каждой установке.
         }
     }
 

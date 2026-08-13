@@ -56,6 +56,10 @@ class MagicGlobals
         // 💾 Каталог генерации HTML-кеша, от корня проекта
         defined('STATIC_HTML_CREATE_DIR') || define('STATIC_HTML_CREATE_DIR', base_path('storage/app/private/magic/html'));
 
+        // ✅ Отметка пройденной установки. Лежит в storage вместе с блейдами:
+        // перенесли проект без storage — установка повторится сама.
+        defined('MAGIC_INSTALL_FILE') || define('MAGIC_INSTALL_FILE', base_path('storage/app/private/magic/.install'));
+
 
 
         // 🔐 Описание директорий и их прав (для проверки и отладки)

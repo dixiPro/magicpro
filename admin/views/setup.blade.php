@@ -32,20 +32,6 @@
         </div>
     @endif
 
-    <div class="my-2">
-        <a href="{{ route('magic.testWrite') }}">@magic_msg('write_permissions')</a>
-    </div>
-
-    @if (session('testWriteStatus'))
-        <div class="alert alert-info">
-            @foreach (session('testWriteStatus', []) as $item)
-                <div>
-                    <b>{{ $item['desc'] }}</b>: {{ $item['value'] }} — {{ $item['result'] }}
-                </div>
-            @endforeach
-        </div>
-    @endif
-
     <div class="mt-2">
         <a href="#"
             onclick="fetch('/a_dmin/api/articles', {
