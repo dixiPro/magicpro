@@ -27,6 +27,21 @@ function onDrop(toList, index) {
   dragged.value = '';
 }
 
+/**
+ * Порядок полей в форме записи — та же перетаскиваемая таблица, но со своим
+ * списком: в форме поля все, и убрать оттуда нечего. Поэтому и перетаскивание
+ * своё, без второй таблицы и без showOnList.
+ */
+const draggedForm = ref('');
+
+function onDropForm(index) {
+  if (draggedForm.value === '') return;
+
+  store.moveFormField(draggedForm.value, index);
+
+  draggedForm.value = '';
+}
+
 async function saveSchema() {
   try {
     await store.saveSchema();
@@ -89,6 +104,38 @@ async function saveSchema() {
             :key="field.name"
             draggable="true"
             @dragstart="dragged = field.name"
+          >
+            <td>
+              <i class="fas fa-grip-vertical text-muted me-2"></i>
+              <code>{{ field.type }}</code>
+            </td>
+            <td>{{ field.code }}</td>
+            <td>{{ field.label }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="mb-4">
+      <h2 class="h6 mb-2">{{ t('feed_form_order') }}</h2>
+      <p class="text-muted small mb-2">{{ t('feed_form_order_help') }}</p>
+
+      <table class="table table-sm align-middle" style="max-width: 40rem">
+        <thead>
+          <tr>
+            <th style="width: 8rem">Type</th>
+            <th style="width: 12rem">Code</th>
+            <th>Label</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="(field, index) in store.inForm"
+            :key="field.name"
+            draggable="true"
+            @dragstart="draggedForm = field.name"
+            @dragover.prevent
+            @drop.stop="onDropForm(index)"
           >
             <td>
               <i class="fas fa-grip-vertical text-muted me-2"></i>

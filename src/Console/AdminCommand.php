@@ -58,6 +58,7 @@ class AdminCommand extends Command
         }
 
         $this->info('Admin created: ' . $email);
+        $this->info('Open the admin panel: ' . url('/a_dmin'));
 
         return self::SUCCESS;
     }

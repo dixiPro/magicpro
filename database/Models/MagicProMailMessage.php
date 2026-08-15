@@ -11,8 +11,9 @@ use Illuminate\Database\Eloquent\Model;
  * constants below and the mail service for the flow. The row stores both
  * the rendered html body and the full raw_message that goes to the provider.
  *
- * Retry timing is derived from `attempts` (0 -> +5m, 1 -> +15m, 2 -> +1h,
- * >=3 -> failed); there is no separate next_attempt_at column.
+ * Retry timing is derived from `attempts` by API_Mail::nextSchedule()
+ * (1 -> +5m, 2 -> +10m, 3 -> +30m, beyond that -> failed); there is no separate
+ * next_attempt_at column.
  *
  * Delivery errors are appended to the `errors` JSON array via appendError().
  */

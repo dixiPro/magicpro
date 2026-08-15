@@ -1,5 +1,28 @@
 # MagicPro CHANGELOG
 
+### 2026-08-15
+
+- Installation rewritten. The whole check runs in `MagicProSrc\Install\Installer`,
+  the admin controller only calls it. The mark is written after a full success,
+  so a half-finished install no longer reports itself as done. The first admin is
+  created by `php artisan magicpro:admin`, not by a migration.
+- Feeds: a record has a `__slug`, unique inside its feed. It is either counted
+  from a string field of the schema (`slugFrom`) or typed by hand.
+  `MproHelper::translitForUrl()` translates Russian and Serbian.
+- Feeds: order of fields in the record form, set by dragging on the feed screen
+  (`orderForm`), next to the order of columns in the list.
+- Feeds: text of a record understands `#field#` substitutions and tags of magic
+  components — `MproHelper::feedText($item, 'body')`. Only the tag itself goes
+  through Blade, so text written by an operator is never compiled.
+- Feeds: image fields keep `path` next to `url` — the same address without the
+  host, the one the resizer understands.
+- The visual editor moved from Quill to TipTap, in its own component
+  `htmlEditor.vue`: own toolbar, paste from Word cleaned by the schema, hotkeys
+  working in any keyboard layout. Ace tab got a format button.
+- Feed admin: the code of a field is locked only when that column already holds
+  data, the structure screen shows the schema json, and the Structure/Data tabs
+  stay inside the feed you opened.
+
 ### 2026-08-05
 
 Feeds: Development Begins

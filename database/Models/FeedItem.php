@@ -46,6 +46,7 @@ class FeedItem extends Model implements HasMedia
         'feed_id',
         '__data',
         '__visible',
+        '__slug',
     ];
 
     /**
@@ -282,6 +283,7 @@ class FeedItem extends Model implements HasMedia
         }
 
         return $out + [
+            '__slug'     => $this->getAttribute('__slug'),
             '__position' => $this->getAttribute('__position'),
             '__visible'  => $this->getAttribute('__visible'),
             'created_at' => $this->getAttribute('created_at'),
@@ -361,6 +363,65 @@ class FeedItem extends Model implements HasMedia
                 $item->__position = static::nextPosition((int) $item->feed_id);
             }
         });
+
+        static::saving(function (self $item): void {
+            $item->applySlug();
+        });
+    }
+
+    // === slug ===
+
+    /**
+     * The address of the record, made right before it is written.
+     *
+     * The schema of the feed decides where it comes from: a feed with slugFrom
+     * recounts it from that field every time — the title changed, the address
+     * changed — while without one the operator types it by hand.
+     *
+     * Either way the value goes through the same transliteration: the column is
+     * a piece of a url, and what is typed by hand has to be as safe as what is
+     * counted.
+     *
+     * feed_id is read out of the raw attributes: going through getAttribute()
+     * here would ask the schema, and the schema is exactly what is being read.
+     */
+    protected function applySlug(): void
+    {
+        $feedId = (int) ($this->attributes['feed_id'] ?? 0);
+        $source = $feedId > 0 ? Feed::slugColumnOf($feedId) : null;
+
+        $raw = $source === null
+            ? (string) ($this->attributes['__slug'] ?? '')
+            : (string) ($this->getAttribute($source) ?? '');
+
+        $slug = \MproHelper::translitForUrl($raw);
+
+        // Пусто — это NULL, а не пустая строка: пустых строк уникальный индекс
+        // пустит только одну, а записей без адреса может быть сколько угодно.
+        $this->attributes['__slug'] = $slug === '' ? null : $slug;
+
+        if ($slug === '' || ! $this->slugTaken($slug)) {
+            return;
+        }
+
+        throw new RuntimeException(
+            \MagicProSrc\MagicLang::getMsg('feed_err_slug_taken') . ': ' . $slug
+        );
+    }
+
+    /**
+     * Whether another record of the same feed already holds this address.
+     *
+     * The database index says the same thing, but it says it as a driver error.
+     * Here the operator gets a sentence and the value.
+     */
+    protected function slugTaken(string $slug): bool
+    {
+        return static::query()
+            ->where('feed_id', (int) ($this->attributes['feed_id'] ?? 0))
+            ->where('__slug', $slug)
+            ->when($this->exists, fn ($query) => $query->where('id', '!=', $this->getKey()))
+            ->exists();
     }
 
     /**

@@ -50,6 +50,17 @@ export const useFeedStore = defineStore('feed', () => {
   // порядок колонок списка: имена полей, у слота колонка, у поля __data его code
   const order = ref([]);
 
+  // Порядок полей в форме записи. Отдельно от order: в списке видны не все поля
+  // и порядок там свой, а в форме поля все и раскладка другая. Имена те же.
+  const orderForm = ref([]);
+
+  // Слот, из которого делается slug записи. Пусто — slug вводят руками.
+  //
+  // На экране источник держится колонкой, а в схему уезжает code: пока в ленте
+  // нет записей, code разрешено менять, и переключатель не должен слетать от
+  // переименования поля.
+  const slugColumn = ref('');
+
   // типы полей __data, порядок как в ТЗ
   const DATA_TYPES = ['string', 'text', 'integer', 'decimal', 'boolean', 'datetime', 'json', 'code', 'image'];
 
@@ -106,6 +117,8 @@ export const useFeedStore = defineStore('feed', () => {
       jsonText.value = JSON.stringify(container?.data ?? [], null, 2);
 
       order.value = Array.isArray(schema.value.order) ? schema.value.order.slice() : [];
+      orderForm.value = Array.isArray(schema.value.orderForm) ? schema.value.orderForm.slice() : [];
+      slugColumn.value = columnOfCode(schema.value.slugFrom ?? '');
 
       groupFeeds.value = await apiFeed({ command: 'feedsList', groupId: feed.group_id });
 
@@ -183,6 +196,46 @@ export const useFeedStore = defineStore('feed', () => {
   }
 
   /**
+   * Можно ли ещё менять code поля.
+   *
+   * Сервер запрещает не любое имя при живых записях, а переименование колонки,
+   * у которой имя уже есть: записи хранят значения по колонкам, и старая карта
+   * схемы разошлась бы с новой. Новое поле садится в свободный слот, менять его
+   * имя можно сколько угодно — до первого сохранения.
+   */
+  function codeLocked(row) {
+    if (itemsCount.value === 0) return false;
+
+    const saved = (schema.value.fields ?? []).find((field) => field.column === row.column);
+
+    return !!saved && (saved.code ?? '') !== '';
+  }
+
+  // колонка поля по его code в считанной схеме
+  function columnOfCode(code) {
+    if (code === '') return '';
+
+    return (schema.value.fields ?? []).find((field) => field.code === code)?.column ?? '';
+  }
+
+  /**
+   * Откуда делать slug.
+   *
+   * Источник один: выбор второго поля снимает первый. Повторный выбор того же
+   * снимает его совсем — тогда slug вводят руками.
+   */
+  function setSlugFrom(column) {
+    slugColumn.value = slugColumn.value === column ? '' : column;
+  }
+
+  // источник так, как он уедет в схему: code поля, каким он сейчас на экране
+  function buildSlugFrom() {
+    if (slugColumn.value === '') return '';
+
+    return rows.string.find((row) => row.column === slugColumn.value)?.code.trim() ?? '';
+  }
+
+  /**
    * Убрать поле.
    *
    * Строки, которой нет в считанной схеме, нет и на сервере — достаточно убрать
@@ -204,6 +257,10 @@ export const useFeedStore = defineStore('feed', () => {
       feedId: feedId.value,
       schema: {
         version: schema.value.version ?? 1,
+        // удаляемое поле могло быть источником slug: сервер не примет схему,
+        // где источник указывает на поле, которого в ней уже нет
+        slugFrom: columnOfCode(schema.value.slugFrom ?? '') === row.column ? '' : schema.value.slugFrom ?? '',
+        orderForm: (schema.value.orderForm ?? []).filter((name) => name !== row.column),
         fields: (schema.value.fields ?? []).filter((field) => field.column !== row.column),
       },
     });
@@ -420,6 +477,42 @@ export const useFeedStore = defineStore('feed', () => {
 
   const notInList = computed(() => allFields.value.filter((field) => !field.showOnList));
 
+  /**
+   * Поля в порядке формы записи.
+   *
+   * Поля здесь все: скрыть поле из формы нельзя — его тогда нечем заполнить.
+   * Чего нет в orderForm, уходит в конец в порядке схемы: добавленное поле
+   * должно появиться в форме само, а не потеряться до первой перетаскивания.
+   */
+  const inForm = computed(() => {
+    const left = new Map(allFields.value.map((field) => [field.name, field]));
+
+    const sorted = [];
+
+    for (const name of orderForm.value) {
+      if (left.has(name)) {
+        sorted.push(left.get(name));
+        left.delete(name);
+      }
+    }
+
+    return [...sorted, ...left.values()];
+  });
+
+  /** Перенести поле формы на нужное место. */
+  function moveFormField(name, index) {
+    const names = inForm.value.map((field) => field.name).filter((item) => item !== name);
+
+    names.splice(index, 0, name);
+
+    orderForm.value = names;
+  }
+
+  // порядок так, как он уедет в схему: все поля, какие сейчас есть, и ровно они
+  function buildOrderForm() {
+    return inForm.value.map((field) => field.name);
+  }
+
   // флаг живёт там же, где поле: у слота в строке таблицы, у __data в JSON
   function setShowOnList(name, value) {
     for (const key of Object.keys(rows)) {
@@ -545,8 +638,20 @@ export const useFeedStore = defineStore('feed', () => {
     try {
       if (canon(buildFields()) !== canon(schema.value.fields)) return true;
 
+      if (buildSlugFrom() !== (schema.value.slugFrom ?? '')) return true;
+
       // перетащенная колонка тоже правка, хотя поля при этом те же
-      return JSON.stringify(buildOrder()) !== JSON.stringify(schema.value.order ?? []);
+      if (JSON.stringify(buildOrder()) !== JSON.stringify(schema.value.order ?? [])) return true;
+
+      // Пустой orderForm значит «порядок не задан», а не «порядок пустой»: у
+      // старых лент ключа нет вовсе. Пока его нет и на экране никто ничего не
+      // перетаскивал, сравнивать нечего — иначе кнопка «сохранить» горела бы у
+      // таких лент всегда, ещё до единой правки.
+      const savedForm = schema.value.orderForm ?? [];
+
+      if (savedForm.length === 0 && orderForm.value.length === 0) return false;
+
+      return JSON.stringify(buildOrderForm()) !== JSON.stringify(savedForm);
     } catch {
       // JSON пока не разбирается — считаем, что есть что сохранять
       return true;
@@ -572,10 +677,18 @@ export const useFeedStore = defineStore('feed', () => {
     schema.value = await apiFeed({
       command: 'schemaSave',
       feedId: feedId.value,
-      schema: { version: schema.value.version ?? 1, order: names, fields: fields },
+      schema: {
+        version: schema.value.version ?? 1,
+        slugFrom: buildSlugFrom(),
+        order: names,
+        orderForm: buildOrderForm(),
+        fields: fields,
+      },
     });
 
     order.value = Array.isArray(schema.value.order) ? schema.value.order.slice() : [];
+    orderForm.value = Array.isArray(schema.value.orderForm) ? schema.value.orderForm.slice() : [];
+    slugColumn.value = columnOfCode(schema.value.slugFrom ?? '');
   }
 
   return {
@@ -587,10 +700,16 @@ export const useFeedStore = defineStore('feed', () => {
     title,
     groupId,
     itemsCount,
+    codeLocked,
     schema,
     rows,
     jsonText,
     order,
+    orderForm,
+    inForm,
+    moveFormField,
+    slugColumn,
+    setSlugFrom,
     allFields,
     inList,
     notInList,

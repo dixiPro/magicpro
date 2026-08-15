@@ -473,15 +473,51 @@ class API_Feeds extends AbstractFeedApi
 
         $this->checkCodesKept($feed, $codeByColumn);
 
-        // order строит админка из полей с showOnList, поэтому проверять в нём
-        // нечего: сюда он приходит уже согласованным со схемой
-        $order = $schema['order'] ?? [];
+        // order и orderForm строит админка из полей схемы, поэтому проверять в
+        // них нечего: сюда они приходят уже согласованными со схемой. Первый —
+        // порядок колонок списка, второй — порядок полей в форме записи
+        $order     = $schema['order'] ?? [];
+        $orderForm = $schema['orderForm'] ?? [];
 
         return [
-            'version' => (int) ($schema['version'] ?? 1),
-            'order'   => is_array($order) ? array_values(array_filter($order, 'is_string')) : [],
-            'fields'  => array_values($fields),
+            'version'   => (int) ($schema['version'] ?? 1),
+            'slugFrom'  => $this->checkSlugFrom($schema, $fields),
+            'order'     => is_array($order) ? array_values(array_filter($order, 'is_string')) : [],
+            'orderForm' => is_array($orderForm) ? array_values(array_filter($orderForm, 'is_string')) : [],
+            'fields'    => array_values($fields),
         ];
+    }
+
+    /**
+     * Поле, из которого делается slug записи. Пусто — slug вводят руками.
+     *
+     * Годятся только строковые слоты: из абзаца текста или из даты адрес
+     * получится мусорный, а из поля `__data` его ещё и не прочитать запросом.
+     *
+     * Смена источника ничего не пересчитывает: у старых записей адрес остаётся
+     * прежним, новое правило работает с их следующего сохранения.
+     */
+    protected function checkSlugFrom(array $schema, array $fields): string
+    {
+        $code = trim((string) ($schema['slugFrom'] ?? ''));
+
+        if ($code === '') {
+            return '';
+        }
+
+        foreach ($fields as $field) {
+            if ((string) ($field['code'] ?? '') !== $code) {
+                continue;
+            }
+
+            if (! str_starts_with((string) ($field['column'] ?? ''), '__string_')) {
+                break;
+            }
+
+            return $code;
+        }
+
+        throw new Exception(self::err('slug_source') . ': ' . $code);
     }
 
     /**
@@ -756,6 +792,13 @@ class API_Feeds extends AbstractFeedApi
                 $item->__visible = (bool) $params['visible'];
             }
 
+            // slug — такая же системная колонка, как видимость, и приходит
+            // отдельным параметром. У ленты с источником он всё равно будет
+            // пересчитан моделью, поэтому проверять здесь нечего
+            if (array_key_exists('slug', $params)) {
+                $item->__slug = (string) $params['slug'];
+            }
+
             $item->save();
 
             return $this->present($item->refresh(), $feed);
@@ -947,6 +990,11 @@ class API_Feeds extends AbstractFeedApi
 
         $data[$code] = array_merge($data[$code] ?? [], [
             'url'  => $media->getUrl(),
+            // Тот же адрес без хоста: `/storage/magicFeed/19/1.png`. Его можно
+            // поставить в src, и его же понимает ресайзер — он ждёт путь от
+            // public. Хост в путь не входит, поэтому переезд на другой домен
+            // ничего не ломает.
+            'path' => parse_url($media->getUrl(), PHP_URL_PATH),
             'size' => $media->size,
             'mime' => $media->mime_type,
             'x'    => $width,
@@ -1024,6 +1072,11 @@ class API_Feeds extends AbstractFeedApi
 
         $data[$code] = array_merge($data[$code] ?? [], [
             'url'  => $media->getUrl(),
+            // Тот же адрес без хоста: `/storage/magicFeed/19/1.png`. Его можно
+            // поставить в src, и его же понимает ресайзер — он ждёт путь от
+            // public. Хост в путь не входит, поэтому переезд на другой домен
+            // ничего не ломает.
+            'path' => parse_url($media->getUrl(), PHP_URL_PATH),
             'size' => $media->size,
             'mime' => $media->mime_type,
             'x'    => $width,
@@ -1132,6 +1185,7 @@ class API_Feeds extends AbstractFeedApi
         return [
             'id'         => (int) $item->id,
             'feedId'     => (int) $item->feed_id,
+            'slug'       => $item->__slug,
             'position'   => (int) $item->__position,
             'visible'    => (bool) $item->__visible,
             'created_at' => (string) $item->created_at,

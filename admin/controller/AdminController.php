@@ -4,7 +4,6 @@ namespace MagicProAdminControllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\File;
 use MagicProDatabaseModels\Article;
 use MagicProDatabaseModels\MagicProUser;
 use MagicProSrc\Install\Installer;
@@ -25,43 +24,6 @@ class AdminController extends Controller
         return view('magicAdmin::index', [
             'report' => (new Installer())->run(),
         ]);
-    }
-
-    public function testWrite()
-    {
-        $testArray = MAGIC_FILE_ROLES;
-
-        // try внутри цикла: каталоги друг от друга не зависят, и ошибка одного
-        // не должна оставлять остальные без ответа
-        foreach ($testArray as $index => $item) {
-            $dir = $item['value'];
-            $operation = '';
-
-            try {
-                // создание директории
-                if (!File::isDirectory($dir)) {
-                    $operation = "create directory $dir";
-                    File::ensureDirectoryExists($dir, 0775, true);
-                }
-
-                $timestamp = time();
-                $file = $dir . DIRECTORY_SEPARATOR . "{$timestamp}_testfile.txt";
-
-                // запись
-                $operation = "write to file $file";
-                File::put($file, $timestamp);
-
-                // удаление
-                $operation = "delete file $file";
-                File::delete($file);
-
-                $testArray[$index]['result'] = 'ok';
-            } catch (\Throwable $th) {
-                $testArray[$index]['result'] = "$operation — " . $th->getMessage();
-            }
-        }
-
-        return redirect()->back()->with('testWriteStatus', $testArray);
     }
 
     public function clearCache()

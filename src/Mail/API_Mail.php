@@ -408,7 +408,7 @@ class API_Mail extends AbstractMailApi
     /**
      * Список писем в очереди для указанного email.
      * Очередь — письма, ещё не отправленные (queued / retrying).
-     * Params: to (email).
+     * Params: email.
      */
     protected static function emailQueue(array $params): array
     {
@@ -603,7 +603,7 @@ class API_Mail extends AbstractMailApi
 
     /**
      * Удалить все письма в очереди (queued / retrying) для указанного email.
-     * Params: to (email).
+     * Params: email.
      */
     protected static function deleteQueueByEmail(array $params): array
     {
@@ -620,9 +620,7 @@ class API_Mail extends AbstractMailApi
 
         $deleted = MagicProMailMessage::query()
             ->where('to_email', $email)
-            ->whereIn('status', [
-                MagicProMailMessage::STATUS_QUEUED,
-            ])
+            ->whereIn('status', self::QUEUE_STATUSES)
             ->delete();
 
         return [

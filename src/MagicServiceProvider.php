@@ -31,18 +31,23 @@ use MagicProSrc\MagicLang;
 use MagicProSrc\Console\AdminCommand; // команда создания админа
 
 use MagicProSrc\Lenta\FeedPathGenerator; // папка картинок лент внутри диска
-use Spatie\MediaLibrary\Support\PathGenerator\DefaultPathGenerator;
+use Spatie\MediaLibrary\Support\PathGenerator\PathGeneratorFactory;
 
 class MagicServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
         // Картинки лент — в подпапку magicFeed, а не в корень диска.
-        // Генератор путей в медиатеке один на всё приложение, поэтому забираем
-        // его только пока он стандартный: чужую настройку не перебиваем.
-        if (config('media-library.path_generator') === DefaultPathGenerator::class) {
-            config(['media-library.path_generator' => FeedPathGenerator::class]);
-        }
+        //
+        // Глобальный генератор путей в медиатеке один на всё приложение, и
+        // забирать его себе нельзя: рядом может жить другой пакет с медиатекой,
+        // и тогда кто загрузился первым — тот и решает, где лежат чужие файлы.
+        // Регистрируем свой генератор на свою модель, он проверяется раньше
+        // глобального.
+        PathGeneratorFactory::setCustomPathGenerators(
+            FeedItem::class,
+            FeedPathGenerator::class
+        );
 
         // вьюхи
         $this->loadViewsFrom(MAGIC_VIEW_DIR, 'magic');

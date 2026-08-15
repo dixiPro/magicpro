@@ -38,7 +38,7 @@ async function removeRow(row) {
       <tbody>
         <tr v-for="row in store.rows.bigint" :key="row.column">
           <td>
-            <InputText v-model="row.code" class="form-control form-control-sm" :disabled="store.itemsCount > 0" />
+            <InputText v-model="row.code" class="form-control form-control-sm" :disabled="store.codeLocked(row)" />
           </td>
           <td><InputText v-model="row.label" class="form-control form-control-sm" /></td>
           <td><input type="number" v-model="row.default" class="form-control form-control-sm" /></td>

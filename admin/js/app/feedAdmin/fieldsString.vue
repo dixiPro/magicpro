@@ -31,6 +31,7 @@ async function removeRow(row) {
           <th style="width: 12rem">Label</th>
           <th style="width: 12rem">default</th>
           <th style="width: 4rem">Unic</th>
+          <th style="width: 4rem" :title="t('feed_slug_from_help')">{{ t('feed_slug_from') }}</th>
           <th style="width: 5rem">{{ t('feed_show_on_list') }}</th>
           <th>validation</th>
           <th style="width: 6rem"></th>
@@ -39,11 +40,22 @@ async function removeRow(row) {
       <tbody>
         <tr v-for="row in store.rows.string" :key="row.column">
           <td>
-            <InputText v-model="row.code" class="form-control form-control-sm" :disabled="store.itemsCount > 0" />
+            <InputText v-model="row.code" class="form-control form-control-sm" :disabled="store.codeLocked(row)" />
           </td>
           <td><InputText v-model="row.label" class="form-control form-control-sm" /></td>
           <td><InputText v-model="row.default" class="form-control form-control-sm" /></td>
           <td class="text-center"><input type="checkbox" v-model="row.unique" /></td>
+          <td class="text-center">
+            <!-- источник один на ленту, поэтому радио. Поле без code выбрать
+                 нельзя: в схему уезжает именно оно -->
+            <input
+              type="radio"
+              name="slugFrom"
+              :disabled="row.code.trim() === ''"
+              :checked="store.slugColumn === row.column"
+              @click="store.setSlugFrom(row.column)"
+            />
+          </td>
           <td class="text-center"><input type="checkbox" v-model="row.showOnList" /></td>
           <td><InputText v-model="row.validation" class="form-control form-control-sm" /></td>
           <td class="text-muted small text-nowrap">

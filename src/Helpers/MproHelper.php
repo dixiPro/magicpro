@@ -1,6 +1,8 @@
 <?php
 
 use MagicProDatabaseModels\Article;
+use MagicProDatabaseModels\FeedItem;
+use MagicProSrc\Lenta\FeedText;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
@@ -21,7 +23,13 @@ class MproHelper
     // Documentation page rendered to html. The markdown source lives in the package
     // docs directory, one subdirectory per language: docs/ru/routing.md. Without an
     // explicit language the one from the MagicPro settings is used.
-    // Both parts of the path are validated, they come from route parameters.
+    //
+    // The name may point into a subdirectory — getDoc('main/use') reads
+    // docs/ru/main/use.md — because the documentation is kept one folder per
+    // module. Slashes are allowed only between segments of letters, digits,
+    // hyphen and underscore, so a dot cannot appear and ../ cannot be built:
+    // both parts of the path come from route parameters.
+    //
     // With $renderHtml = false the markdown source is returned untouched, which is
     // what a download or a translation job needs.
     public static function getDoc(string $name, string $lang = '', bool $renderHtml = true): string
@@ -30,7 +38,7 @@ class MproHelper
             $lang = (string) (MagicGlobals::$INI['LANGUAGE'] ?? 'ru');
         }
 
-        if (!preg_match('/^[A-Za-z0-9_-]+$/', $name) || !preg_match('/^[A-Za-z-]+$/', $lang)) {
+        if (!preg_match('#^[A-Za-z0-9_-]+(/[A-Za-z0-9_-]+)*$#', $name) || !preg_match('/^[A-Za-z-]+$/', $lang)) {
             self::addLog('doc', ['error' => 'invalid name or lang', 'name' => $name, 'lang' => $lang]);
             return '';
         }
@@ -243,6 +251,16 @@ class MproHelper
         return $text;
     }
 
+    // Текст записи ленты, готовый к выводу: подстановки #поле# и теги magic-
+    // компонентов внутри текста. Работа в MagicProSrc\Lenta\FeedText, здесь
+    // только вход для блейдов — там пишут без use и коротко:
+    //
+    //   {!! MproHelper::feedText($item, 'body') !!}
+    public static function feedText(FeedItem $item, string $code): string
+    {
+        return FeedText::render($item, $code);
+    }
+
     // Markdown of a feed record rendered to html. Unlike getDoc, the source here
     // is written by an operator, so raw html inside it is stripped rather than
     // passed through, and links that carry javascript are dropped.
@@ -258,6 +276,86 @@ class MproHelper
             'html_input'         => 'strip',
             'allow_unsafe_links' => false,
         ]);
+    }
+
+    // Строка -> кусок URL: латиница в нижнем регистре, цифры и дефис.
+    //
+    // Таблица закрытая: что в ней есть, то и переводится, остальное выбрасывается.
+    // Так адрес не зависит от того, какие ещё символы придут — иероглифы, эмодзи,
+    // невидимые пробелы: их просто не будет в результате.
+    //
+    // Пробелы, дефисы и подчёркивания сводятся к одному дефису: подчёркивание в
+    // адресе допустимо, но разделитель слов должен быть один.
+    //
+    // Обрезка идёт по границе слова, чтобы адрес не обрывался посреди слова, и
+    // держит длину заведомо ниже 255 символов колонки. $limit = 0 — не резать.
+    private const TRANSLIT_URL = [
+        'А' => 'a', 'Б' => 'b', 'В' => 'v', 'Г' => 'g', 'Д' => 'd', 'Е' => 'e',
+        'Ё' => 'yo', 'Ж' => 'zh', 'З' => 'z', 'И' => 'i', 'Й' => 'y', 'К' => 'k',
+        'Л' => 'l', 'М' => 'm', 'Н' => 'n', 'О' => 'o', 'П' => 'p', 'Р' => 'r',
+        'С' => 's', 'Т' => 't', 'У' => 'u', 'Ф' => 'f', 'Х' => 'h', 'Ц' => 'c',
+        'Ч' => 'ch', 'Ш' => 'sh', 'Щ' => 'sch', 'Ъ' => '', 'Ы' => 'y', 'Ь' => '',
+        'Э' => 'e', 'Ю' => 'yu', 'Я' => 'ya',
+        'Ђ' => 'dj', 'Ј' => 'j', 'Љ' => 'lj', 'Њ' => 'nj', 'Ћ' => 'c', 'Џ' => 'dz',
+        'Č' => 'c', 'Ć' => 'c', 'Đ' => 'dj', 'Š' => 's', 'Ž' => 'z',
+
+        'а' => 'a', 'б' => 'b', 'в' => 'v', 'г' => 'g', 'д' => 'd', 'е' => 'e',
+        'ё' => 'yo', 'ж' => 'zh', 'з' => 'z', 'и' => 'i', 'й' => 'y', 'к' => 'k',
+        'л' => 'l', 'м' => 'm', 'н' => 'n', 'о' => 'o', 'п' => 'p', 'р' => 'r',
+        'с' => 's', 'т' => 't', 'у' => 'u', 'ф' => 'f', 'х' => 'h', 'ц' => 'c',
+        'ч' => 'ch', 'ш' => 'sh', 'щ' => 'sch', 'ъ' => '', 'ы' => 'y', 'ь' => '',
+        'э' => 'e', 'ю' => 'yu', 'я' => 'ya',
+        'ђ' => 'dj', 'ј' => 'j', 'љ' => 'lj', 'њ' => 'nj', 'ћ' => 'c', 'џ' => 'dz',
+        'č' => 'c', 'ć' => 'c', 'đ' => 'dj', 'š' => 's', 'ž' => 'z',
+
+        'A' => 'a', 'B' => 'b', 'C' => 'c', 'D' => 'd', 'E' => 'e', 'F' => 'f',
+        'G' => 'g', 'H' => 'h', 'I' => 'i', 'J' => 'j', 'K' => 'k', 'L' => 'l',
+        'M' => 'm', 'N' => 'n', 'O' => 'o', 'P' => 'p', 'Q' => 'q', 'R' => 'r',
+        'S' => 's', 'T' => 't', 'U' => 'u', 'V' => 'v', 'W' => 'w', 'X' => 'x',
+        'Y' => 'y', 'Z' => 'z',
+
+        'a' => 'a', 'b' => 'b', 'c' => 'c', 'd' => 'd', 'e' => 'e', 'f' => 'f',
+        'g' => 'g', 'h' => 'h', 'i' => 'i', 'j' => 'j', 'k' => 'k', 'l' => 'l',
+        'm' => 'm', 'n' => 'n', 'o' => 'o', 'p' => 'p', 'q' => 'q', 'r' => 'r',
+        's' => 's', 't' => 't', 'u' => 'u', 'v' => 'v', 'w' => 'w', 'x' => 'x',
+        'y' => 'y', 'z' => 'z',
+
+        '0' => '0', '1' => '1', '2' => '2', '3' => '3', '4' => '4',
+        '5' => '5', '6' => '6', '7' => '7', '8' => '8', '9' => '9',
+
+        ' ' => '-', '_' => '-', '-' => '-', '–' => '-', '—' => '-',
+    ];
+
+    public static function translitForUrl(string $text, int $limit = 200): string
+    {
+        // «й» может прийти как «и» с отдельным значком: в таком виде таблица его
+        // не найдёт и буква пропадёт из адреса
+        if (class_exists(\Normalizer::class)) {
+            $text = \Normalizer::normalize($text, \Normalizer::FORM_C) ?: $text;
+        }
+
+        $result = '';
+
+        foreach (preg_split('//u', $text, -1, PREG_SPLIT_NO_EMPTY) ?: [] as $char) {
+            $result .= self::TRANSLIT_URL[$char] ?? '';
+        }
+
+        $result = trim((string) preg_replace('/-+/', '-', $result), '-');
+
+        if ($limit > 0 && mb_strlen($result) > $limit) {
+            $result = mb_substr($result, 0, $limit);
+
+            // хвост до последнего дефиса — обрубок слова, он в адресе не нужен
+            $lastDash = mb_strrpos($result, '-');
+
+            if ($lastDash !== false) {
+                $result = mb_substr($result, 0, $lastDash);
+            }
+
+            $result = trim($result, '-');
+        }
+
+        return $result;
     }
 
     //

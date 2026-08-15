@@ -46,16 +46,6 @@
         <pre id="result"></pre>
     </div>
 
-    @if (session('regenerateArticles'))
-        <div class="alert alert-info">
-            @foreach (session('regenerateArticles', []) as $item)
-                <div>
-
-                </div>
-            @endforeach
-        </div>
-    @endif
-
     <div class=""><a href="/a_dmin/phpinfo">phpinfo</a></div>
 
     <div id="setup" class="my-3"></div>

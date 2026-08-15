@@ -222,27 +222,34 @@ Development is active and MagicPro currently targets **Laravel 13**.
 
 ## ⚙️ Installation
 
-Install Laravel — see [Cookbook.md](Cookbook.md#laravel).
-
 ```bash
+composer create-project laravel/laravel myapp
+
+cd myapp
+
+# config laravel [Cookbook.md](Cookbook.md#laravel).
+
 composer require dixipro/magicpro
 
 php artisan migrate
+
+php artisan storage:link
+
+php artisan magicpro:admin
 
 (sudo crontab -u www-data -l 2>/dev/null; echo "* * * * * cd $(pwd) && /usr/bin/php artisan schedule:run >> /dev/null 2>&1") | sort -u | sudo crontab -u www-data -
 ```
 
 The last command adds Laravel Scheduler to the `www-data` crontab using the current project directory automatically.
 
-Then open:
-
-```text
-/a_dmin
-```
-
 MagicPro creates the required directories, publishes assets, links storage and reports anything still missing.
 
 For development setup see [Cookbook.md](Cookbook.md#magicpro).
+
+### Mail configuration
+
+Configure mail settings in the main `.env_mpro` file.
+Set the SMTP or Amazon SES credentials according to your mail provider.
 
 ## 📜 Changelog
 

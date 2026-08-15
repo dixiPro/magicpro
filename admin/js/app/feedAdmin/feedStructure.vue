@@ -90,6 +90,12 @@ onUnmounted(() => {
     <button v-if="store.dirty" class="btn btn-sm btn-primary" @click="saveSchema()">
       {{ t('feed_save_schema') }} <span class="small opacity-75">Ctrl+S</span>
     </button>
+
+    <!-- схема как она лежит на сервере: смотреть глазами, править нельзя -->
+    <details class="mt-4">
+      <summary class="text-muted small">schema json</summary>
+      <pre class="small bg-light border rounded p-2 mt-2" style="max-width: 60rem">{{ JSON.stringify(store.schema, null, 2) }}</pre>
+    </details>
   </div>
 </template>
 

@@ -113,12 +113,14 @@ class Feed extends Model
     protected static function booted(): void
     {
         static::saved(function (): void {
-            self::$schemaMaps = [];
+            self::$schemaMaps   = [];
+            self::$slugColumns  = [];
             self::$schemaGeneration++;
         });
 
         static::deleted(function (): void {
-            self::$schemaMaps = [];
+            self::$schemaMaps   = [];
+            self::$slugColumns  = [];
             self::$schemaGeneration++;
         });
     }
@@ -133,6 +135,43 @@ class Feed extends Model
         }
 
         return self::$schemaMaps[$feedId];
+    }
+
+    /**
+     * Колонки-источники slug, по id ленты. Живут рядом со схемами и сбрасываются
+     * вместе с ними: `slugFrom` лежит в той же json-схеме.
+     *
+     * @var array<int, string|null>
+     */
+    protected static array $slugColumns = [];
+
+    /**
+     * Колонка, из которой делается slug записи, или null — тогда его вводят
+     * руками.
+     *
+     * В схеме лежит `code` поля, а не колонка: так его видно глазами. Пока в
+     * ленте нет записей, `code` разрешено менять, и админка переписывает
+     * `slugFrom` тем же сохранением схемы.
+     */
+    public function slugColumn(): ?string
+    {
+        $code = trim((string) ($this->schema['slugFrom'] ?? ''));
+
+        if ($code === '') {
+            return null;
+        }
+
+        return $this->schemaMap()[0][$code] ?? null;
+    }
+
+    /** Источник slug по id ленты, прочитанный не больше одного раза. */
+    public static function slugColumnOf(int $feedId): ?string
+    {
+        if (! array_key_exists($feedId, self::$slugColumns)) {
+            self::$slugColumns[$feedId] = static::find($feedId)?->slugColumn();
+        }
+
+        return self::$slugColumns[$feedId];
     }
 
     public function schemaMap(): array

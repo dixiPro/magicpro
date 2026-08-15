@@ -62,22 +62,6 @@ class MagicGlobals
 
 
 
-        // 🔐 Описание директорий и их прав (для проверки и отладки)
-        defined('MAGIC_FILE_ROLES') || define('MAGIC_FILE_ROLES', [
-            [
-                'value' => MAGIC_VIEW_DIR,
-                'desc'  => 'Directory for view'
-            ],
-            [
-                'value' => MAGIC_CONTROLLER_DIR,
-                'desc'  => 'Directory for controllers'
-            ],
-            [
-                'value' => public_path(MagicGlobals::$INI['PUBLIC_UPLOAD_DIR']),
-                'desc'  => 'Directory for public'
-            ],
-        ]);
-
         defined('ART_NAME_404') || define('ART_NAME_404', 'error404');
     }
 

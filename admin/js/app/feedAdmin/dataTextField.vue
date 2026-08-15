@@ -1,8 +1,9 @@
 <script setup>
 import { ref, watch, onMounted, onBeforeUnmount, useId } from 'vue';
 import AceFileEditor from '../CommonCom/AceFileEditor.vue';
+import { formatBlade } from '../ArtEditor/component/formatBlade.js';
 import AceMdEditor from '../CommonCom/AceMdEditor.vue';
-import Editor from 'primevue/editor';
+import htmlEditor from './htmlEditor.vue';
 import { apiFeed } from './api.js';
 
 import { useI18n } from 'vue-i18n';
@@ -68,6 +69,16 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => clearTimeout(timer));
+
+/**
+ * Причесать разметку в Ace — тем же форматированием, что и в редакторе статей.
+ *
+ * Кривой html оно не портит: prettier не разобрал — возвращается исходный текст,
+ * а сообщение показывает сам formatBlade.
+ */
+async function format() {
+  value.value = await formatBlade(value.value, 2);
+}
 </script>
 
 <template>
@@ -86,26 +97,37 @@ onBeforeUnmount(() => clearTimeout(timer));
         <button
           type="button"
           class="btn"
+          :class="mode === 'wy' ? 'btn-primary' : 'btn-outline-primary'"
+          @click="mode = 'wy'"
+        >
+          WYSIWYG
+        </button>
+        <button
+          type="button"
+          class="btn"
           :class="mode === 'ace' ? 'btn-primary' : 'btn-outline-primary'"
           @click="mode = 'ace'"
         >
           ace
         </button>
-        <button
-          type="button"
-          class="btn"
-          :class="mode === 'wy' ? 'btn-primary' : 'btn-outline-primary'"
-          @click="mode = 'wy'"
-        >
-          Wy
-        </button>
       </div>
 
-      <div v-if="mode === 'result'" class="border rounded p-2" v-html="value"></div>
+      <!-- форматирование только в Ace: в остальных вкладках правится не текст -->
+      <button
+        v-if="mode === 'ace'"
+        type="button"
+        class="btn btn-sm btn-outline-secondary ms-2"
+        :title="t('format_code')"
+        @click="format()"
+      >
+        <i class="fas fa-indent"></i>
+      </button>
+
+      <div v-if="mode === 'result'" class="border rounded p-2 preview" v-html="value"></div>
       <div v-else-if="mode === 'ace'" class="border rounded" style="height: 20rem">
         <AceFileEditor v-model="value" file-extention="html" theme="chrome" wrap />
       </div>
-      <Editor v-else v-model="value" editor-style="height: 20rem" />
+      <htmlEditor v-else v-model="value" />
     </template>
 
     <!-- markdown: редактор, под ним результат -->
@@ -119,7 +141,7 @@ onBeforeUnmount(() => clearTimeout(timer));
         <AceMdEditor v-model="value" theme="chrome" />
       </div>
 
-      <div v-if="showPreview" class="border rounded p-2 mt-1 bg-white" v-html="preview"></div>
+      <div v-if="showPreview" class="border rounded p-2 mt-1 bg-white preview" v-html="preview"></div>
     </template>
 
     <!-- plain -->
@@ -127,4 +149,23 @@ onBeforeUnmount(() => clearTimeout(timer));
   </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+/*
+ * Текст оператора приходит с неразрывными пробелами: визуальный редактор ставит
+ * их сам. Обычных пробелов в такой строке может не быть вовсе, переносить её
+ * негде, и она уезжает за рамку блока. anywhere разрешает разрыв в любом месте —
+ * но только когда иначе строка не помещается.
+ *
+ * :deep нужен потому, что содержимое приходит через v-html и области видимости
+ * этого компонента не знает.
+ */
+.preview,
+.preview :deep(*) {
+  overflow-wrap: anywhere;
+}
+
+/* широкое остаётся широким: таблица или картинка получают свою прокрутку */
+.preview {
+  overflow-x: auto;
+}
+</style>

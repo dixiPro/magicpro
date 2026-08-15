@@ -89,11 +89,6 @@ Route::get('/a_dmin/api/clearCache', [AdminController::class, 'clearCache'])
     ->middleware('magic.auth')
     ->withoutMiddleware([$csrf])->name('magic.cleatCahe');
 
-// тест записи    
-Route::get('/a_dmin/api/testWrite', [AdminController::class, 'testWrite'])
-    ->middleware('magic.auth')
-    ->withoutMiddleware([$csrf])->name('magic.testWrite');
-
 // phpInfo
 Route::get('/a_dmin/phpinfo', function () {
     phpinfo();

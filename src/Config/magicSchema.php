@@ -6,7 +6,7 @@ return [
         'label'   => 'language',
         'type'    => 'list',
         'values'  => ['ru', 'en'],
-        'default' => 'ru',
+        'default' => 'en',
         'mutable' => true,
     ],
 

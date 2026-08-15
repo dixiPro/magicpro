@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
 import { apiFeed } from './api.js';
 import { formatDate } from '../CommonCom/formatDate.js';
 import InputText from 'primevue/inputtext';
@@ -19,6 +19,10 @@ const feed = ref({ code: '', title: '', group_id: null, id: null });
 const fields = ref([]); // поля схемы: код, подпись, тип, варианты для связи
 const values = ref({}); // значения по логическим именам
 const visible = ref(false);
+const slug = ref(''); // адрес записи, системная колонка
+
+// лента считает slug сама — править его руками нечем
+const slugAuto = computed(() => (feed.value.schema?.slugFrom ?? '') !== '');
 
 // тип вложенного поля __data превращаем в тот же набор, что у слотов
 function dataTypeOf(type) {
@@ -68,6 +72,7 @@ async function load() {
     const item = await apiFeed({ command: 'itemGet', id: itemId.value });
 
     visible.value = item.visible;
+    slug.value = item.slug ?? '';
 
     feed.value = await apiFeed({ command: 'feedGet', id: item.feedId });
 
@@ -125,8 +130,36 @@ async function load() {
         type === 'datetime-local' ? toInput(item.fields[field.code]) : item.fields[field.code];
     }
 
-    fields.value = list;
+    fields.value = inFormOrder(list);
   } catch (error) {}
+}
+
+/**
+ * Поля в порядке, заданном на экране ленты (`orderForm` в схеме).
+ *
+ * Имя поля там же, что и в порядке колонок списка: у слота физическая колонка, у
+ * поля `__data` его code. Чего в порядке нет — в конец, как пришло из схемы:
+ * новое поле должно появиться в форме само, а не ждать, пока его перетащат.
+ *
+ * Порядок не задан — форма идёт как схема, то есть как было раньше.
+ */
+function inFormOrder(list) {
+  const order = feed.value.schema?.orderForm ?? [];
+
+  if (!Array.isArray(order) || order.length === 0) return list;
+
+  const left = new Map(list.map((field) => [field.column === '__data' ? field.code : field.column, field]));
+
+  const sorted = [];
+
+  for (const name of order) {
+    if (left.has(name)) {
+      sorted.push(left.get(name));
+      left.delete(name);
+    }
+  }
+
+  return [...sorted, ...left.values()];
 }
 
 async function save() {
@@ -144,6 +177,7 @@ async function save() {
       id: itemId.value,
       fields: payload,
       visible: visible.value,
+      slug: slug.value,
     });
 
     document.showToast(t('saved'));
@@ -151,10 +185,34 @@ async function save() {
   } catch (error) {}
 }
 
+/**
+ * Ctrl+S сохраняет запись.
+ *
+ * Ловим на окне и в фазе перехвата: фокус чаще всего стоит в редакторе текста, а
+ * он гасит событие у себя. Своё сохранение страницы браузером при этом
+ * перехватывается — в админке оно бессмысленно.
+ *
+ * Клавиша сравнивается по code, а не по key: при русской раскладке key приходит
+ * буквой «ы».
+ */
+function onKeydown(event) {
+  if (!(event.ctrlKey || event.metaKey) || event.code !== 'KeyS') return;
+
+  event.preventDefault();
+
+  save();
+}
+
 watch(itemId, () => load());
 
 onMounted(() => {
   load();
+
+  window.addEventListener('keydown', onKeydown, { capture: true });
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onKeydown, { capture: true });
 });
 </script>
 
@@ -171,9 +229,31 @@ onMounted(() => {
       <span class="text-muted small">id {{ itemId }}</span>
     </h1>
 
-    <div style="max-width: 50rem">
+    <div style="max-width: 100rem">
+      <!-- адрес записи стоит первым: он про запись целиком, а не про её поля -->
+      <div class="row mb-2">
+        <label class="col-3 col-form-label col-form-label-sm">{{ t('feed_slug') }}</label>
+        <div class="col-9">
+          <InputText
+            v-model="slug"
+            :readonly="slugAuto"
+            class="form-control form-control-sm"
+            :class="{ 'bg-body-secondary': slugAuto }"
+          />
+        </div>
+      </div>
+
+      <div class="row mb-2">
+        <label class="col-3 col-form-label col-form-label-sm">{{ t('feed_visible') }}</label>
+        <div class="col-9">
+          <div class="form-check pt-1">
+            <input type="checkbox" v-model="visible" class="form-check-input" />
+          </div>
+        </div>
+      </div>
+
       <div v-for="field in fields" :key="field.code" class="row mb-2">
-        <label class="col-4 col-form-label col-form-label-sm">
+        <label class="col-3 col-form-label col-form-label-sm">
           {{ field.label }}
           <span class="text-muted small d-block">{{ field.code }}</span>
 
@@ -191,7 +271,7 @@ onMounted(() => {
             />
           </a>
         </label>
-        <div class="col-8">
+        <div class="col-9">
           <select v-if="field.type === 'link'" v-model="values[field.code]" class="form-select form-select-sm">
             <option :value="null">—</option>
             <option v-for="option in field.options" :key="option.id" :value="option.id">
@@ -230,17 +310,6 @@ onMounted(() => {
             v-model="values[field.code]"
             class="form-control form-control-sm"
           />
-        </div>
-      </div>
-
-      <hr />
-
-      <div class="row mb-3">
-        <label class="col-4 col-form-label col-form-label-sm">{{ t('feed_visible') }}</label>
-        <div class="col-8">
-          <div class="form-check pt-1">
-            <input type="checkbox" v-model="visible" class="form-check-input" />
-          </div>
         </div>
       </div>
 
