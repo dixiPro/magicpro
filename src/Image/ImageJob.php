@@ -11,7 +11,8 @@ use MagicProSrc\Config\MagicGlobals;
  * Всё, что вычисляется, вычисляется один раз и лежит в полях. Между методами
  * ходит сам объект, а не шесть аргументов.
  *
- * Снаружи два статических входа: make() — сделать, clear() — снести кеш исходника.
+ * Снаружи три статических входа: make() — сделать, clear() — снести кеш одного
+ * исходника, clearAll() — снести весь кеш.
  * Исключений не бросает: не вышло — заглушка и текст в errorMsg.
  */
 class ImageJob
@@ -89,6 +90,45 @@ class ImageJob
         }
 
         return $count;
+    }
+
+    /**
+     * Снести весь кеш ресайза: файлы и опустевшие подпапки. Сама папка кеша
+     * остаётся — её создаёт установка, а не ресайз.
+     *
+     * Потеря не страшна: каждый файл делается заново при первом же обращении.
+     */
+    public static function clearAll(): array
+    {
+        $root  = storage_path('app/public/' . self::DIR);
+        $files = 0;
+        $bytes = 0;
+
+        if (! is_dir($root)) {
+            return ['files' => $files, 'bytes' => $bytes];
+        }
+
+        $walk = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::CHILD_FIRST
+        );
+
+        foreach ($walk as $item) {
+            if ($item->isDir()) {
+                @rmdir($item->getPathname());
+
+                continue;
+            }
+
+            $size = (int) @filesize($item->getPathname());
+
+            if (@unlink($item->getPathname())) {
+                $files++;
+                $bytes += $size;
+            }
+        }
+
+        return ['files' => $files, 'bytes' => $bytes];
     }
 
     /** Второй шаг: то, что зависит от оси, размера и формата. */
@@ -183,10 +223,12 @@ class ImageJob
         }
 
         return [
-            'url' => $this->errorMsg === ''
-                ? $this->url
-                : 'data:image/svg+xml;base64,' . base64_encode((string) self::setting('IMAGE_ERROR', '')),
-            'path'     => $this->errorMsg === '' ? $this->path : '',
+            // Путь от public, со слэшем и со storage: он же в src, он же
+            // обратно в хелперы через public_path(). Внутреннее $this->path
+            // считается от корня диска и наружу не идёт.
+            //
+            // Не вышло — пусто. Причина в errorMsg.
+            'path'     => $this->errorMsg === '' ? $this->url : '',
             'width'    => $this->width,
             'height'   => $this->height,
             'size'     => $this->bytes,

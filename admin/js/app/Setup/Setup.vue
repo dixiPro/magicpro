@@ -3,6 +3,7 @@ import { ref, computed, isProxy, isReactive, onMounted, onUnmounted, nextTick, w
 import { apiSetup, apiCall } from '../apiCall';
 
 import TosatConfirm from '../CommonCom/ToastConfirm.vue';
+import LoadingButton from '../CommonCom/LoadingButton.vue';
 
 import EditString from './component/EditString.vue';
 import EditBoolean from './component/EditBoolean.vue';
@@ -94,6 +95,22 @@ async function saveParams() {
   await getIniParams();
 }
 
+/**
+ * Уменьшенные копии живут в storage и делаются заново при первом обращении,
+ * поэтому чистить их можно смело: страница после этого просто соберётся
+ * медленнее один раз.
+ */
+async function clearImageCache() {
+  if (!(await document.confirmDialog(t('image_cache_clear')))) {
+    return;
+  }
+  const res = await apiSetup({
+    command: 'clearImageCache',
+  });
+
+  document.showToast(`${t('image_cache_cleared')}: ${res.files} (${Math.round(res.bytes / 1024)} KB)`);
+}
+
 async function restoreParams() {
   if (!(await document.confirmDialog(t('reset')))) {
     return;
@@ -148,6 +165,18 @@ async function restoreParams() {
       </div>
       <div class="col-md-3 text-end">
         <button class="btn btn-sm btn-danger" @click="restoreParams">{{ t('reset') }}</button>
+      </div>
+    </div>
+
+    <div class="row mt-5">
+      <div class="col-3">
+        <div><strong>{{ t('image_cache') }}</strong></div>
+        <div style="line-height: 1">
+          <small>{{ t('image_cache_help') }}</small>
+        </div>
+      </div>
+      <div class="col-md-5">
+        <LoadingButton :action="clearImageCache">{{ t('image_cache_clear') }}</LoadingButton>
       </div>
     </div>
   </div>

@@ -113,15 +113,15 @@ $categories = Feed::where('code', 'categories')->first()
 прыгает при загрузке:
 
 ```blade
-<img src="{{ $item->img1['url'] ?? '' }}"
+<img src="{{ $item->img1['path'] ?? '' }}"
      alt="{{ $item->img1['alt'] ?? '' }}"
      width="{{ $item->img1['x'] ?? '' }}"
      height="{{ $item->img1['y'] ?? '' }}">
 ```
 
-Ключи: `url`, `path`, `alt`, `x`, `y`, `mime`, `size`. `path` — тот же адрес без
-хоста, `/storage/magicFeed/19/1.png`: его понимает ресайзер. `alt` пишет оператор
-в форме, остальное — загрузка.
+Ключи: `path`, `alt`, `x`, `y`, `mime`, `size`. `path` — адрес без хоста,
+`/storage/magicFeed/19/1.png`: он же в `src`, он же в `public_path()` для
+ресайза. `alt` пишет оператор в форме, остальное — загрузка.
 
 Кадрирует оператор в браузере, при загрузке. Обрезанный кусок уходит на сервер
 голыми пикселями, а в рабочий формат его кодирует сервер — тот же, что стоит в
@@ -133,7 +133,7 @@ $categories = Feed::where('code', 'categories')->first()
 В тексте записи можно ставить подстановки и теги magic-компонентов:
 
 ```html
-<x-magic::resize_abs_img :file="#img1.path#" width="400" />
+<x-magic::img :img="#img1#" width="400" mobile="2" />
 <iframe src="#urlYoutube#"></iframe>
 ```
 
@@ -149,6 +149,8 @@ $categories = Feed::where('code', 'categories')->first()
 `#img1.alt#` даёт пусто.
 
 Текст без меток и тегов хелпера не требует, хватит `{!! $item->body !!}`.
+
+Какие компоненты есть и что они принимают — `docs/ru/components/use.md`.
 
 ### Создание и правка
 

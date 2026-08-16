@@ -629,8 +629,8 @@ onMounted(() => {
           <template #body="{ data }">
             <template v-if="column.type === 'image'">
               <img
-                v-if="data.fields[column.code]?.url"
-                :src="data.fields[column.code].url"
+                v-if="data.fields[column.code]?.path"
+                :src="data.fields[column.code].path"
                 :alt="data.fields[column.code].alt ?? ''"
                 class="border rounded"
                 style="max-height: 2.5rem; max-width: 4rem"

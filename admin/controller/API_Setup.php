@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use MagicProSrc\Config\MagicGlobals; // global constants
+use MagicProSrc\Image\ImageJob;
 use MagicProSrc\MagicFile;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
@@ -31,6 +32,7 @@ class API_Setup extends Controller
                 'processUrl'         => ['name' => 'processUrl'],
                 'startHtmlCache'     => ['name' => 'startHtmlCache'],
                 'restoreParams'      => ['name' => 'restoreParams'],
+                'clearImageCache'    => ['name' => 'clearImageCache'],
 
 
             ];
@@ -219,6 +221,12 @@ class API_Setup extends Controller
         }
 
         return  $schema;
+    }
+
+    // 🖼 снести кеш ресайза целиком: файлы сделаются заново при первом запросе
+    private function clearImageCache(): array
+    {
+        return ImageJob::clearAll();
     }
 
     // save parameters

@@ -57,7 +57,7 @@ async function remove() {
 
 <template>
   <div>
-    <div v-if="value?.url" class="small text-muted mb-2">
+    <div v-if="value?.path" class="small text-muted mb-2">
       {{ value.mime }} · {{ value.x }} × {{ value.y }} · {{ size }}
     </div>
 
@@ -71,13 +71,13 @@ async function remove() {
       @uploaded="value = $event"
     />
 
-    <button v-if="value?.url" class="btn btn-sm btn-outline-danger" @click="remove()">
+    <button v-if="value?.path" class="btn btn-sm btn-outline-danger" @click="remove()">
       {{ t('delete') }}
     </button>
 
     <input
       v-model="alt"
-      :disabled="!value?.url"
+      :disabled="!value?.path"
       :placeholder="'alt'"
       class="form-control form-control-sm mt-2"
     />

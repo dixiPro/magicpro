@@ -39,7 +39,7 @@ function cleatStatistic() {
 const storageDirStatus = ref(false);
 const publicDirStatus = ref(false);
 
-import LoadingButton from './component/LoadingButton.vue';
+import LoadingButton from '../CommonCom/LoadingButton.vue';
 
 onMounted(() => {
   console.log('startCrawler');

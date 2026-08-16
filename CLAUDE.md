@@ -20,6 +20,7 @@ touch, how to check the work, how to answer. Open it first.
 | установка и обновление | `docs/ru/main/install.md` |
 | ленты: вывод на сайте, схема, слоты, API | `docs/ru/feed/` |
 | картинки: ресайз на лету, кеш, форматы, кроппер | `docs/ru/image/` |
+| блейд-компоненты сайта: картинка, пагинатор | `docs/ru/components/` |
 | почта: отправка, очередь, SMTP и SES | `docs/ru/mail/` |
 | `MproHelper`: дерево статей, логи, шифрование, тексты | `docs/ru/helpers/` |
 | MCP-сервер и его инструменты | `docs/ru/mcp/` |

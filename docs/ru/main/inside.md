@@ -173,8 +173,8 @@ Blade::componentNamespace('MagicProControllers', 'magic'); // <x-magic::Имя /
             'label'   => 'image_max_size',
             'type'    => 'integer',
             'min'     => 10,
-            'max'     => 1000,
-            'default' => 1000,
+            'max'     => 10000,
+            'default' => 10000,
             'mutable' => true,
         ],
         'RESIZE_FORMAT' => [
@@ -194,7 +194,7 @@ Blade::componentNamespace('MagicProControllers', 'magic'); // <x-magic::Имя /
 MagicGlobals::$INI['RESIZE']['MAX_RESIZE'];
 
 // или весь набор сразу
-$resize = MagicGlobals::$INI['RESIZE'];   // ['MAX_RESIZE' => 1000, 'RESIZE_FORMAT' => 'webp', …]
+$resize = MagicGlobals::$INI['RESIZE'];   // ['MAX_RESIZE' => 10000, 'RESIZE_FORMAT' => 'webp', …]
 ```
 
 Вложенность одноуровневая: группа внутри группы не предусмотрена. Умолчания,

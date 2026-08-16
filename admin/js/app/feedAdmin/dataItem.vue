@@ -259,12 +259,12 @@ onBeforeUnmount(() => {
 
           <!-- изображение показываем тут же, у подписи: справа только кнопки и alt -->
           <a
-            v-if="field.type === 'image' && values[field.code]?.url"
-            :href="values[field.code].url"
+            v-if="field.type === 'image' && values[field.code]?.path"
+            :href="values[field.code].path"
             target="_blank"
           >
             <img
-              :src="values[field.code].url"
+              :src="values[field.code].path"
               :alt="values[field.code].alt ?? ''"
               class="border rounded d-block mt-1"
               style="max-height: 6rem; max-width: 100%"

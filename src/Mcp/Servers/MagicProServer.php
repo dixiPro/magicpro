@@ -4,6 +4,8 @@ namespace MagicProSrc\Mcp\Servers;
 
 use Laravel\Mcp\Server;
 use MagicProSrc\Mcp\Tools\CreateArticleTool;
+use MagicProSrc\Mcp\Tools\FeedApiTool;
+use MagicProSrc\Mcp\Tools\FeedApiWriteTool;
 use MagicProSrc\Mcp\Tools\GetArticleByNameTool;
 use MagicProSrc\Mcp\Tools\GetArticleChildrenTool;
 use MagicProSrc\Mcp\Tools\GetArticleParentsTool;
@@ -37,6 +39,10 @@ class MagicProServer extends Server
         CreateArticleTool::class,
         SaveArticleTool::class,
         MoveArticleTool::class,
+
+        // ленты: чтение и запись, по инструменту на каждое
+        FeedApiTool::class,
+        FeedApiWriteTool::class,
 
         // файлы
         ReadFileTool::class,

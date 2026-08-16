@@ -989,17 +989,21 @@ class API_Feeds extends AbstractFeedApi
         $data = $item->__data ?? [];
 
         $data[$code] = array_merge($data[$code] ?? [], [
-            'url'  => $media->getUrl(),
-            // Тот же адрес без хоста: `/storage/magicFeed/19/1.png`. Его можно
-            // поставить в src, и его же понимает ресайзер — он ждёт путь от
-            // public. Хост в путь не входит, поэтому переезд на другой домен
-            // ничего не ломает.
+            // Один путь на все нужды: `/storage/magicFeed/19/1.png`. Его ставят
+            // в src, и его же берут хелперы через public_path(). Хост в него не
+            // входит, поэтому переезд на другой домен ничего не ломает — по той
+            // же причине полного адреса здесь и нет.
             'path' => parse_url($media->getUrl(), PHP_URL_PATH),
             'size' => $media->size,
             'mime' => $media->mime_type,
             'x'    => $width,
             'y'    => $height,
         ]);
+
+        // Ключ `url` писался здесь раньше и остался в json у старых картинок.
+        // array_merge бережёт то, что ввёл оператор, и заодно тянул бы этот
+        // остаток дальше — гасим его при каждой загрузке.
+        unset($data[$code]['url']);
 
         $item->__data = $data;
         $item->save();
@@ -1071,17 +1075,21 @@ class API_Feeds extends AbstractFeedApi
         $data = $item->__data ?? [];
 
         $data[$code] = array_merge($data[$code] ?? [], [
-            'url'  => $media->getUrl(),
-            // Тот же адрес без хоста: `/storage/magicFeed/19/1.png`. Его можно
-            // поставить в src, и его же понимает ресайзер — он ждёт путь от
-            // public. Хост в путь не входит, поэтому переезд на другой домен
-            // ничего не ломает.
+            // Один путь на все нужды: `/storage/magicFeed/19/1.png`. Его ставят
+            // в src, и его же берут хелперы через public_path(). Хост в него не
+            // входит, поэтому переезд на другой домен ничего не ломает — по той
+            // же причине полного адреса здесь и нет.
             'path' => parse_url($media->getUrl(), PHP_URL_PATH),
             'size' => $media->size,
             'mime' => $media->mime_type,
             'x'    => $width,
             'y'    => $height,
         ]);
+
+        // Ключ `url` писался здесь раньше и остался в json у старых картинок.
+        // array_merge бережёт то, что ввёл оператор, и заодно тянул бы этот
+        // остаток дальше — гасим его при каждой загрузке.
+        unset($data[$code]['url']);
 
         $item->__data = $data;
         $item->save();

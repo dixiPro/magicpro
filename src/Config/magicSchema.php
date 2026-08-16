@@ -81,8 +81,8 @@ return [
                 'label'   => 'image_max_size',
                 'type'    => 'integer',
                 'min'     => 10,
-                'max'     => 1000,
-                'default' => 1000,
+                'max'     => 10000,
+                'default' => 10000,
                 'mutable' => true,
             ],
 

@@ -1,6 +1,34 @@
 # MagicPro CHANGELOG
 
-### 2026-08-15
+### 2026-08-16
+
+- MCP reaches the feeds. `feed-api` reads — `feedsList`, `feedGet`, `itemsList`
+  (250 records a page at most), `itemGet`. `feed-api-write` writes —
+  `itemCreate`, `itemSave`, `itemDelete`. Both run one command over
+  `AbstractFeedApi::run()`, with their own list of what is allowed. Writing is a
+  separate tool on purpose: the permission is the connected tool, not a flag.
+  `itemDelete` deletes one record per call and only on the second call, the first
+  one shows what would go. Image fields are refused: a file gets into a feed
+  through the cropper of the admin panel.
+- Images: the `url` key is gone, feeds and the resizer both speak `path` — the
+  address from `public`, empty when the resize failed.
+- Setup got a button that clears the whole resize cache
+  (`ImageJob::clearAll()`).
+- A picture component, `<x-magic::img :img="#img1#" width="700" mobile="2" />`.
+  It takes the place on the page, not the files: three sources (avif, webp, jpg)
+  in a plain and a double size, `sizes` counted from `width` and `mobile`, and
+  the widths in `srcset` read back from the resizer, since `MAX_RESIZE` may trim
+  what was asked for. The `src` holds a large copy for image search — Google
+  indexes `src` and reads avif there, while a live browser never fetches it.
+- `<x-magic::img_box>` wraps that picture in an inline-block `span` that holds
+  the place: for the text of a record, where no column sets the width. It is a
+  `span` and not a `div` because the editor puts the tag inside a `<p>`, and the
+  parser pushes a block element out of it. The desktop width rides inline, the
+  phone share comes from the `mimg-m2`…`mimg-m4` classes of `design/style.css`.
+- A pagination component, `<x-magic::paginator :items="$items" />`, with its own
+  markup: the wording of the Laravel view sits inside the framework and only
+  translations can change it.
+- `MAX_RESIZE` may now go up to 10000.
 
 - Installation rewritten. The whole check runs in `MagicProSrc\Install\Installer`,
   the admin controller only calls it. The mark is written after a full success,
