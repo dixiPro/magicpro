@@ -1,5 +1,14 @@
 # MagicPro CHANGELOG
 
+### 2026-08-17
+
+- webp out of an avif source. `cwebp` reads png, jpeg, tiff and webp and nothing
+  else, so a record made by the feed cropper — avif, that being the default
+  `RESIZE_FORMAT` — got no webp at all. Such a source now goes to vips, the same
+  way `iwebp` does; the format, the extension and the cache stay as they were.
+- `x-magic::img` drops a format that failed instead of printing a `<source>`
+  with an empty address, and prints no `<picture>` when nothing was built.
+
 ### 2026-08-16
 
 - MCP reaches the feeds. `feed-api` reads — `feedsList`, `feedGet`, `itemsList`

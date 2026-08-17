@@ -55,6 +55,9 @@ class MagicServiceProvider extends ServiceProvider
 
         // Include helper functions
         require_once __DIR__ . '/Helpers/MproHelper.php';
+        // совместимость ...
+        require_once __DIR__ . '/Helpers/TreeHelper.php';
+        require_once __DIR__ . '/Helpers/DumpHelper.php';
 
         // Feed models under short names, so that blades and article controllers
         // write Feed:: and FeedItem:: instead of the full namespace. The alias

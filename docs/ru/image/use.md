@@ -50,6 +50,11 @@ MproHelper::imageCacheClear($file);            // снести производ�
 | `iwebp` | тот же webp, но кодирует `vipsthumbnail` — для сравнения |
 | `avif`, `jpg`, `png` | `vipsthumbnail` |
 
+`cwebp` читает только png, jpeg, tiff и webp. Исходник другого формата — а это
+обычный случай, `RESIZE_FORMAT` по умолчанию avif, и в лентах лежат avif, — webp
+делает `vipsthumbnail`, тот же путь, что у `iwebp`. Снаружи ничего не меняется:
+формат `webp`, расширение `.webp`.
+
 Разворот по exif: `vipsthumbnail` делает его сам, `cwebp` не умеет — там снимок
 разворачивается заранее через gd. На трёхтысячном снимке это порядка полусекунды,
 и видно её отдельно, в `rotateMs`.

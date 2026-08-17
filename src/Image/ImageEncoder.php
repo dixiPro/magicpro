@@ -4,6 +4,7 @@ namespace MagicProSrc\Image;
 
 /**
  * Запуск внешних кодировщиков: webp делает cwebp, остальное — vipsthumbnail.
+ * Исключение — исходник, которого cwebp не понимает: там и webp идёт через vips.
  *
  * Ни та, ни другая утилита не умеет stdin и stdout, поэтому работаем через файлы.
  * На каждый формат свой метод, общий только `run()`. Исключений нет: картинка не
@@ -21,6 +22,9 @@ class ImageEncoder
      * preset: default, picture, photo, drawing, icon, text. effort: 0–6.
      */
     private const WEBP_VIPS = 'preset=photo,effort=6,smart-subsample=true';
+
+    /** Что умеет читать cwebp. Остальное webp-путь отдаёт vips, см. `webp()`. */
+    private const CWEBP_READS = ['png', 'jpg', 'jpeg', 'tif', 'tiff', 'webp'];
 
     /**
      * Уменьшить $file по стороне $axis ('x' — ширина, 'y' — высота) до $size.
@@ -72,9 +76,17 @@ class ImageEncoder
      *
      * Повёрнутый снимок разворачиваем до cwebp: сам он не крутит. Метаданные не
      * переносим — блок exif тащит встроенную превьюшку, плюс 55 КБ на файл.
+     *
+     * Исходник, который cwebp не читает (avif прежде всего — а он же наш
+     * RESIZE_FORMAT, и в ленте лежат именно такие файлы), уходит в iwebp: тот же
+     * webp, только кодирует vips. Иначе на avif webp не собирался бы вовсе.
      */
     protected static function webp(string $file, string $target, string $axis, int $size, int $quality): array
     {
+        if (! in_array(strtolower(pathinfo($file, PATHINFO_EXTENSION)), self::CWEBP_READS, true)) {
+            return self::iwebp($file, $target, $axis, $size, $quality);
+        }
+
         $start    = microtime(true);
         $upright  = self::upright($file);
         $rotateMs = $upright === null ? 0.0 : round((microtime(true) - $start) * 1000, 1);
