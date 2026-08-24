@@ -12,6 +12,7 @@
         ['route' => 'magic.users', 'label' => 'users', 'icon' => 'fas fa-users'],
         ['route' => 'magic.mail', 'label' => 'mail', 'icon' => 'fas fa-envelope'],
         ['route' => 'magic.feed', 'label' => 'feed', 'icon' => 'fas fa-stream'],
+        ['route' => 'magic.cron', 'label' => 'cron', 'icon' => 'fas fa-clock'],
         ['route' => 'magic.crawler', 'label' => 'crawler', 'icon' => 'fas fa-spider'],
         ['route' => 'magic.dataBase', 'label' => 'dataBase', 'icon' => 'fas fa-database'],
         ['route' => 'magic.other', 'label' => 'other', 'icon' => 'fas fa-ellipsis-h'],

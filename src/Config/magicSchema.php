@@ -71,6 +71,15 @@ return [
         'mutable' => true,
     ],
 
+    // писать ли в storage/logs/cron.log строку об отработавшей задаче. Беды
+    // пишутся всегда, а строка выполнения нужна, пока присматриваешься
+    'CRON_LOG_SUCCESS' => [
+        'label'   => 'cron_log_success',
+        'type'    => 'boolean',
+        'default' => true,
+        'mutable' => true,
+    ],
+
 
     'RESIZE' => [
         'label'   => 'resize_params',

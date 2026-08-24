@@ -1,7 +1,44 @@
 # MagicPro CHANGELOG
 
+### 2026-08-24
+
+- Cron tasks are created in the admin panel, `/a_dmin/cron`: a name, an article,
+  json parameters and a cron string. The scheduler then calls the controller of
+  that article — an ordinary MagicPro controller, the same one a browser opens,
+  so a task is debugged like any page. Nothing is written to php files, and a
+  change in the admin panel works from the next minute: the list is read again on
+  every pass of the scheduler. The article has to be a route with a controller,
+  `postEnable` and `adminOnly`; `CronTaskChecker` holds that list and marks a task
+  red once its article is renamed or gone. Parameters always travel as post.
+  Registration is guarded twice — a missing table leaves the schedule without
+  dynamic tasks instead of breaking artisan, and a broken cron string is refused
+  before it can take down the pass together with `magicpro:heartbeat` and
+  `magicpro:sendQueue`.
+- Cron does not judge the result of a task, and there is no last status in the
+  table. Retries do not exist, a task never switches itself off, so there is
+  nothing to do with such a verdict: what happened inside is the controller's own
+  business. `last_run_at` says only that the scheduler reached the task.
+- The log of the tasks is `storage/logs/cron.log`. Troubles are always written; a
+  line about a task that ran — with the time it took — while `CRON_LOG_SUCCESS` is
+  on in Setup.
+- The diagnostics of the admin home page tells about the checks that passed, not
+  only about the troubles. Silence is not a report: an empty screen used to be
+  the only sign that everything is in place. The list is translated, unlike the
+  troubles, which stay in English because they also go to the log.
+
 ### 2026-08-17
 
+- Mail: the duplicate check no longer closes an address and subject for good.
+  `findDduplicates()` compared the status of the last letter to `sent` alone,
+  and `sent` lives for seconds — the webhook turns it into `delivered` and then
+  `open`, and exhausted attempts turn it into `failed`. Every one of those took
+  the first branch and answered `duplicate email`, so the pair became
+  single-use and the minute threshold was never reached. Now a letter still in
+  the queue (`queued`, `retrying`) answers `duplicate email`, and anything that
+  already went out is only held back by `retryTimeEmail`, 60 seconds by
+  default. A blocked address is still refused earlier, by `checkEmail()`.
+  Found from the shop, where an order mail carries one subject for everyone: a
+  returning customer would have been mailed once in a lifetime.
 - webp out of an avif source. `cwebp` reads png, jpeg, tiff and webp and nothing
   else, so a record made by the feed cropper — avif, that being the default
   `RESIZE_FORMAT` — got no webp at all. Such a source now goes to vips, the same

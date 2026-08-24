@@ -66,6 +66,19 @@ Route::post('/a_dmin/api/mailSystem', [API_Mail::class, 'handle'])
     ->middleware('magic.auth')
     ->withoutMiddleware([$csrf]);
 
+// Крон: задачи расписания из админки
+use MagicProSrc\Scheduling\API_Cron;
+
+// страница
+Route::get('/a_dmin/cron', function () {
+    return view('magicAdmin::cron');
+})->name('magic.cron');
+
+// АПИ
+Route::post('/a_dmin/api/cron', [API_Cron::class, 'handle'])
+    ->middleware('magic.auth')
+    ->withoutMiddleware([$csrf]);
+
 // Ленты
 use MagicProSrc\Lenta\API_Feeds;
 

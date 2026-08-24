@@ -155,6 +155,45 @@ MproHelper::sendMail([
 ]);
 ```
 
+## ⏰ Cron
+
+Scheduled tasks are created in the admin panel, not in php files.
+
+A task holds a name, an article, json parameters and a cron expression. At the
+appointed time the Laravel scheduler calls the controller of that article — an
+ordinary MagicPro controller, the very same one a browser opens, so a task is
+debugged like any other page.
+
+```text
+Название: Обновление кеша товаров
+Контроллер: regenerateCache
+Параметры: {"parent_sku":"index_product"}
+Cron: 0 4 * * *
+```
+
+Parameters arrive as post, exactly as in a normal request:
+
+```php
+class regenerateCache extends MagicController
+{
+    protected function process(array $params): array
+    {
+        $postParams = $params['postParams'] ?? [];
+        // ...
+    }
+}
+```
+
+A change made in the admin panel works from the next minute: the list of tasks
+is read again on every pass of the scheduler. The article of a task must be a
+route with a controller, with post and adminOnly enabled — the admin panel
+refuses a task that could never run, and marks a task whose article was renamed
+or deleted.
+
+Cron does not judge the result: there are no retries, and a task never switches
+itself off. Whatever happens inside the controller is the controller's own
+business.
+
 ## ⚡ Static generation
 
 MagicPro can publish dynamic pages as static HTML.
@@ -172,6 +211,7 @@ The administration interface manages:
 - users and permissions;
 - application settings;
 - mail queues;
+- scheduled tasks;
 - files;
 - generated code.
 

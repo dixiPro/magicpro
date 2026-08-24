@@ -37,6 +37,7 @@ return [
     'users' => 'Пользователи',
     'mail' => 'Почта',
     'feed' => 'Ленты',
+    'cron' => 'Крон',
     'crawler' => 'Паук',
     'tables' => 'Таблицы',
     'logout' => 'Выйти',
@@ -44,6 +45,7 @@ return [
     'remember_me' => 'Запомнить меня',
     'login' => 'Войти',
     'html_pages_dir'        => 'Каталог html страниц от корня проекта',
+    'cron_log_success'      => 'Писать в лог отработавшие задачи крона',
     'public_upload_dir'     => 'Папка для загрузки изображений относительно public',
     'excluded_routes'       => 'Страницы исключенные из динамического раута',
     'render_url'            => 'Дополнительные страницы для рендера статических страниц',
@@ -69,6 +71,18 @@ return [
     'other'                 => 'Другое',
     'group_images'          => 'Изображения',
     'diagnostics_title'     => 'Диагностика',
+    'diagnostics_ok_title'  => 'Проверено',
+
+    // Пройденные проверки установщика: деталь к строке добавляет он сам
+    'install_ok_admin'          => 'Администраторы на месте',
+    'install_ok_directories'    => 'Каталоги на месте, запись работает',
+    'install_ok_symlink'        => 'Ссылка public/storage работает',
+    'install_ok_articles'       => 'Статьи на месте, генерация файлов работает',
+    'install_ok_regenerate'     => 'Статьи перегенерированы',
+    'install_ok_assets'         => 'Ассеты админки актуальны',
+    'install_ok_image_tool'     => 'Инструмент картинок',
+    'install_ok_php_extension'  => 'Расширение php',
+    'install_ok_cron'           => 'Крон жив, последняя отметка',
 
 
 

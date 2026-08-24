@@ -16,13 +16,17 @@ class AdminController extends Controller
     /**
      * Главная админки: она же установка и она же проверка.
      *
-     * Вся работа в Installer, здесь только показать, что он сказал. Пусто —
-     * значит всё на месте и говорить не о чем.
+     * Вся работа в Installer, здесь только показать, что он сказал: сперва
+     * беды, потом список пройденных проверок. Раньше отдавались только беды, и
+     * пустой экран приходилось понимать как «всё хорошо».
      */
     public function index()
     {
+        $installer = new Installer();
+
         return view('magicAdmin::index', [
-            'report' => (new Installer())->run(),
+            'report' => $installer->run(),
+            'okList' => $installer->okList(),
         ]);
     }
 

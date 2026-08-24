@@ -54,6 +54,16 @@ class Installer
     private array $msgArr = [];
 
     /**
+     * Checks that passed: ['key' => a key of the lang file, 'note' => detail].
+     *
+     * Troubles are written in English, they go to the log as well and are read
+     * by whoever fixes the server. This list is read by the visitor of the
+     * admin panel instead, so it is translated — the key is resolved in the
+     * blade, the note is a number, a path or a time and needs no translation.
+     */
+    private array $okArr = [];
+
+    /**
      * The whole installation. Returns ready html for the page.
      *
      * No lock around it: the cache store may itself live in a database that has
@@ -104,6 +114,19 @@ class Installer
             && trim((string) file_get_contents(MAGIC_INSTALL_FILE)) === 'install';
     }
 
+    /**
+     * Checks that passed, for the page.
+     *
+     * Silence used to be the only sign that everything is in place, and
+     * silence is not a report: this list says what exactly was looked at.
+     *
+     * @return array<int, array{key: string, note: string}>
+     */
+    public function okList(): array
+    {
+        return $this->okArr;
+    }
+
     /** Messages of this run as html. Nothing to say — empty string. */
     private function html(): string
     {
@@ -120,6 +143,21 @@ class Installer
             storage_path(self::LOG),
             date('Y-m-d H:i:s') . ' ' . $msg . PHP_EOL
         );
+    }
+
+    /**
+     * A check that passed.
+     *
+     * Nothing is written to the log here: the log keeps the history of an
+     * installation, and a green line every time somebody opens the admin panel
+     * would bury it.
+     */
+    private function ok(string $key, string $note = ''): void
+    {
+        $this->okArr[] = [
+            'key'  => $key,
+            'note' => $note,
+        ];
     }
 
     /** Message for the screen and the log at once, then stop. */
@@ -169,10 +207,13 @@ class Installer
             $this->fail("**No table of users.**\n\nRun: `php artisan migrate`");
         }
 
-        if (! MagicProUser::query()->exists()) {
+        $admins = MagicProUser::query()->count();
+
+        if (! $admins) {
             $this->fail("**No admin to log in with.**\n\nRun: `php artisan magicpro:admin`");
         }
 
+        $this->ok('install_ok_admin', (string) $admins);
         $this->writeLog('admin ok');
     }
 
@@ -194,6 +235,8 @@ class Installer
         // Comes with the package, we never create it: missing means the package
         // itself did not arrive whole.
         $this->testDirectory(VENDOR_FROM);
+
+        $this->ok('install_ok_directories', (string) (count($create) + 1));
     }
 
     public function checkSymLink(): void
@@ -206,6 +249,7 @@ class Installer
             $this->fail("**No link `public/storage`.**\n\nRun: `php artisan storage:link`");
         }
 
+        $this->ok('install_ok_symlink', is_link($link) ? (string) readlink($link) : $link);
         $this->writeLog('storage link ok');
     }
 
@@ -226,6 +270,7 @@ class Installer
 
         $this->testArticle();
 
+        $this->ok('install_ok_articles', (string) Article::query()->count());
         $this->writeLog('articles ok');
     }
 
@@ -372,6 +417,7 @@ class Installer
             $this->fail("**Articles are not generated.**\n\n`" . $res['errorMsg'] . '`');
         }
 
+        $this->ok('install_ok_regenerate', (string) count($res['data']));
         $this->writeLog('articles regenerated: ' . count($res['data']));
     }
 
@@ -387,6 +433,8 @@ class Installer
         $installed   = is_file($versionFile) ? trim((string) file_get_contents($versionFile)) : null;
 
         if ($installed === MAGIC_VERSION) {
+            $this->ok('install_ok_assets', MAGIC_VERSION);
+
             return;
         }
 
@@ -397,6 +445,7 @@ class Installer
             $this->fail("**Cannot copy the assets** to `" . VENDOR_PUBLIC . "`\n\n`" . $e->getMessage() . '`');
         }
 
+        $this->ok('install_ok_assets', MAGIC_VERSION);
         $this->writeLog('assets copied: ' . MAGIC_VERSION);
     }
 
@@ -423,14 +472,22 @@ class Installer
             if ($code !== 0) {
                 $this->msgArr[] = "**{$name} not found.** Images are not resized.\n\nRun: `{$tool['hint']}`";
                 $this->writeLog($name . ' not found');
+
+                continue;
             }
+
+            $this->ok('install_ok_image_tool', trim($name . ' ' . ($lines[0] ?? '')));
         }
 
         foreach (self::PHP_EXTENSIONS as $extension => $hint) {
             if (! extension_loaded($extension)) {
                 $this->msgArr[] = "**php {$extension} is missing.**\n\nRun: `{$hint}`";
                 $this->writeLog('php ' . $extension . ' is missing');
+
+                continue;
             }
+
+            $this->ok('install_ok_php_extension', $extension);
         }
 
         $this->checkCron();
@@ -445,6 +502,8 @@ class Installer
         $file = storage_path(Heartbeat::FILE);
 
         if (is_file($file) && (time() - (int) filemtime($file)) <= self::CRON_MAX_AGE) {
+            $this->ok('install_ok_cron', date('Y-m-d H:i:s', (int) filemtime($file)));
+
             return;
         }
 

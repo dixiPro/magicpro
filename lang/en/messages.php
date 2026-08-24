@@ -37,6 +37,7 @@ return [
     'users' => 'Users',
     'mail' => 'Mail',
     'feed' => 'Feeds',
+    'cron' => 'Cron',
     'crawler' => 'Crawler',
     'tables' => 'Tables',
     'logout' => 'Logout',
@@ -44,6 +45,7 @@ return [
     'remember_me' => 'Remember me',
     'login' => 'Login',
     'html_pages_dir' => 'Html pages directory relative to project root',
+    'cron_log_success' => 'Log cron tasks that ran',
     'public_upload_dir' => 'Image upload directory relative to public',
     'excluded_routes' => 'Routes excluded from dynamic routing',
     'render_url' => 'Additional urls for static page rendering',
@@ -69,6 +71,18 @@ return [
     'other'                 => 'Other',
     'group_images'          => 'Images',
     'diagnostics_title'     => 'Diagnostics',
+    'diagnostics_ok_title'  => 'Checked',
+
+    // Checks that passed: the detail of a line is added by the installer
+    'install_ok_admin'          => 'Admins are in place',
+    'install_ok_directories'    => 'Directories are in place and writable',
+    'install_ok_symlink'        => 'The public/storage link works',
+    'install_ok_articles'       => 'Articles are in place, file generation works',
+    'install_ok_regenerate'     => 'Articles regenerated',
+    'install_ok_assets'         => 'Admin assets are up to date',
+    'install_ok_image_tool'     => 'Image tool',
+    'install_ok_php_extension'  => 'php extension',
+    'install_ok_cron'           => 'Cron is alive, last mark',
 
 
 

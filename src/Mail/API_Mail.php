@@ -158,9 +158,18 @@ class API_Mail extends AbstractMailApi
     /**
      * Ищет дубли по паре to + subject (берём последнее письмо на этот адрес
      * с этой темой).
-     *   - если такое письмо есть и его статус НЕ sent — 'duplicate email';
-     *   - если статус sent, но с момента sent_at прошло меньше
+     *   - письмо ещё в очереди (queued, retrying) — 'duplicate email':
+     *     второе такое же ждать отправки не должно;
+     *   - письмо уже уходило, но с момента sent_at прошло меньше
      *     retryTimeEmail секунд (по умолчанию 60) — 'too frequent'.
+     *
+     * Сравнивать статус с одним лишь sent нельзя: sent живёт секунды, дальше
+     * вебхук ставит delivered и open, а исчерпанные попытки дают failed. По
+     * такому сравнению пара «адрес + тема» закрывалась навсегда, и постоянный
+     * покупатель получал письмо с этой темой ровно один раз.
+     *
+     * Блокировку адреса проверяет checkEmail() из buildLetterParams(), до
+     * сюда заблокированный адрес не доходит.
      */
     protected static function findDduplicates(array $params): void
     {
@@ -186,7 +195,7 @@ class API_Mail extends AbstractMailApi
             return;
         }
 
-        if ($last->status !== MagicProMailMessage::STATUS_SENT) {
+        if (in_array($last->status, self::QUEUE_STATUSES, true)) {
             throw new \Exception(self::ERRORS['duplicate_email']);
         }
 
