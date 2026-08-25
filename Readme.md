@@ -159,40 +159,46 @@ MproHelper::sendMail([
 
 Scheduled tasks are created in the admin panel, not in php files.
 
-A task holds a name, an article, json parameters and a cron expression. At the
-appointed time the Laravel scheduler calls the controller of that article — an
-ordinary MagicPro controller, the very same one a browser opens, so a task is
-debugged like any other page.
+A task holds a name, a controller method, json parameters and a cron expression.
+At the appointed time the Laravel scheduler calls that method directly — no
+request, no view, just the method.
 
 ```text
 Название: Обновление кеша товаров
-Контроллер: regenerateCache
+Контроллер: dataCache|task
 Параметры: {"parent_sku":"index_product"}
 Cron: 0 4 * * *
 ```
 
-Parameters arrive as post, exactly as in a normal request:
+The method is an entry point of its own. Its article needs a controller and
+nothing else — no route, no post, no adminOnly — so a task may live in an
+article that is not a page at all. When the same job also has to be reachable by
+URL, the page shares the method:
 
 ```php
-class regenerateCache extends MagicController
+class dataCache extends MagicController
 {
     protected function process(array $params): array
     {
-        $postParams = $params['postParams'] ?? [];
+        return $this->task($params['postParams'] ?? []);
+    }
+
+    public function task(array $params): array
+    {
         // ...
     }
 }
 ```
 
 A change made in the admin panel works from the next minute: the list of tasks
-is read again on every pass of the scheduler. The article of a task must be a
-route with a controller, with post and adminOnly enabled — the admin panel
-refuses a task that could never run, and marks a task whose article was renamed
-or deleted.
+is read again on every pass of the scheduler. The admin panel refuses a task
+whose article or controller class does not exist, and marks one whose article
+was renamed or deleted later.
 
 Cron does not judge the result: there are no retries, and a task never switches
-itself off. Whatever happens inside the controller is the controller's own
-business.
+itself off. What it does now is show the failure — nothing wraps the call, so a
+broken method lands in the log with its own words, and the "run now" button
+puts them on the screen.
 
 ## ⚡ Static generation
 

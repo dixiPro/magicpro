@@ -14,8 +14,8 @@ return new class extends Migration
             // human readable name, shown in the admin list only
             $table->string('name');
 
-            // name of the article whose controller the task calls;
-            // the class is \MagicProControllers\{controller}
+            // article|method: the class is \MagicProControllers\{article},
+            // the method is the public one the task calls
             $table->string('controller');
 
             // call parameters, always sent as POST; may be empty

@@ -160,6 +160,9 @@ if (! $lock->get()) {
 
 Весь входящий запрос пишется в лог целиком, `Log::info('awsHook received')`.
 
+Топик, подписка на этот адрес и набор конфигурации, без которого SES ничего в
+топик не публикует, заводятся командами `magicpro:aws-*` — `docs/ru/aws/`.
+
 ## Модели
 
 `MagicProMailMessage`, таблица `magicPro_mail_messages`. Хранит и готовый html, и

@@ -193,7 +193,8 @@ onMounted(() => {
 
       <div class="mb-3">
         <label class="form-label">{{ t('cron_controller') }}</label>
-        <input v-model="form.controller" type="text" class="form-control form-control-sm" />
+        <input v-model="form.controller" type="text" class="form-control form-control-sm" placeholder="dataCache|task" />
+        <div class="form-text">{{ t('cron_controller_hint') }}</div>
       </div>
 
       <div class="mb-3">

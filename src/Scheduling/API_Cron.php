@@ -144,6 +144,11 @@ class API_Cron extends AbstractApi
     /**
      * Run right now, past the scheduler.
      *
+     * This is where a task is really checked. Cron calls the method straight,
+     * nothing swallows an exception any more, so whatever the method says
+     * about itself comes back here and goes on the screen — the button exists
+     * to see exactly that.
+     *
      * There is no lock here on purpose: withoutOverlapping sits on the
      * scheduler event and does not cover a manual run. Press the button while
      * the task is already running on schedule and it goes as a second pass —
@@ -158,7 +163,13 @@ class API_Cron extends AbstractApi
             throw new \Exception($check['error']);
         }
 
-        return ['ms' => CronTaskRunner::run($task)];
+        $res = CronTaskRunner::run($task);
+
+        if ($res['error'] !== '') {
+            throw new \Exception($res['error']);
+        }
+
+        return ['ms' => $res['ms']];
     }
 
     private static function findTask(array $params): MagicProCronTask

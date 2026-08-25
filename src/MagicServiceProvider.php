@@ -30,6 +30,10 @@ use MagicProSrc\MagicLang;
 
 use MagicProSrc\Console\AdminCommand; // команда создания админа
 
+use MagicProSrc\Console\Aws\SetupCommand as AwsSetupCommand;     // настройка AWS
+use MagicProSrc\Console\Aws\StatusCommand as AwsStatusCommand;   // состояние AWS
+use MagicProSrc\Console\Aws\WebhookCommand as AwsWebhookCommand; // адрес вебхука
+
 use MagicProSrc\Lenta\FeedPathGenerator; // папка картинок лент внутри диска
 use Spatie\MediaLibrary\Support\PathGenerator\PathGeneratorFactory;
 
@@ -142,7 +146,12 @@ class MagicServiceProvider extends ServiceProvider
 
         // консольные команды пакета
         if ($this->app->runningInConsole()) {
-            $this->commands([AdminCommand::class]);
+            $this->commands([
+                AdminCommand::class,
+                AwsSetupCommand::class,
+                AwsWebhookCommand::class,
+                AwsStatusCommand::class,
+            ]);
         }
     }
 

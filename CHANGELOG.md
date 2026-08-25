@@ -1,5 +1,56 @@
 # MagicPro CHANGELOG
 
+### 2026-08-25 — AWS
+
+- Настройка почты Amazon тремя командами вместо прогулки по консоли AWS, которую
+  никто не помнит наизусть. `magicpro:aws-setup` — «сайт может слать письма»:
+  IAM-пользователь, права, ключ и посчитанный из него SMTP-пароль.
+  `magicpro:aws-webhook` — «сайт узнаёт, что с письмами стало»: топик,
+  разрешение для SES публиковать в него, подписка и набор конфигурации с
+  событиями; та же команда и заводит всё с нуля, и меняет адрес.
+  `magicpro:aws-status` показывает, как всё настроено сейчас, ничего не трогая.
+- Граница между первыми двумя проведена по смыслу: топик и набор конфигурации
+  существуют ради вебхука, и сайту, которому события не нужны, хватает одной
+  первой команды. У такого сайта `AWS_SES_CONFIGURATION_SET` пуст, SES событий
+  не шлёт — правильное поведение, а не недонастройка.
+- Параметры — только из ini-файлов, `aws-setup.ini` и `aws-webhook.ini`; флаги
+  несут пути и ничего больше. Секретов в этих файлах нет, поэтому они лежат
+  открыто и через полгода отвечают на вопрос, как всё было настроено. Имена
+  ресурсов там не хранятся: они считаются из `user`, одинаково всеми командами,
+  так что две команды не могут иметь в виду разные топики.
+- Ключ настройки спрашивается в терминале при каждом запуске и нигде не
+  сохраняется. Проверка на терминал строже обычной: `isInteractive()` при
+  запуске через пайп остаётся истинным, и вопрос молча прочёл бы пустую строку.
+- Секреты проекта пишутся только в `aws-{домен}-{дата}.result`, права `600`,
+  `*.result` дописывается в `.gitignore` — команда говорит, что дописала. Файл
+  пишется и после падения на середине: секрет ключа AWS отдаёт один раз, и
+  терять его вместе с сообщением об ошибке нельзя.
+- В политику топика добавляется разрешение `ses.amazonaws.com` публиковать —
+  без него события не приходят, а выглядит это как молчащий вебхук.
+- Дока — `docs/ru/aws/`.
+
+### 2026-08-25
+
+- A cron task points at a public method of a controller, `dataCache|task`, and
+  the scheduler calls that method straight: no `Request`, no `Env`, no view.
+  `MagicController` got a public `run()` for the same reason — a controller can
+  now be called as a service, not only as a page. The method is an entry point
+  of its own; `process()` may hand it the same work when the job has to be
+  reachable by URL as well. One controller holds as many such methods as there
+  are tasks. Parameters go as one array, the json of the task, and the method
+  takes one array.
+- Because `handle()` is out of the way, nothing swallows an exception any more.
+  It used to be caught inside the controller and turned into a 500 page that
+  cron dropped, text and all; now it reaches `cron.log` with its own words, and
+  the "run now" button shows it on the screen. That button is the check: what
+  `save` asks for is only that the article and its controller class exist. A
+  route, `adminOnly`, `postEnable` are about a page, and a method is not a page
+  — an article that is only a place to keep a controller carries a task just as
+  well.
+- The method name has to start with a letter and hold letters, digits and
+  underscore. `__construct` and the rest of the php magic are refused by that
+  one rule, without a list of bans.
+
 ### 2026-08-24
 
 - Cron tasks are created in the admin panel, `/a_dmin/cron`: a name, an article,

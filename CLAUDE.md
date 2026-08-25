@@ -22,6 +22,7 @@ touch, how to check the work, how to answer. Open it first.
 | картинки: ресайз на лету, кеш, форматы, кроппер | `docs/ru/image/` |
 | блейд-компоненты сайта: картинка, пагинатор | `docs/ru/components/` |
 | почта: отправка, очередь, SMTP и SES | `docs/ru/mail/` |
+| AWS: настройка SES и SNS консольными командами | `docs/ru/aws/` |
 | крон: задачи расписания из админки | `docs/ru/cron/` |
 | `MproHelper`: дерево статей, логи, шифрование, тексты | `docs/ru/helpers/` |
 | MCP-сервер и его инструменты | `docs/ru/mcp/` |
