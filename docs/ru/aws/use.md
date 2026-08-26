@@ -19,9 +19,10 @@ sns: CreateTopic, ListTopics, SetTopicAttributes, Subscribe, Unsubscribe, ListSu
 Ключ не хранится нигде: команда спрашивает его в терминале каждый раз. Секрет
 вводится скрыто. Без терминала команда работать откажется.
 
-## Два файла
+## Файл настроек
 
-В корне проекта. Секретов в них нет, можно держать в git.
+Один на сайт, в корне проекта, из него читают все три команды. Секретов в нём
+нет, можно держать в git.
 
 ```ini
 ; aws-setup.ini
@@ -29,12 +30,11 @@ region    = eu-north-1
 domain    = dixipro.net
 user      = magicpro-dixipro
 smtp_port = 587
+webhook   = https://dixipro.net/awsHook
 ```
 
-```ini
-; aws-webhook.ini
-webhook = https://dixipro.net/awsHook
-```
+`webhook` нужен одной `magicpro:aws-webhook`; сайту, которому события не нужны,
+эта строка ни к чему.
 
 Имена ресурсов AWS не пишутся: они считаются из `user`, и все три команды считают
 одинаково.
@@ -49,11 +49,12 @@ event_destination {user}-sns
 Отсюда правило: **переименовал `user` — команды пошли искать другие ресурсы**.
 Имя меняется вместе с ресурсами, а не отдельно от них.
 
-Свой сайт — своя пара файлов. Звать удобно по домену, пути передаются флагами:
+Свой сайт — свой файл. Звать удобно по домену, путь передаётся флагом:
 
 ```bash
-php artisan magicpro:aws-setup --file=aws-setup-dixipro.ini
-php artisan magicpro:aws-webhook --file=aws-webhook-dixipro.ini --setup=aws-setup-dixipro.ini
+php artisan magicpro:aws-setup   --file=aws-dixipro.ini
+php artisan magicpro:aws-webhook --file=aws-dixipro.ini
+php artisan magicpro:aws-status  --file=aws-dixipro.ini
 ```
 
 ## Настроить отправку
@@ -86,6 +87,7 @@ Continue? (yes/no) [no]:
 AWS_SesV2Client=true
 AWS_ACCESS_KEY_ID=AKIA...
 AWS_SECRET_ACCESS_KEY=...
+AWS_DEFAULT_REGION=eu-north-1
 
 MAIL_MAILER=smtp
 MAIL_HOST=email-smtp.eu-north-1.amazonaws.com
@@ -94,9 +96,19 @@ MAIL_ENCRYPTION=tls
 MAIL_USERNAME=AKIA...
 MAIL_PASSWORD=...
 MAIL_FROM_ADDRESS=info@dixipro.net
+MAIL_FROM_NAME="magicpro-dixipro"
 
-# IAM user
+# IAM user:      magicpro-dixipro
+# webhookUrl =   'https://dixipro.net/awsHook'
 ```
+
+Ключ выпущен в одном регионе и работает только в нём, поэтому `AWS_DEFAULT_REGION`
+едет вместе с ним. `MAIL_FROM_NAME` — имя пользователя из ini; читаемое имя
+отправителя вписывается руками, это подпись, а не настройка AWS.
+
+Строки после пустой — комментарии, в `.env_mpro` они не нужны. Адрес вебхука
+записан для справки: у MagicPro путь всегда `/awsHook`, и через полгода его не
+придётся искать в исходниках.
 
 Скопировать верхнюю часть в `.env_mpro` и удалить файл. Это единственное место,
 где записан секрет: на экран он не печатается, в лог не пишется.
@@ -110,8 +122,22 @@ MAIL_FROM_ADDRESS=info@dixipro.net
 php artisan magicpro:aws-webhook
 ```
 
+Первым делом команда стучится в адрес постом и ждёт ответа самого обработчика,
+`{"status": true}`. Не ответил — останов до того, как что-либо создано в AWS:
+
+```text
+[ERROR] answered, but not by the MagicPro hook: https://dixipro.net/awsHook
+POST /awsHook has to reach AwsHookHandler: check that the dynamic router lets it through.
+```
+
+Это ровно тот случай, который иначе стоит трёх суток: SNS подтверждает подписку
+таким же стуком, и если стучаться некуда, подписка висит `PENDING`, а команда
+рапортует об успехе по всем остальным шагам. Обычная причина — динамический
+роутер сайта перехватил `/awsHook`; вторая по частоте — в ini остался чужой
+адрес.
+
 Та же команда и заводит всё с нуля, и меняет адрес: топик, разрешение для SES
-публиковать в него, подписка на адрес из `aws-webhook.ini`, набор конфигурации с
+публиковать в него, подписка на адрес из `webhook`, набор конфигурации с
 восемью событиями. Чего нет — создаётся, что есть — приводится к нужному виду.
 Прочие https-подписки отписываются: топик обслуживает один сайт.
 
@@ -155,6 +181,7 @@ php artisan magicpro:aws-status
 3. `aws-setup.ini`.
 4. `php artisan magicpro:aws-setup`.
 5. Скопировать блок в `.env_mpro`, удалить `.result`. Письма уже уходят.
-6. Нужны события: `aws-webhook.ini`, `php artisan magicpro:aws-webhook`, строку с
-   набором конфигурации — в `.env_mpro`.
+6. Нужны события: строка `webhook` в том же файле,
+   `php artisan magicpro:aws-webhook`, строку с набором конфигурации — в
+   `.env_mpro`.
 7. `php artisan magicpro:aws-status` — убедиться.

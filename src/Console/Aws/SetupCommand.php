@@ -70,6 +70,12 @@ class SetupCommand extends AwsCommand
             $this->smtp($smtpPort);
 
             $this->env['MAIL_FROM_ADDRESS'] = 'info@' . $domain;
+            $this->env['MAIL_FROM_NAME']    = '"' . $user . '"';
+
+            // Not a setting of anything — the address magicpro:aws-webhook will
+            // be asked to subscribe. Written down so that half a year later the
+            // path is not looked for in the sources.
+            $this->notes[] = "webhookUrl =   'https://" . $domain . "/awsHook'";
         } catch (\Throwable $e) {
             $this->err($this->awsMessage($e));
         }
@@ -196,6 +202,9 @@ class SetupCommand extends AwsCommand
         $this->env['AWS_SesV2Client']       = 'true';
         $this->env['AWS_ACCESS_KEY_ID']     = $created['AccessKeyId'];
         $this->env['AWS_SECRET_ACCESS_KEY'] = $created['SecretAccessKey'];
+        // The key is issued in one region and works in that one only: it must
+        // travel to the project together with the region it belongs to.
+        $this->env['AWS_DEFAULT_REGION']    = $this->region;
     }
 
     /**

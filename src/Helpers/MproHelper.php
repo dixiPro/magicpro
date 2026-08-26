@@ -91,9 +91,16 @@ class MproHelper
         try {
 
             $res = API_Mail::run('sendNow', [
-                'to'      => $params['email'] ?? '',
-                'subject' => $params['subj'] ?? '',
-                'html'    => $params['html'] ?? '',
+                'to'       => $params['email'] ?? '',
+                'subject'  => $params['subj'] ?? '',
+                'html'     => $params['html'] ?? '',
+                // Where the answer goes: the site sends from a service address
+                // nobody reads, and a form has an address that is read.
+                'replyTo'  => $params['replyTo'] ?? '',
+                // The name in front of the address. Empty means the one from
+                // the settings of the project: the address itself never changes
+                // here, only the way it signs itself.
+                'fromName' => $params['fromName'] ?? '',
             ]);
 
             if (!$res['status']) {

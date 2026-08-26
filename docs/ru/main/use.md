@@ -338,14 +338,16 @@ class Magic_Pro_Name_Controller extends Component
 
 | Метод | Что делает |
 | --- | --- |
-| `sendMail(array $params)` | Отправляет письмо сразу, через `API_Mail`. Ключи: `email`, `subj`, `html`. Возвращает `status / errorMsg / data`, исключений не бросает. Каждая попытка, успешная и нет, пишется в лог `mail`. |
+| `sendMail(array $params)` | Отправляет письмо сразу, через `API_Mail`. Ключи: `email`, `subj`, `html`, необязательные `replyTo` и `fromName` — разбор в `docs/ru/helpers/use.md`. Возвращает `status / errorMsg / data`, исключений не бросает. Каждая попытка, успешная и нет, пишется в лог `mail`. |
 | `addLog(string $logName, string\|array $data)` | Пишет в `storage/logs/{$logName}.log` с ротацией за 14 дней. Массив раскладывается построчно в `ключ: значение`, вложенные — в JSON. |
 
 ```php
 $res = MproHelper::sendMail([
-    'email' => 'user@example.com',
-    'subj'  => 'Тема письма',
-    'html'  => '<h1>Привет</h1>',
+    'email'    => 'user@example.com',
+    'subj'     => 'Тема письма',
+    'html'     => '<h1>Привет</h1>',
+    'replyTo'  => 'client@example.com', // необязательно
+    'fromName' => 'Магазин',            // необязательно
 ]);
 
 if (! $res['status']) {

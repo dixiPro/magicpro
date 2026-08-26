@@ -2,12 +2,15 @@
 
 namespace MagicProSrc\Console\Aws;
 
+use Illuminate\Support\Facades\Http;
+
 /**
  * Makes the site hear back about its mail: topic, subscription, event set.
  *
  * Everything here exists for one purpose — to tell the site what happened to a
  * letter. A site that does not need to know sends mail perfectly well without
- * any of it, which is why none of this lives in aws-setup.
+ * any of it, which is why none of this runs inside magicpro:aws-setup — though
+ * both read the same settings file, one site being one file.
  *
  * The command builds what is missing and brings what is there to the required
  * shape. Changing the address is the same run: the new one is subscribed, the
@@ -17,8 +20,7 @@ namespace MagicProSrc\Console\Aws;
 class WebhookCommand extends AwsCommand
 {
     protected $signature = 'magicpro:aws-webhook
-        {--file=aws-webhook.ini : file holding the webhook address}
-        {--setup=aws-setup.ini : settings of the site, for the region and the user}';
+        {--file=aws-setup.ini : settings of the site}';
 
     protected $description = 'Delivers SES events of a site to a webhook address';
 
@@ -36,23 +38,24 @@ class WebhookCommand extends AwsCommand
 
     public function handle(): int
     {
-        $webhook = $this->readSettings((string) $this->option('file'), ['webhook']);
-
-        if (! $webhook) {
-            return self::FAILURE;
-        }
-
-        $settings = $this->readSettings((string) $this->option('setup'), ['region', 'user']);
+        $settings = $this->readSettings(
+            (string) $this->option('file'),
+            ['region', 'user', 'webhook']
+        );
 
         if (! $settings) {
             return self::FAILURE;
         }
 
-        $endpoint = $webhook['webhook'];
+        $endpoint = $settings['webhook'];
 
         if (! str_starts_with($endpoint, 'https://')) {
             $this->err('the webhook address must be https: ' . $endpoint);
 
+            return self::FAILURE;
+        }
+
+        if (! $this->reachable($endpoint)) {
             return self::FAILURE;
         }
 
@@ -101,6 +104,52 @@ class WebhookCommand extends AwsCommand
         $this->line('AWS_SES_CONFIGURATION_SET=' . $names['config_set']);
 
         return self::SUCCESS;
+    }
+
+    /**
+     * We knock at the address before anything is created in AWS.
+     *
+     * SNS confirms a subscription by knocking too, and a knock that lands
+     * nowhere leaves a PENDING subscription hanging for three days — while the
+     * command reports success on everything else. Cheaper to find out now.
+     *
+     * The knock is a POST with a Type of our own: the handler answers a Type it
+     * does not know with the same `{"status": true}`, and the dynamic router of
+     * the site — the usual reason the address is silent — answers with a page.
+     * So the answer says not only «alive» but «it is our hook that is alive».
+     */
+    private function reachable(string $endpoint): bool
+    {
+        try {
+            $answer = Http::timeout(10)->withoutRedirecting()->post($endpoint, ['Type' => 'MagicProPing']);
+        } catch (\Throwable $e) {
+            $this->err('the address does not answer: ' . $e->getMessage());
+
+            return false;
+        }
+
+        if ($answer->redirect()) {
+            $this->err('the address redirects to ' . $answer->header('Location'));
+
+            return false;
+        }
+
+        if (! $answer->successful()) {
+            $this->err('the address answers ' . $answer->status() . ': ' . $endpoint);
+
+            return false;
+        }
+
+        if ($answer->json('status') !== true) {
+            $this->err('answered, but not by the MagicPro hook: ' . $endpoint);
+            $this->line('POST /awsHook has to reach AwsHookHandler: check that the dynamic router lets it through.');
+
+            return false;
+        }
+
+        $this->ok('webhook ' . $endpoint . ' answers');
+
+        return true;
     }
 
     /** CreateTopic answers with the existing one when the name is taken. */
