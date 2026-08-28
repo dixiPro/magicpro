@@ -164,10 +164,10 @@ At the appointed time the Laravel scheduler calls that method directly — no
 request, no view, just the method.
 
 ```text
-Название: Обновление кеша товаров
-Контроллер: dataCache|task
-Параметры: {"parent_sku":"index_product"}
-Cron: 0 4 * * *
+Name:       Product cache refresh
+Controller: dataCache|task
+Parameters: {"parent_sku":"index_product"}
+Cron:       0 4 * * *
 ```
 
 The method is an entry point of its own. Its article needs a controller and
@@ -303,4 +303,4 @@ See [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 
-MIT © dixiRu
+MIT © [dixipro.net](https://dixipro.net/)

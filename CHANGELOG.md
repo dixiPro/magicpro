@@ -2,208 +2,59 @@
 
 ### 2026-08-28
 
-- `MproHelper::imageCacheCleanup()` убирает производные, у которых не стало
-  исходника. Годность кеша считалась сравнением со временем исходника, поэтому
-  удалённая картинка оставляла свои копии навсегда: сравнивать не с чем, и
-  устареть они уже не могли. Таблицы соответствий не завёл намеренно — путь
-  производной сам называет исходник, а таблица была бы вторым местом, обязанным
-  быть синхронным, и разошлась бы первой. Папка `x/` (исходник вне проекта,
-  каталог назван хешем) не проверяется и не удаляется. Работа для крона или для
-  кнопки, не для отдачи страницы.
-- Имя файла в окне загрузки картинки ленты берётся из строкового слота записи:
-  список «имя файла взять из», выбрал — имя собралось из текущего значения слота.
-  Правится дальше руками. Длина ограничена 217 символами: 255 байт файловой
-  системы минус `_x10000.iwebp.webp`, который припишет кеш ресайза, и ещё
-  двадцать про запас. Пустое имя сохранить нельзя. Набранное руками имя не
-  чинится молча, а проверяется при сохранении: не латиница, цифра или дефис —
-  тост с ошибкой. Молчаливая правка вводила в заблуждение: `ууу` уезжало на диск
-  как `uuu`, и выглядело это как «сохранилось то, что написал».
-- Там же поле `alt` со своим списком «alt взять из» — те же слоты, но значение
-  берётся как есть, без транслитерации. Убираются угловые скобки и кавычки:
-  строка уезжает в атрибут HTML. Картинка не сохраняется, пока `alt` пуст.
-  Заодно `alt` теперь уезжает вместе с ответом загрузки — раньше повторная
-  загрузка стирала уже написанную подпись, потому что ответ сервера про неё
-  ничего не знает.
-- Транслитерация в админке (`translitString`) даёт латиницу в нижнем регистре,
-  дефис вместо подчёркивания и схлопывает подряд идущие дефисы в один. Имя
-  уезжает в url и в имя файла, а
-  поисковик считает словами только то, что разделено дефисом; выброшенные знаки
-  препинания давали `Tsena--rub`. Заодно `Ю` перестала давать `Yu` с пробелом на
-  конце. Задевает и имена статей, которые считаются из заголовка.
-- Кеш картинок на `/a_dmin/setup` теперь двумя кнопками вместо одной: «Удалить»
-  сносит только то, у чего не стало исходника, «Очистить» — весь кеш, как
-  раньше. Команда `cleanupImageCache` в `API_Setup`. Подробности —
-  `docs/ru/image/use.md`.
+- Added cleanup of orphaned image-cache files whose source image no longer exists.
+- Image cache controls in `/a_dmin/setup` are now split into orphan cleanup and full cache clear.
+- Feed image names are length-limited and validated instead of being silently transliterated.
+- Feed images now require and preserve `alt` text.
+- `translitString` now returns lowercase Latin text with normalized dashes.
 
 ### 2026-08-26
 
-- `MproHelper::sendMail()` принимает `replyTo` и `fromName` — `API_Mail` это умел
-  с самого начала, короткий вход со страницы не пробрасывал. Заявка с формы
-  уходит с `MAIL_FROM_ADDRESS`, который никто не читает, и «Ответить» у менеджера
-  должно вести клиенту; `fromName` — только подпись перед адресом, сам адрес
-  подтверждён в SES и не меняется. Ключа нет или он пуст — поведение прежнее.
-  Разбор всех ключей письма — в `docs/ru/helpers/use.md`.
+- `MproHelper::sendMail()` now supports `replyTo` and `fromName`.
 
 ### 2026-08-25 — AWS
 
-- Настройка почты Amazon тремя командами вместо прогулки по консоли AWS, которую
-  никто не помнит наизусть. `magicpro:aws-setup` — «сайт может слать письма»:
-  IAM-пользователь, права, ключ и посчитанный из него SMTP-пароль.
-  `magicpro:aws-webhook` — «сайт узнаёт, что с письмами стало»: топик,
-  разрешение для SES публиковать в него, подписка и набор конфигурации с
-  событиями; та же команда и заводит всё с нуля, и меняет адрес.
-  `magicpro:aws-status` показывает, как всё настроено сейчас, ничего не трогая.
-- Граница между первыми двумя проведена по смыслу: топик и набор конфигурации
-  существуют ради вебхука, и сайту, которому события не нужны, хватает одной
-  первой команды. У такого сайта `AWS_SES_CONFIGURATION_SET` пуст, SES событий
-  не шлёт — правильное поведение, а не недонастройка.
-- Параметры — только из ini-файла, `aws-setup.ini`, один на сайт для всех трёх
-  команд; флаги несут пути и ничего больше. Секретов в файле нет, поэтому он
-  лежит открыто и через полгода отвечает на вопрос, как всё было настроено. Имена
-  ресурсов там не хранятся: они считаются из `user`, одинаково всеми командами,
-  так что две команды не могут иметь в виду разные топики.
-- Ключ настройки спрашивается в терминале при каждом запуске и нигде не
-  сохраняется. Проверка на терминал строже обычной: `isInteractive()` при
-  запуске через пайп остаётся истинным, и вопрос молча прочёл бы пустую строку.
-- Секреты проекта пишутся только в `aws-{домен}-{дата}.result`, права `600`,
-  `*.result` дописывается в `.gitignore` — команда говорит, что дописала. Файл
-  пишется и после падения на середине: секрет ключа AWS отдаёт один раз, и
-  терять его вместе с сообщением об ошибке нельзя. Рядом с ключом там же лежит
-  `AWS_DEFAULT_REGION` — ключ работает только в своём регионе и ехать в проект
-  должен вместе с ним, — `MAIL_FROM_NAME` и комментарием адрес вебхука.
-- `magicpro:aws-webhook` стучится в адрес постом до того, как что-либо создано, и
-  ждёт ответа самого обработчика, а не просто живого хоста. SNS подтверждает
-  подписку таким же стуком: не ответили — подписка висит `PENDING` трое суток,
-  а команда рапортует об успехе всех прочих шагов. Ловится и перехват `/awsHook`
-  динамическим роутером, и забытый в ini чужой адрес.
-- В политику топика добавляется разрешение `ses.amazonaws.com` публиковать —
-  без него события не приходят, а выглядит это как молчащий вебхук.
-- Дока — `docs/ru/aws/`.
+- AWS SES setup is now handled by `magicpro:aws-setup`, `magicpro:aws-webhook` and `magicpro:aws-status`.
+- Mail sending and event webhooks are configured independently.
+- AWS settings are stored in one per-site `aws-setup.ini`, without secrets.
+- Setup credentials are entered interactively and are never stored.
+- Generated AWS credentials are saved only in protected `*.result` files excluded from Git.
+- Webhook setup validates the endpoint and SNS subscription before use.
+- SNS topics now receive the policy required for SES event delivery.
+- Documentation added under `docs/ru/aws/`.
 
 ### 2026-08-25
 
-- A cron task points at a public method of a controller, `dataCache|task`, and
-  the scheduler calls that method straight: no `Request`, no `Env`, no view.
-  `MagicController` got a public `run()` for the same reason — a controller can
-  now be called as a service, not only as a page. The method is an entry point
-  of its own; `process()` may hand it the same work when the job has to be
-  reachable by URL as well. One controller holds as many such methods as there
-  are tasks. Parameters go as one array, the json of the task, and the method
-  takes one array.
-- Because `handle()` is out of the way, nothing swallows an exception any more.
-  It used to be caught inside the controller and turned into a 500 page that
-  cron dropped, text and all; now it reaches `cron.log` with its own words, and
-  the "run now" button shows it on the screen. That button is the check: what
-  `save` asks for is only that the article and its controller class exist. A
-  route, `adminOnly`, `postEnable` are about a page, and a method is not a page
-  — an article that is only a place to keep a controller carries a task just as
-  well.
-- The method name has to start with a letter and hold letters, digits and
-  underscore. `__construct` and the rest of the php magic are refused by that
-  one rule, without a list of bans.
+- Cron tasks can call public controller methods directly, and `MagicController::run()` allows controllers to be used as services.
+- Cron exceptions are no longer swallowed and are visible in `cron.log` and manual runs.
+- Cron method names are validated to prevent calls to PHP magic methods.
 
 ### 2026-08-24
 
-- Cron tasks are created in the admin panel, `/a_dmin/cron`: a name, an article,
-  json parameters and a cron string. The scheduler then calls the controller of
-  that article — an ordinary MagicPro controller, the same one a browser opens,
-  so a task is debugged like any page. Nothing is written to php files, and a
-  change in the admin panel works from the next minute: the list is read again on
-  every pass of the scheduler. The article has to be a route with a controller,
-  `postEnable` and `adminOnly`; `CronTaskChecker` holds that list and marks a task
-  red once its article is renamed or gone. Parameters always travel as post.
-  Registration is guarded twice — a missing table leaves the schedule without
-  dynamic tasks instead of breaking artisan, and a broken cron string is refused
-  before it can take down the pass together with `magicpro:heartbeat` and
-  `magicpro:sendQueue`.
-- Cron does not judge the result of a task, and there is no last status in the
-  table. Retries do not exist, a task never switches itself off, so there is
-  nothing to do with such a verdict: what happened inside is the controller's own
-  business. `last_run_at` says only that the scheduler reached the task.
-- The log of the tasks is `storage/logs/cron.log`. Troubles are always written; a
-  line about a task that ran — with the time it took — while `CRON_LOG_SUCCESS` is
-  on in Setup.
-- The diagnostics of the admin home page tells about the checks that passed, not
-  only about the troubles. Silence is not a report: an empty screen used to be
-  the only sign that everything is in place. The list is translated, unlike the
-  troubles, which stay in English because they also go to the log.
+- Cron tasks are managed from `/a_dmin/cron` and reloaded by the scheduler without editing PHP files.
+- Invalid tasks or cron expressions no longer break the rest of the scheduler.
+- `last_run_at` records only that the scheduler reached the task.
+- Cron logging now includes errors and optional successful-run timing.
+- Admin diagnostics now also show successful checks.
 
 ### 2026-08-17
 
-- Mail: the duplicate check no longer closes an address and subject for good.
-  `findDduplicates()` compared the status of the last letter to `sent` alone,
-  and `sent` lives for seconds — the webhook turns it into `delivered` and then
-  `open`, and exhausted attempts turn it into `failed`. Every one of those took
-  the first branch and answered `duplicate email`, so the pair became
-  single-use and the minute threshold was never reached. Now a letter still in
-  the queue (`queued`, `retrying`) answers `duplicate email`, and anything that
-  already went out is only held back by `retryTimeEmail`, 60 seconds by
-  default. A blocked address is still refused earlier, by `checkEmail()`.
-  Found from the shop, where an order mail carries one subject for everyone: a
-  returning customer would have been mailed once in a lifetime.
-- webp out of an avif source. `cwebp` reads png, jpeg, tiff and webp and nothing
-  else, so a record made by the feed cropper — avif, that being the default
-  `RESIZE_FORMAT` — got no webp at all. Such a source now goes to vips, the same
-  way `iwebp` does; the format, the extension and the cache stay as they were.
-- `x-magic::img` drops a format that failed instead of printing a `<source>`
-  with an empty address, and prints no `<picture>` when nothing was built.
+- Mail duplicate protection now blocks only queued/retrying messages; sent mail uses `retryTimeEmail`.
+- AVIF-to-WEBP conversion now uses `vips`.
+- `<x-magic::img>` no longer renders broken sources or empty `<picture>` elements.
 
 ### 2026-08-16
 
-- MCP reaches the feeds. `feed-api` reads — `feedsList`, `feedGet`, `itemsList`
-  (250 records a page at most), `itemGet`. `feed-api-write` writes —
-  `itemCreate`, `itemSave`, `itemDelete`. Both run one command over
-  `AbstractFeedApi::run()`, with their own list of what is allowed. Writing is a
-  separate tool on purpose: the permission is the connected tool, not a flag.
-  `itemDelete` deletes one record per call and only on the second call, the first
-  one shows what would go. Image fields are refused: a file gets into a feed
-  through the cropper of the admin panel.
-- Images: the `url` key is gone, feeds and the resizer both speak `path` — the
-  address from `public`, empty when the resize failed.
-- Setup got a button that clears the whole resize cache
-  (`ImageJob::clearAll()`).
-- A picture component, `<x-magic::img :img="#img1#" width="700" mobile="2" />`.
-  It takes the place on the page, not the files: three sources (avif, webp, jpg)
-  in a plain and a double size, `sizes` counted from `width` and `mobile`, and
-  the widths in `srcset` read back from the resizer, since `MAX_RESIZE` may trim
-  what was asked for. The `src` holds a large copy for image search — Google
-  indexes `src` and reads avif there, while a live browser never fetches it.
-- `<x-magic::img_box>` wraps that picture in an inline-block `span` that holds
-  the place: for the text of a record, where no column sets the width. It is a
-  `span` and not a `div` because the editor puts the tag inside a `<p>`, and the
-  parser pushes a block element out of it. The desktop width rides inline, the
-  phone share comes from the `mimg-m2`…`mimg-m4` classes of `design/style.css`.
-- A pagination component, `<x-magic::paginator :items="$items" />`, with its own
-  markup: the wording of the Laravel view sits inside the framework and only
-  translations can change it.
-- `MAX_RESIZE` may now go up to 10000.
-
-- Installation rewritten. The whole check runs in `MagicProSrc\Install\Installer`,
-  the admin controller only calls it. The mark is written after a full success,
-  so a half-finished install no longer reports itself as done. The first admin is
-  created by `php artisan magicpro:admin`, not by a migration.
-- Feeds: a record has a `__slug`, unique inside its feed. It is either counted
-  from a string field of the schema (`slugFrom`) or typed by hand.
-  `MproHelper::translitForUrl()` translates Russian and Serbian.
-- Feeds: order of fields in the record form, set by dragging on the feed screen
-  (`orderForm`), next to the order of columns in the list.
-- Feeds: text of a record understands `#field#` substitutions and tags of magic
-  components — `MproHelper::feedText($item, 'body')`. Only the tag itself goes
-  through Blade, so text written by an operator is never compiled.
-- Feeds: image fields keep `path` next to `url` — the same address without the
-  host, the one the resizer understands.
-- The visual editor moved from Quill to TipTap, in its own component
-  `htmlEditor.vue`: own toolbar, paste from Word cleaned by the schema, hotkeys
-  working in any keyboard layout. Ace tab got a format button.
-- Feed admin: the code of a field is locked only when that column already holds
-  data, the structure screen shows the schema json, and the Structure/Data tabs
-  stay inside the feed you opened.
+- MCP feeds now have separate read and write tools.
+- Added responsive image and paginator Blade components.
+- Image data now consistently uses `path` instead of `url`.
+- Installation was moved to `MagicProSrc\Install\Installer`, with admin creation handled by `magicpro:admin`.
+- Feeds gained unique slugs, draggable field ordering and `#field#`/Magic component rendering.
+- The visual editor was replaced with TipTap.
 
 ### 2026-08-05
 
-Feeds: Development Begins
-
-The MCP server can now build pages. I’m as excited as a little kid.
+- Feed development started, including MCP support for building pages.
 
 ### 2026-07-31
 
