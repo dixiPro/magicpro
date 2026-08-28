@@ -54,6 +54,7 @@ return [
             'utm_campaign',
             'utm_term',
             'utm_content',
+            'utm_id',
             'gclid',     // Google Ads
             'fbclid',    // Facebook / Instagram
             'yclid',     // Яндекс.Директ

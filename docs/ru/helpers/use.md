@@ -151,8 +151,13 @@ html. `getDoc` читает файлы самого пакета и им дов�
 | `imageReduceX(string $file, int $width, ?string $format = null, ?int $quality = null)`  | уменьшить по ширине          |
 | `imageReduceY(string $file, int $height, ?string $format = null, ?int $quality = null)` | уменьшить по высоте          |
 | `imageCacheClear(string $file)`                                                         | снести производные исходника |
+| `imageCacheCleanup()`                                                                   | снести производные, у которых не стало исходника |
 
 Это входы в ресайзер, подробности — `docs/ru/image/use.md`.
+
+`imageCacheCleanup()` возвращает `files`, `bytes`, `kept` и `skipped`. Работа не
+для страницы: обход читает каждый каталог исходников, место ему в кроне или под
+кнопкой в `/a_dmin/setup`.
 
 ## Отладка
 

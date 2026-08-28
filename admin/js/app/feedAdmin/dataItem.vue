@@ -24,6 +24,21 @@ const slug = ref(''); // адрес записи, системная колон�
 // лента считает slug сама — править его руками нечем
 const slugAuto = computed(() => (feed.value.schema?.slugFrom ?? '') !== '');
 
+/**
+ * Строковые слоты записи со своими значениями: из них окно загрузки предлагает
+ * взять имя файла. Значение читается на момент открытия списка, поэтому имя
+ * берётся то, что в форме сейчас, даже если запись ещё не сохранена.
+ */
+const stringSlots = computed(() =>
+  fields.value
+    .filter((field) => (field.column ?? '').startsWith('__string_'))
+    .map((field) => ({
+      code: field.code,
+      label: field.label,
+      value: values.value[field.code] ?? '',
+    }))
+);
+
 // тип вложенного поля __data превращаем в тот же набор, что у слотов
 function dataTypeOf(type) {
   const map = {
@@ -290,6 +305,7 @@ onBeforeUnmount(() => {
             :code="field.code"
             :min-width="field.minWidth"
             :ratio="field.ratio"
+            :name-fields="stringSlots"
           />
 
           <dataTextField

@@ -245,6 +245,14 @@ class MproHelper
         return ImageJob::clear($file);
     }
 
+    // Sweeps the derivatives left without a source. Written as a helper on
+    // purpose: the cron of MagicPro calls a controller of an article, and a
+    // controller has no `use` — this is what it reaches for.
+    public static function imageCacheCleanup(): array
+    {
+        return ImageJob::cleanup();
+    }
+
     public static function imageType(string $text): string
     {
         $text = match (strtolower(pathinfo($text, PATHINFO_EXTENSION))) {

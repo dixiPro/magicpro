@@ -29,9 +29,21 @@ const props = defineProps({
   code: { type: String, required: true },
   minWidth: { type: Number, default: 0 },
   ratio: { type: String, default: '' },
+  // строковые слоты записи: [{ code, label, value }]
+  nameFields: { type: Array, default: () => [] },
 });
 
 const emit = defineEmits(['uploaded']);
+
+/**
+ * Потолок длины имени без расширения.
+ *
+ * Файловая система держит 255 байт на элемент пути, а имя живёт в кеше ресайза
+ * не одно: к нему приписывается ось с размером и расширение, в худшем случае
+ * `_x10000.iwebp.webp` — восемнадцать символов. Остаётся 237, и от них ещё
+ * двадцать про запас: формат производной может смениться, а имя уже лежит.
+ */
+const NAME_MAX = 217;
 
 const open = ref(false);
 const input = ref(null);
@@ -40,6 +52,10 @@ const file = ref(null); // выбранный файл, как есть
 const imgSrc = ref(null); // он же для показа
 const fileName = ref(''); // имя без расширения, его правит оператор
 const extension = ref('');
+const nameFrom = ref(''); // код слота, из которого взяли имя
+
+const altText = ref(''); // подпись картинки, уезжает в атрибут alt
+const altFrom = ref('');
 
 const imageWidth = ref(0);
 const imageHeight = ref(0);
@@ -59,15 +75,66 @@ const aspectRatio = computed(() => {
   return w && h ? w / h : undefined;
 });
 
-const canSaveImage = computed(() => imageWidth.value >= props.minWidth);
-const canSaveCrop = computed(() => cropWidth.value >= props.minWidth);
+// Без имени файл не сохраняем: имя уедет в путь, и пустое там не значит ничего.
+// Без alt — тоже: пустая подпись у картинки это не «пока не придумал», а прямая
+// потеря для поиска и для читалки с экрана
+const canSave = computed(() => fileName.value !== '' && altText.value !== '');
 
-// имя файла уедет в url, поэтому только латиница
-watch(fileName, (name) => {
-  const clean = translitString(name);
+const canSaveImage = computed(() => imageWidth.value >= props.minWidth && canSave.value);
+const canSaveCrop = computed(() => cropWidth.value >= props.minWidth && canSave.value);
 
-  if (clean !== name) fileName.value = clean;
+/**
+ * Имя проверяется, а не чинится молча.
+ *
+ * Чинилось: набранное превращалось в латиницу прямо под курсором, и `ууу`
+ * уезжало на диск как `uuu` — оператор при этом был уверен, что сохранил то,
+ * что написал. Пусть лучше скажет тост.
+ *
+ * Пустое имя сюда не доходит: без него кнопки «Сохранить» нет вовсе.
+ */
+function nameError() {
+  if (!/^[A-Za-z0-9-]+$/.test(fileName.value)) {
+    return t('feed_image_name_bad');
+  }
+
+  if (fileName.value.length > NAME_MAX) {
+    return t('feed_image_name_long') + ' ' + NAME_MAX;
+  }
+
+  return '';
+}
+
+// имя из поля записи: оператор выбирает, из какого, и правит результат руками
+function nameFromField(code) {
+  const field = props.nameFields.find((item) => item.code === code);
+
+  if (!field) return;
+
+  fileName.value = translitString(String(field.value ?? '').trim()).slice(0, NAME_MAX);
+}
+
+/**
+ * alt живёт в атрибуте HTML, поэтому из него убираются угловые скобки и кавычки
+ * обоих видов: строка попадает в разметку, и незакрытый атрибут ломает тег.
+ *
+ * Амперсанд оставлен: «Чай & кофе» — обычный текст, а экранирование при выводе
+ * делает блейд.
+ */
+watch(altText, (text) => {
+  const clean = text.replace(/["'<>]/g, '');
+
+  if (clean !== text) altText.value = clean;
 });
+
+// alt берётся из того же списка слотов, но как есть: это подпись для человека,
+// а не кусок адреса, и транслитерировать её незачем
+function altFromField(code) {
+  const field = props.nameFields.find((item) => item.code === code);
+
+  if (!field) return;
+
+  altText.value = String(field.value ?? '').trim();
+}
 
 // размеры выбранной картинки: по ним решается, можно ли её вообще брать
 watch(imgSrc, (src) => {
@@ -89,7 +156,7 @@ function take(picked) {
   const parts = picked.name.split('.');
 
   extension.value = parts.length > 1 ? parts.pop() : '';
-  fileName.value = translitString(parts.join('.'));
+  fileName.value = translitString(parts.join('.')).slice(0, NAME_MAX);
 
   const reader = new FileReader();
 
@@ -148,6 +215,14 @@ function croppedFile() {
 }
 
 async function save() {
+  const bad = nameError();
+
+  if (bad) {
+    document.showToast(bad, 'error');
+
+    return;
+  }
+
   const cropped = cropperActive.value;
 
   const ready = cropped
@@ -161,7 +236,10 @@ async function save() {
 
     const data = await apiFeedFile({ command, id: props.itemId, code: props.code }, ready);
 
-    emit('uploaded', data);
+    // Ответ сервера — только про файл: путь, размер, mime. alt в него не входит,
+    // он уедет в базу вместе с формой записи, поэтому подставляется здесь. Без
+    // этого повторная загрузка стирала бы подпись, которую уже написали
+    emit('uploaded', { ...data, alt: altText.value });
 
     document.showToast(t('saved'));
 
@@ -175,6 +253,9 @@ function close() {
   imgSrc.value = null;
   fileName.value = '';
   extension.value = '';
+  nameFrom.value = '';
+  altText.value = '';
+  altFrom.value = '';
   imageWidth.value = 0;
   imageHeight.value = 0;
   cropperActive.value = false;
@@ -243,11 +324,36 @@ onUnmounted(() => {
       </div>
 
       <div class="col-5">
-        <label class="form-label mb-0 small">{{ t('feed_image_name') }}</label>
+        <label class="form-label mb-0 small">{{ t('feed_image_name_from') }}</label>
+        <select
+          v-model="nameFrom"
+          class="form-select form-select-sm mb-1"
+          @change="nameFromField(nameFrom)"
+        >
+          <option value="">—</option>
+          <option v-for="field in nameFields" :key="field.code" :value="field.code">
+            {{ field.label }}
+          </option>
+        </select>
+
         <div class="input-group input-group-sm mb-2">
           <input v-model="fileName" class="form-control form-control-sm" />
           <span class="input-group-text">.{{ cropperActive ? uploadFormat : extension }}</span>
         </div>
+
+        <label class="form-label mb-0 small">{{ t('feed_image_alt_from') }}</label>
+        <select
+          v-model="altFrom"
+          class="form-select form-select-sm mb-1"
+          @change="altFromField(altFrom)"
+        >
+          <option value="">—</option>
+          <option v-for="field in nameFields" :key="field.code" :value="field.code">
+            {{ field.label }}
+          </option>
+        </select>
+
+        <input v-model="altText" class="form-control form-control-sm mb-2" placeholder="alt" />
 
         <div v-if="minWidth" class="small text-muted">
           {{ t('feed_image_min') }} {{ minWidth }}px<span v-if="ratio"> · {{ ratio }}</span>

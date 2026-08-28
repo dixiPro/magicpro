@@ -227,6 +227,59 @@ class Magic_Pro_Name_Controller extends MagicController
 
 `$params` пока имеет три поля `request` `getParams` `postParams`
 
+### Вызов методов контроллера
+
+Класс контроллера называется так же, как статья, буква в букву: у статьи
+`testToDo` класс `MagicProControllers\testToDo`. `Magic_Pro_Name_Controller` в
+заготовке — это подстановка, при сохранении статьи она заменяется на имя.
+
+Публичные методы контроллера можно звать снаружи. Контроллер статьи `testToDo`:
+
+```php
+<?php
+
+namespace MagicProControllers;
+
+use Illuminate\Http\Request;
+use MagicProSrc\MagicController;
+
+class testToDo extends MagicController
+{
+    protected function process(array $params): array
+    {
+        $request = $params['request'];
+        $getParams = $params['getParams'] ?? [];
+        $postParams = $params['postParams'] ?? [];
+
+        return ['Get' => $getParams];
+    }
+
+    public function test(array $param): array
+    {
+        return ['res' => 'res'];
+    }
+}
+```
+
+Из блейда — с полным пространством имён: скомпилированный блейд лежит в
+глобальном, короткое имя там не найдётся.
+
+```php
+$res = app(MagicProControllers\testToDo::class)->test([]);
+```
+
+Из другого контроллера МаджикПро — коротким именем, они в одном пространстве
+имён.
+
+```php
+$res = app(testToDo::class)->test([]);
+```
+
+`app()` только собирает объект. `handle()` и `process()` при этом не
+выполняются, блейд не рендерится — отрабатывает ровно тот метод, который
+позвали. Метод обязан быть `public`: `process()` объявлен `protected` и снаружи
+недоступен.
+
 ### Контроллер ClassBased компонента, опытная эксплуатация, может быть изменен
 
 В текущих проектах он нигде не используется, но тестировался. Пока контроллер такой. Возможно я его переделаю.

@@ -53,7 +53,7 @@ return [
     'language' => 'language ru or en, save and reload',
     'addition_link' => 'Дополнительные ссылки в админке',
     'resize_params'         => 'Ресайз изображений',
-    'image_resize_format'   => 'Формат производных изображений',
+    'image_resize_format'   => 'Формат изображений по умолчанию',
     'image_upload_format'   => 'Формат отправки из кроппера на сервер',
     'default_jpg_quality'   => 'Качество jpg по умолчанию, 10-100',
     'png_compression'       => 'Сжатие png, 0-9: больше — дольше и мельче',

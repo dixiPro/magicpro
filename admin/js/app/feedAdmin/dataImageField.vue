@@ -24,6 +24,8 @@ const props = defineProps({
   code: { type: String, required: true },
   minWidth: { type: Number, default: 0 },
   ratio: { type: String, default: '' },
+  // строковые слоты записи: окно загрузки берёт из них имя файла
+  nameFields: { type: Array, default: () => [] },
 });
 
 const value = defineModel({ type: Object, default: null });
@@ -68,6 +70,7 @@ async function remove() {
       :code="code"
       :min-width="minWidth"
       :ratio="ratio"
+      :name-fields="nameFields"
       @uploaded="value = $event"
     />
 

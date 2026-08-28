@@ -18,7 +18,7 @@ async function handleClick() {
 </script>
 
 <template>
-  <button :disabled="loading" @click="handleClick" class="btn btn-primary">
+  <button :disabled="loading" @click="handleClick" class="btn btn-sm btn-primary">
     <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
     <slot></slot>
   </button>

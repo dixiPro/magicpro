@@ -68,7 +68,7 @@ onMounted(() => {
   getIniParams();
 });
 
-onUnmounted(() => { });
+onUnmounted(() => {});
 
 async function getIniParams() {
   paramsAttr.value = await apiSetup({
@@ -111,6 +111,21 @@ async function clearImageCache() {
   document.showToast(`${t('image_cache_cleared')}: ${res.files} (${Math.round(res.bytes / 1024)} KB)`);
 }
 
+/**
+ * То же, но выборочно: уходят копии, у которых удалили исходник. Остальной кеш
+ * остаётся, поэтому сайт после этого не пересобирает картинки заново.
+ */
+async function cleanupImageCache() {
+  if (!(await document.confirmDialog(t('image_cache_cleanup')))) {
+    return;
+  }
+  const res = await apiSetup({
+    command: 'cleanupImageCache',
+  });
+
+  document.showToast(`${t('image_cache_cleared')}: ${res.files} (${Math.round(res.bytes / 1024)} KB)`);
+}
+
 async function restoreParams() {
   if (!(await document.confirmDialog(t('reset')))) {
     return;
@@ -128,34 +143,38 @@ async function restoreParams() {
 <template>
   <div v-if="ready">
     <template v-for="block in blocks" :key="block.group ?? block.items[0][0]">
-      <div v-if="block.group" class="mt-4 mb-1"><strong>{{ block.title }}</strong></div>
+      <div v-if="block.group" class="mt-4 mb-1">
+        <strong>{{ block.title }}</strong>
+      </div>
 
       <div class="row my-3" v-for="[key, value] in block.items" :key="key">
-      <div class="col-3" :class="{ pointer: collapsible(value) }" @click="toggle(key, value)">
-        <div>
-          <i
-            v-if="collapsible(value)"
-            class="fas fa-chevron-right small me-1"
-            :class="{ 'fa-rotate-90': isOpen(key, value) }"
-          ></i>
-          <strong v-text="key"></strong>
+        <div class="col-3" :class="{ pointer: collapsible(value) }" @click="toggle(key, value)">
+          <div>
+            <i v-if="collapsible(value)" class="fas fa-chevron-right small me-1" :class="{ 'fa-rotate-90': isOpen(key, value) }"></i>
+            <strong v-text="key"></strong>
+          </div>
+          <div style="line-height: 1">
+            <small v-text="value.label"></small>
+          </div>
         </div>
-        <div style="line-height: 1">
-          <small v-text="value.label"></small>
-        </div>
-      </div>
-      <div class="col-md-5" v-show="isOpen(key, value)">
-        <EditString v-if="value.type == 'localpath' || value.type == 'string'" v-model="iniParams[key]"
-          :defaultValue="value.default" :mutable="value.mutable"></EditString>
-        <EditBoolean v-if="value.type == 'boolean'" v-model="iniParams[key]" :defaultValue="value.default"
-          :mutable="value.mutable"></EditBoolean>
-        <EditArray v-if="value.type == 'array'" v-model="iniParams[key]" :defaultValue="value.default"
-          :mutable="value.mutable"></EditArray>
-        <EditList v-if="value.type == 'list'" v-model="iniParams[key]" :values="value.values ?? []"
-          :mutable="value.mutable"></EditList>
-        <EditInteger v-if="value.type == 'integer'" v-model="iniParams[key]" :min="value.min ?? null"
-          :max="value.max ?? null" :mutable="value.mutable"></EditInteger>
-        <EditGroup v-if="value.type == 'group'" v-model="iniParams[key]" :fields="value.data ?? {}"></EditGroup>
+        <div class="col-md-5" v-show="isOpen(key, value)">
+          <EditString
+            v-if="value.type == 'localpath' || value.type == 'string'"
+            v-model="iniParams[key]"
+            :defaultValue="value.default"
+            :mutable="value.mutable"
+          ></EditString>
+          <EditBoolean v-if="value.type == 'boolean'" v-model="iniParams[key]" :defaultValue="value.default" :mutable="value.mutable"></EditBoolean>
+          <EditArray v-if="value.type == 'array'" v-model="iniParams[key]" :defaultValue="value.default" :mutable="value.mutable"></EditArray>
+          <EditList v-if="value.type == 'list'" v-model="iniParams[key]" :values="value.values ?? []" :mutable="value.mutable"></EditList>
+          <EditInteger
+            v-if="value.type == 'integer'"
+            v-model="iniParams[key]"
+            :min="value.min ?? null"
+            :max="value.max ?? null"
+            :mutable="value.mutable"
+          ></EditInteger>
+          <EditGroup v-if="value.type == 'group'" v-model="iniParams[key]" :fields="value.data ?? {}"></EditGroup>
         </div>
       </div>
     </template>
@@ -169,14 +188,22 @@ async function restoreParams() {
     </div>
 
     <div class="row mt-5">
-      <div class="col-3">
-        <div><strong>{{ t('image_cache') }}</strong></div>
-        <div style="line-height: 1">
-          <small>{{ t('image_cache_help') }}</small>
-        </div>
+      <div class="col-12">
+        <h2>{{ t('image_cache') }}</h2>
       </div>
-      <div class="col-md-5">
-        <LoadingButton :action="clearImageCache">{{ t('image_cache_clear') }}</LoadingButton>
+    </div>
+
+    <div class="row my-2">
+      <div class="col-md-3">{{ t('image_cache_cleanup') }}</div>
+      <div class="col-md-3">
+        <LoadingButton :action="cleanupImageCache">{{ t('image_cache_cleanup_btn') }}</LoadingButton>
+      </div>
+    </div>
+
+    <div class="row my-2">
+      <div class="col-md-3">{{ t('image_cache_clear') }}</div>
+      <div class="col-md-3">
+        <LoadingButton :action="clearImageCache">{{ t('image_cache_clear_btn') }}</LoadingButton>
       </div>
     </div>
   </div>

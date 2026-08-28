@@ -131,6 +131,133 @@ class ImageJob
         return ['files' => $files, 'bytes' => $bytes];
     }
 
+    /**
+     * Remove the derivatives whose source is gone.
+     *
+     * Nothing is written down about what was made from what, and nothing needs
+     * to be: the cache path names the source itself — letter of the root, the
+     * directory under it, and the file name up to the size suffix. So «is the
+     * original still there» is answered by looking at the disk instead of by a
+     * second copy of the truth, which would be the first thing to go stale.
+     *
+     * The extension of the source is not in the cache name, so a directory is
+     * read once and names are compared without extensions: `photo.jpg` and
+     * `photo.png` both keep `photo_x800.avif` alive. A deliberate bias towards
+     * keeping: a stale file in the cache costs less than a deleted needed one.
+     *
+     * Files under `x/` — source outside the project, folder named by a hash —
+     * cannot be traced back and are never deleted; they go to `skipped`.
+     */
+    public static function cleanup(): array
+    {
+        $root = storage_path('app/public/' . self::DIR);
+        $out  = ['files' => 0, 'bytes' => 0, 'kept' => 0, 'skipped' => 0];
+
+        if (! is_dir($root)) {
+            return $out;
+        }
+
+        $walk = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::CHILD_FIRST
+        );
+
+        // source directory => the names without extensions lying in it. The
+        // cache repeats the tree of the sources, so one scandir serves every
+        // derivative of one folder — and there are as many as sizes asked for
+        $seen = [];
+
+        foreach ($walk as $item) {
+            $file = $item->getPathname();
+
+            if ($item->isDir()) {
+                // CHILD_FIRST: whatever could go from here has already gone,
+                // so an emptied folder leaves in the same pass. rmdir will not
+                // touch a folder that still holds anything
+                @rmdir($file);
+
+                continue;
+            }
+
+            $back = self::sourceBase(substr($file, strlen($root) + 1));
+
+            if ($back === null) {
+                $out['skipped']++;
+
+                continue;
+            }
+
+            [$dir, $name] = $back;
+
+            $seen[$dir] ??= self::baseNames($dir);
+
+            if (isset($seen[$dir][$name])) {
+                $out['kept']++;
+
+                continue;
+            }
+
+            $size = (int) @filesize($file);
+
+            if (@unlink($file)) {
+                $out['files']++;
+                $out['bytes'] += $size;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * The cache path back into its source: `p/storage/magicFeed/11/photo_x800.avif`
+     * gives the folder `public_path('storage/magicFeed/11')` and the name `photo`.
+     *
+     * Null means the path says nothing about a source: an `x` folder, a letter
+     * we do not know, or a name without a size suffix — something the resizer
+     * did not put here.
+     */
+    protected static function sourceBase(string $rel): ?array
+    {
+        $parts  = explode('/', $rel);
+        $file   = array_pop($parts);
+        $letter = array_shift($parts) ?? '';
+
+        $roots = ['p' => public_path(), 's' => storage_path(), 'b' => base_path()];
+
+        if (! isset($roots[$letter])) {
+            return null;
+        }
+
+        // The greedy group takes the last suffix: a source called
+        // `photo_x800.jpg` makes `photo_x800_x400.avif`, and ours is the second
+        // one. A tail of two extensions is `iwebp`: `photo_x800.iwebp.webp`
+        if (! preg_match('/^(.+)_[xy]\d+\.[A-Za-z0-9]+(?:\.[A-Za-z0-9]+)?$/', $file, $m)) {
+            return null;
+        }
+
+        $dir = rtrim($roots[$letter], '/');
+
+        if ($parts) {
+            $dir .= '/' . implode('/', $parts);
+        }
+
+        return [$dir, $m[1]];
+    }
+
+    /** File names of a directory without extensions. No directory — empty. */
+    protected static function baseNames(string $dir): array
+    {
+        $names = [];
+
+        foreach (@scandir($dir) ?: [] as $entry) {
+            if ($entry !== '.' && $entry !== '..') {
+                $names[pathinfo($entry, PATHINFO_FILENAME)] = true;
+            }
+        }
+
+        return $names;
+    }
+
     /** Второй шаг: то, что зависит от оси, размера и формата. */
     public function init(string $axis, int $size, ?string $format, ?int $quality): void
     {

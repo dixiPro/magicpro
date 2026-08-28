@@ -245,7 +245,7 @@ onMounted(() => {
             <td class="text-center" v-text="message.attempts"></td>
             <td class="text-nowrap">
               <i :class="['fas', statusIcon(message.status).icon, statusIcon(message.status).class]" :title="statusLabel(message.status)"></i>
-              <span class="text-muted small">{{ formatStatusDate(message.updated_at, isQueue ? message.scheduled_at : message.sent_at) }}</span>
+              <span class="ms-2 text-muted small">{{ formatStatusDate(message.updated_at, isQueue ? message.scheduled_at : message.sent_at) }}</span>
             </td>
             <td class="text-center">
               <i

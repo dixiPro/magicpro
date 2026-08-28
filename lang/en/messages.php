@@ -53,7 +53,7 @@ return [
     'language' => 'Language ru or en, save and reload',
     'addition_link' => 'Add links in admin pannel',
     'resize_params'         => 'Image resize',
-    'image_resize_format'   => 'Format of derived images',
+    'image_resize_format'   => 'Default image format',
     'image_upload_format'   => 'Format the cropper sends to the server',
     'default_jpg_quality'   => 'Default jpg quality, 10-100',
     'png_compression'       => 'png compression, 0-9: higher is slower and smaller',

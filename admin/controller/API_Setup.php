@@ -33,6 +33,7 @@ class API_Setup extends Controller
                 'startHtmlCache'     => ['name' => 'startHtmlCache'],
                 'restoreParams'      => ['name' => 'restoreParams'],
                 'clearImageCache'    => ['name' => 'clearImageCache'],
+                'cleanupImageCache'  => ['name' => 'cleanupImageCache'],
 
 
             ];
@@ -227,6 +228,12 @@ class API_Setup extends Controller
     private function clearImageCache(): array
     {
         return ImageJob::clearAll();
+    }
+
+    // 🖼 снести только то, у чего не стало исходника; остальной кеш остаётся
+    private function cleanupImageCache(): array
+    {
+        return ImageJob::cleanup();
     }
 
     // save parameters
