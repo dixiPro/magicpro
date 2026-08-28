@@ -66,6 +66,8 @@ return [
     'image_webp_auto_filter'=> 'cwebp -af, smooths out artifacts',
     'image_webp_multithread'=> 'cwebp -mt, encode in several threads',
     'file_manager' => 'File manager',
+    'documentation' => 'Documentation',
+    'documentation_none' => 'No doc yet',
     'artList' => 'Articles list',
 
     'other'                 => 'Other',
@@ -83,6 +85,7 @@ return [
     'install_ok_image_tool'     => 'Image tool',
     'install_ok_php_extension'  => 'php extension',
     'install_ok_cron'           => 'Cron is alive, last mark',
+    'install_ok_aws_hook'       => 'The AWS hook answers at',
 
 
 
@@ -117,6 +120,7 @@ return [
     'feed_err_relation_column'   => 'The display_code column of the target feed is not taken by a field',
     'feed_err_code_locked'       => 'The feed has records, the field cannot be renamed',
     'feed_err_slug_source'       => 'A slug can only be made from a string field',
+    'feed_err_order_source'      => 'The list can only be ordered by a string field or a date',
 
     'feed_err_item_id_required'  => 'No record id given',
     'feed_err_item_not_found'    => 'Record not found',

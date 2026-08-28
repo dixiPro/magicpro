@@ -32,7 +32,8 @@ const total = ref(0);
 /**
  * Порядок записей.
  *
- * По умолчанию — свой порядок ленты, большие номера сверху.
+ * Начальный берётся из схемы, `orderBy` и `orderDir`; не задан — свой порядок
+ * ленты, большие номера сверху.
  *
  * Сортировать сервер умеет по колонкам, поэтому стрелки стоят у слотов;
  * значения json-контейнера, а с ними и картинки, отбирать нечем.
@@ -77,6 +78,14 @@ async function loadFeed() {
   const data = await apiFeed({ command: 'feedGet', id: feedId.value });
 
   feed.value = data;
+
+  // порядок из схемы — начальный: стрелки в шапке ставят свой поверх него
+  orderBy.value = data.schema?.orderBy || '__position';
+  direction.value = data.schema?.orderBy
+    ? data.schema?.orderDir === 'desc'
+      ? 'desc'
+      : 'asc'
+    : 'desc';
 
   const list = [];
 

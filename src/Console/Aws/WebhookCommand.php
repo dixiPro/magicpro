@@ -3,6 +3,7 @@
 namespace MagicProSrc\Console\Aws;
 
 use Illuminate\Support\Facades\Http;
+use MagicProSrc\Mail\AwsHookHandler;
 
 /**
  * Makes the site hear back about its mail: topic, subscription, event set.
@@ -121,7 +122,7 @@ class WebhookCommand extends AwsCommand
     private function reachable(string $endpoint): bool
     {
         try {
-            $answer = Http::timeout(10)->withoutRedirecting()->post($endpoint, ['Type' => 'MagicProPing']);
+            $answer = Http::timeout(10)->withoutRedirecting()->post($endpoint, ['Type' => AwsHookHandler::PING]);
         } catch (\Throwable $e) {
             $this->err('the address does not answer: ' . $e->getMessage());
 

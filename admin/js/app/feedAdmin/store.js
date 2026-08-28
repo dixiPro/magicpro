@@ -61,6 +61,14 @@ export const useFeedStore = defineStore('feed', () => {
   // переименования поля.
   const slugColumn = ref('');
 
+  // Поле, с которого открывается список записей, и в какую сторону. Держится
+  // колонкой по той же причине, что и источник slug, а в схему уезжает code.
+  //
+  // Пусто — свой порядок ленты, как было. Порядок начальный: стрелки в шапке
+  // списка никуда не делись.
+  const orderByColumn = ref('');
+  const orderDir = ref('asc');
+
   // типы полей __data, порядок как в ТЗ
   const DATA_TYPES = ['string', 'text', 'integer', 'decimal', 'boolean', 'datetime', 'json', 'code', 'image'];
 
@@ -119,6 +127,8 @@ export const useFeedStore = defineStore('feed', () => {
       order.value = Array.isArray(schema.value.order) ? schema.value.order.slice() : [];
       orderForm.value = Array.isArray(schema.value.orderForm) ? schema.value.orderForm.slice() : [];
       slugColumn.value = columnOfCode(schema.value.slugFrom ?? '');
+      orderByColumn.value = columnOfCode(schema.value.orderBy ?? '');
+      orderDir.value = schema.value.orderDir === 'desc' ? 'desc' : 'asc';
 
       groupFeeds.value = await apiFeed({ command: 'feedsList', groupId: feed.group_id });
 
@@ -233,6 +243,29 @@ export const useFeedStore = defineStore('feed', () => {
     if (slugColumn.value === '') return '';
 
     return rows.string.find((row) => row.column === slugColumn.value)?.code.trim() ?? '';
+  }
+
+  /**
+   * Поля, по которым список можно упорядочить: строки и даты.
+   *
+   * Сортирует база, поэтому годятся только слоты — у поля `__data` своей
+   * колонки нет. Числа и флаги в выбор не идут: их не просили.
+   */
+  const sortFields = computed(() =>
+    [...rows.date, ...rows.string]
+      .filter((row) => row.code.trim() !== '')
+      .map((row) => ({
+        column: row.column,
+        code: row.code.trim(),
+        label: row.label.trim() || row.code.trim(),
+      }))
+  );
+
+  // поле сортировки так, как оно уедет в схему: code, каким он сейчас на экране
+  function buildOrderBy() {
+    if (orderByColumn.value === '') return '';
+
+    return sortFields.value.find((field) => field.column === orderByColumn.value)?.code ?? '';
   }
 
   /**
@@ -640,6 +673,12 @@ export const useFeedStore = defineStore('feed', () => {
 
       if (buildSlugFrom() !== (schema.value.slugFrom ?? '')) return true;
 
+      if (buildOrderBy() !== (schema.value.orderBy ?? '')) return true;
+
+      // направление считается правкой только при выбранном поле: без него оно
+      // ни на что не влияет, а у старых лент ключа нет вовсе
+      if (buildOrderBy() !== '' && orderDir.value !== (schema.value.orderDir ?? 'asc')) return true;
+
       // перетащенная колонка тоже правка, хотя поля при этом те же
       if (JSON.stringify(buildOrder()) !== JSON.stringify(schema.value.order ?? [])) return true;
 
@@ -680,6 +719,8 @@ export const useFeedStore = defineStore('feed', () => {
       schema: {
         version: schema.value.version ?? 1,
         slugFrom: buildSlugFrom(),
+        orderBy: buildOrderBy(),
+        orderDir: orderDir.value,
         order: names,
         orderForm: buildOrderForm(),
         fields: fields,
@@ -689,6 +730,8 @@ export const useFeedStore = defineStore('feed', () => {
     order.value = Array.isArray(schema.value.order) ? schema.value.order.slice() : [];
     orderForm.value = Array.isArray(schema.value.orderForm) ? schema.value.orderForm.slice() : [];
     slugColumn.value = columnOfCode(schema.value.slugFrom ?? '');
+    orderByColumn.value = columnOfCode(schema.value.orderBy ?? '');
+    orderDir.value = schema.value.orderDir === 'desc' ? 'desc' : 'asc';
   }
 
   return {
@@ -710,6 +753,9 @@ export const useFeedStore = defineStore('feed', () => {
     moveFormField,
     slugColumn,
     setSlugFrom,
+    orderByColumn,
+    orderDir,
+    sortFields,
     allFields,
     inList,
     notInList,

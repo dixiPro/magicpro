@@ -116,6 +116,34 @@ async function saveSchema() {
       </table>
     </div>
 
+    <!--
+      Порядок записей в списке. Отдельный выбор, а не первая колонка: колонку
+      двигают, чтобы было удобнее читать, и порядок записей от этого ехать не
+      должен. Да и сортировать нередко надо по полю, которого в списке нет.
+    -->
+    <div class="mb-4">
+      <h2 class="h6 mb-2">{{ t('feed_list_order') }}</h2>
+      <p class="text-muted small mb-2">{{ t('feed_list_order_help') }}</p>
+
+      <div class="d-flex gap-2" style="max-width: 40rem">
+        <select v-model="store.orderByColumn" class="form-select form-select-sm w-auto">
+          <option value="">{{ t('feed_list_order_own') }}</option>
+          <option v-for="field in store.sortFields" :key="field.column" :value="field.column">
+            {{ field.label }}
+          </option>
+        </select>
+
+        <select
+          v-model="store.orderDir"
+          class="form-select form-select-sm w-auto"
+          :disabled="store.orderByColumn === ''"
+        >
+          <option value="asc">{{ t('feed_list_order_asc') }}</option>
+          <option value="desc">{{ t('feed_list_order_desc') }}</option>
+        </select>
+      </div>
+    </div>
+
     <div class="mb-4">
       <h2 class="h6 mb-2">{{ t('feed_form_order') }}</h2>
       <p class="text-muted small mb-2">{{ t('feed_form_order_help') }}</p>

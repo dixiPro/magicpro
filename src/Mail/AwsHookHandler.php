@@ -17,14 +17,26 @@ use MagicProDatabaseModels\MagicProEmailAddress;
  */
 class AwsHookHandler
 {
+    /**
+     * The Type of the knock the site itself makes: the webhook command before
+     * touching AWS, and the diagnostics of the admin panel on every visit.
+     *
+     * It is answered like any unknown Type and is the one thing that stays out
+     * of the log: a line per visit to the start page would bury the events the
+     * log is kept for.
+     */
+    public const PING = 'MagicProPing';
+
     public function handle(Request $request): JsonResponse
     {
         $raw = $request->getContent();
 
-        Log::info('awsHook received', ['body' => $raw]);
-
         $envelope = json_decode($raw, true) ?: [];
         $type = (string) ($envelope['Type'] ?? '');
+
+        if ($type !== self::PING) {
+            Log::info('awsHook received', ['body' => $raw]);
+        }
 
         if ($type === 'SubscriptionConfirmation') {
             $subscribeUrl = (string) ($envelope['SubscribeURL'] ?? '');

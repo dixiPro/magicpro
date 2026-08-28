@@ -5,7 +5,13 @@
 - Added cleanup of orphaned image-cache files whose source image no longer exists.
 - Image cache controls in `/a_dmin/setup` are now split into orphan cleanup and full cache clear.
 - Feed image names are length-limited and validated instead of being silently transliterated.
-- Feed images now require and preserve `alt` text.
+- Feed images now require `alt` text and store it with the upload itself.
+- The crop button of the feed image dialog is always available.
+- Feed string fields are edited in a growing textarea with a counter near the 255-character limit.
+- Admin diagnostics print the AWS hook address and knock at it with a POST.
+- New admin page `/a_dmin/documentation`: helpers of `MproHelper` with their doc, read from the phpdoc of the source.
+- Every public method of `MproHelper` carries a bilingual `@ru`/`@en` phpdoc.
+- A feed can set the order its record list opens in — a string field or a date, ascending or descending.
 - `translitString` now returns lowercase Latin text with normalized dashes.
 
 ### 2026-08-26

@@ -66,6 +66,8 @@ return [
     'image_webp_auto_filter'=> 'cwebp -af, сглаживание артефактов',
     'image_webp_multithread'=> 'cwebp -mt, кодировать в несколько потоков',
     'file_manager' => 'Файл менеджер',
+    'documentation' => 'Документация',
+    'documentation_none' => 'Доки нет',
     'artList' => 'Список статей',
 
     'other'                 => 'Другое',
@@ -83,6 +85,7 @@ return [
     'install_ok_image_tool'     => 'Инструмент картинок',
     'install_ok_php_extension'  => 'Расширение php',
     'install_ok_cron'           => 'Крон жив, последняя отметка',
+    'install_ok_aws_hook'       => 'Хук AWS отвечает по адресу',
 
 
 
@@ -117,6 +120,7 @@ return [
     'feed_err_relation_column'   => 'Колонка display_code в целевой ленте не занята полем',
     'feed_err_code_locked'       => 'В ленте есть записи, переименовать поле нельзя',
     'feed_err_slug_source'       => 'Slug можно делать только из строкового поля',
+    'feed_err_order_source'      => 'Сортировать список можно только по строковому полю или по дате',
 
     'feed_err_item_id_required'  => 'Не передан id записи',
     'feed_err_item_not_found'    => 'Запись не найдена',

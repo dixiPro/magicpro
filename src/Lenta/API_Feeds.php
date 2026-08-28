@@ -482,10 +482,47 @@ class API_Feeds extends AbstractFeedApi
         return [
             'version'   => (int) ($schema['version'] ?? 1),
             'slugFrom'  => $this->checkSlugFrom($schema, $fields),
+            'orderBy'   => $this->checkOrderBy($schema, $fields),
+            'orderDir'  => strtolower((string) ($schema['orderDir'] ?? '')) === 'desc' ? 'desc' : 'asc',
             'order'     => is_array($order) ? array_values(array_filter($order, 'is_string')) : [],
             'orderForm' => is_array($orderForm) ? array_values(array_filter($orderForm, 'is_string')) : [],
             'fields'    => array_values($fields),
         ];
+    }
+
+    /**
+     * Поле, по которому список записей открывается. Пусто — свой порядок ленты.
+     *
+     * Годятся строковые и датовые слоты: сортирует база, а у поля `__data` нет
+     * своей колонки — по нему нечего упорядочивать. Числа и флаги в выбор не
+     * идут не по этой причине, их просто не просили.
+     *
+     * Порядок здесь — только начальный: стрелки в шапке списка работают как
+     * работали, и выбор оператора живёт до перезагрузки экрана.
+     */
+    protected function checkOrderBy(array $schema, array $fields): string
+    {
+        $code = trim((string) ($schema['orderBy'] ?? ''));
+
+        if ($code === '') {
+            return '';
+        }
+
+        foreach ($fields as $field) {
+            if ((string) ($field['code'] ?? '') !== $code) {
+                continue;
+            }
+
+            $column = (string) ($field['column'] ?? '');
+
+            if (! str_starts_with($column, '__string_') && ! str_starts_with($column, '__date_')) {
+                break;
+            }
+
+            return $code;
+        }
+
+        throw new Exception(self::err('order_source') . ': ' . $code);
     }
 
     /**
@@ -963,8 +1000,8 @@ class API_Feeds extends AbstractFeedApi
      * Puts a file into a field of a record and writes its metadata into __data.
      *
      * One field holds one image: the collection is cleared first, so the old
-     * file goes with it. What the operator typed — alt and the like — survives,
-     * only the file properties are overwritten.
+     * file goes with it. The alt comes along with the file; anything else the
+     * operator typed survives, only the file properties are overwritten.
      */
     protected function imageUpload(array $params): array
     {
@@ -998,6 +1035,7 @@ class API_Feeds extends AbstractFeedApi
             'mime' => $media->mime_type,
             'x'    => $width,
             'y'    => $height,
+            'alt'  => $this->imageAlt($params, (string) ($data[$code]['alt'] ?? '')),
         ]);
 
         // Ключ `url` писался здесь раньше и остался в json у старых картинок.
@@ -1009,6 +1047,25 @@ class API_Feeds extends AbstractFeedApi
         $item->save();
 
         return $data[$code];
+    }
+
+    /**
+     * The caption of the picture, it travels together with the file.
+     *
+     * Not with the form: the file lands in the database at once, while the
+     * record itself may stay unsaved for another hour — and the alt written in
+     * the upload window would wait there with it. Nothing given: what lies in
+     * the record stays.
+     *
+     * Angle brackets and quotes of both kinds go out. The string ends up in an
+     * html attribute, and an unclosed one breaks the tag. The browser cuts them
+     * too; the server does not take its word for it.
+     */
+    protected function imageAlt(array $params, string $was): string
+    {
+        $alt = trim((string) ($params['alt'] ?? ''));
+
+        return $alt === '' ? $was : preg_replace('/["\'<>]/', '', $alt);
     }
 
     /**
@@ -1084,6 +1141,7 @@ class API_Feeds extends AbstractFeedApi
             'mime' => $media->mime_type,
             'x'    => $width,
             'y'    => $height,
+            'alt'  => $this->imageAlt($params, (string) ($data[$code]['alt'] ?? '')),
         ]);
 
         // Ключ `url` писался здесь раньше и остался в json у старых картинок.

@@ -234,12 +234,15 @@ async function save() {
   try {
     const command = cropped ? 'imageCropUpload' : 'imageUpload';
 
-    const data = await apiFeedFile({ command, id: props.itemId, code: props.code }, ready);
+    // alt едет вместе с файлом, а не с формой записи: файл ложится в базу сразу,
+    // и подпись должна лечь с ним. Иначе картинка уже на месте, а alt ждёт, пока
+    // оператор нажмёт «Сохранить» у записи, — и до тех пор его в базе нет
+    const data = await apiFeedFile(
+      { command, id: props.itemId, code: props.code, alt: altText.value },
+      ready
+    );
 
-    // Ответ сервера — только про файл: путь, размер, mime. alt в него не входит,
-    // он уедет в базу вместе с формой записи, поэтому подставляется здесь. Без
-    // этого повторная загрузка стирала бы подпись, которую уже написали
-    emit('uploaded', { ...data, alt: altText.value });
+    emit('uploaded', data);
 
     document.showToast(t('saved'));
 
@@ -378,7 +381,8 @@ onUnmounted(() => {
           <button v-if="canSaveImage" class="btn btn-sm btn-primary me-1" @click="save()">
             {{ t('save') }}
           </button>
-          <button v-if="canSaveImage" class="btn btn-sm btn-outline-primary me-1" @click="cropperActive = true">
+          <!-- обрезать дают всегда: имя и alt нужны для сохранения, а не для рамки -->
+          <button class="btn btn-sm btn-outline-primary me-1" @click="cropperActive = true">
             {{ t('feed_image_crop') }}
           </button>
         </template>

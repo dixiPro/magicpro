@@ -20,24 +20,35 @@ class MproHelper
     // language the documentation is written in, the one translations fall back to
     private const DOC_SOURCE_LANG = 'ru';
 
-    // Documentation page rendered to html. The markdown source lives in the package
-    // docs directory, one subdirectory per language: docs/ru/routing.md. Without an
-    // explicit language the one from the MagicPro settings is used.
-    //
-    // The name may point into a subdirectory — getDoc('main/use') reads
-    // docs/ru/main/use.md — because the documentation is kept one folder per
-    // module. Slashes are allowed only between segments of letters, digits,
-    // hyphen and underscore, so a dot cannot appear and ../ cannot be built:
-    // both parts of the path come from route parameters.
-    //
-    // With $renderHtml = false the markdown source is returned untouched, which is
-    // what a download or a translation job needs.
+    /**
+     * @ru
+     * Страница документации пакета в html, источник — markdown в `docs/<язык>/`.
+     *
+     * `$name` — имя файла без `.md`, можно с папкой: `main/use`.
+     * `$lang` — пустой берётся из настроек; нет перевода — покажется ru.
+     * `$renderHtml` — `false` отдаёт markdown как есть.
+     *
+     *     {!! MproHelper::getDoc('feed/use') !!}
+     *
+     * @en
+     * A documentation page of the package as html, the source is markdown in
+     * `docs/<lang>/`.
+     *
+     * `$name` — file name without `.md`, a folder is allowed: `main/use`.
+     * `$lang` — empty takes the one from the settings; no translation shows ru.
+     * `$renderHtml` — `false` returns the markdown untouched.
+     *
+     *     {!! MproHelper::getDoc('feed/use') !!}
+     */
     public static function getDoc(string $name, string $lang = '', bool $renderHtml = true): string
     {
         if ($lang === '') {
             $lang = (string) (MagicGlobals::$INI['LANGUAGE'] ?? 'ru');
         }
 
+        // letters, digits, dash and underscore, a slash only between segments: a
+        // dot cannot get in and ../ cannot be built, and both parts of the path
+        // arrive as route parameters
         if (!preg_match('#^[A-Za-z0-9_-]+(/[A-Za-z0-9_-]+)*$#', $name) || !preg_match('/^[A-Za-z-]+$/', $lang)) {
             self::addLog('doc', ['error' => 'invalid name or lang', 'name' => $name, 'lang' => $lang]);
             return '';
@@ -68,17 +79,35 @@ class MproHelper
         );
     }
 
-    // Public site key of Google reCAPTCHA, the one that goes into the form and
-    // is visible in the page source. Kept here so blades never read env directly
-    // and the key lives in .env only.
+    /**
+     * @ru
+     * Публичный site key reCAPTCHA из `RECAPTCHA_SITE_KEY`. Тот, что виден в
+     * исходнике страницы; секретный ключ сюда не приходит.
+     *
+     * @en
+     * The public site key of reCAPTCHA, from `RECAPTCHA_SITE_KEY`. The one
+     * visible in the page source; the secret key never comes here.
+     */
     public static function getRecaptureKey(): string
     {
         return (string) env('RECAPTCHA_SITE_KEY');
     }
 
-    // The secret key is read from RECAPTCHA_SECRET_KEY inside the api and is
-    // never passed in. run() is used instead of runOrFail() to keep the bool
-    // result the calling articles expect.
+    /**
+     * @ru
+     * Проверяет токен reCAPTCHA у Google. `true` только при успехе, любая
+     * ошибка сети даёт `false`.
+     *
+     * `$response` — токен из формы. Секретный ключ берётся из
+     * `RECAPTCHA_SECRET_KEY` внутри и не передаётся.
+     *
+     * @en
+     * Checks a reCAPTCHA token with Google. `true` on success only, any network
+     * trouble gives `false`.
+     *
+     * `$response` — the token from the form. The secret key is taken from
+     * `RECAPTCHA_SECRET_KEY` inside and is never passed in.
+     */
     public static function verifyRecapture(string $response): bool
     {
         return API_Auth::run('checkGoogleCapture', [
@@ -86,6 +115,23 @@ class MproHelper
         ])['status'];
     }
 
+    /**
+     * @ru
+     * Отправляет письмо сразу. Возвращает `status`, `errorMsg`, `data`; ошибка
+     * не бросается, а приходит в ответе, и всё пишется в лог `mail`.
+     *
+     * `$params`: `email`, `subj`, `html`, необязательные `replyTo` и `fromName`.
+     *
+     *     MproHelper::sendMail(['email' => $to, 'subj' => 'Заказ', 'html' => $html]);
+     *
+     * @en
+     * Sends a letter right away. Returns `status`, `errorMsg`, `data`; nothing
+     * is thrown, the trouble arrives in the answer, and both go to the `mail` log.
+     *
+     * `$params`: `email`, `subj`, `html`, optional `replyTo` and `fromName`.
+     *
+     *     MproHelper::sendMail(['email' => $to, 'subj' => 'Order', 'html' => $html]);
+     */
     public static function sendMail(array $params): array
     {
         try {
@@ -135,6 +181,25 @@ class MproHelper
         }
     }
 
+    /**
+     * @ru
+     * Пишет строку в свой лог `storage/logs/<имя>.log`, файл на день, хранится
+     * две недели.
+     *
+     * `$logName` — имя лога, оно же имя файла. `$data` — строка или массив;
+     * массив разворачивается в строки `ключ: значение`.
+     *
+     *     MproHelper::addLog('order', ['id' => $id, 'sum' => $sum]);
+     *
+     * @en
+     * Writes a line into its own log, `storage/logs/<name>.log`, a file per day,
+     * kept for two weeks.
+     *
+     * `$logName` — the name of the log and of the file. `$data` — a string or an
+     * array; an array is unfolded into `key: value` lines.
+     *
+     *     MproHelper::addLog('order', ['id' => $id, 'sum' => $sum]);
+     */
     public static function addLog(string $logName, string|array $data): void
     {
         $logger = new Logger($logName);
@@ -172,6 +237,21 @@ class MproHelper
         $logger->info($data);
     }
 
+    /**
+     * @ru
+     * Шлёт сообщение в телеграм. Возвращает ответ телеграма как есть, запись
+     * уходит в лог `telegram`.
+     *
+     * `$message` — текст, `$chat_id` — чат, `$botToken` — токен бота,
+     * `$mode` — разметка текста: `HTML` или `Markdown`.
+     *
+     * @en
+     * Sends a message to telegram. Returns the answer of telegram as it is, and
+     * writes a line into the `telegram` log.
+     *
+     * `$message` — the text, `$chat_id` — the chat, `$botToken` — the token of
+     * the bot, `$mode` — markup of the text: `HTML` or `Markdown`.
+     */
     public static function telegramSend(string $message, string $chat_id, string $botToken, string $mode = 'HTML'): array
     {
         $url = 'https://api.telegram.org/bot' . $botToken . '/sendMessage';
@@ -192,6 +272,19 @@ class MproHelper
     }
 
 
+    /**
+     * @ru
+     * Шифрует массив в строку AES-256-CBC, пригодную для ссылки или письма.
+     * Обратно — `decrypt` с тем же ключом.
+     *
+     * `$data` — массив, `$key` — ключ шифрования.
+     *
+     * @en
+     * Encrypts an array into an AES-256-CBC string fit for a link or a letter.
+     * Back with `decrypt` and the same key.
+     *
+     * `$data` — the array, `$key` — the key.
+     */
     public static function crypt(array $data, string $key): string
     {
         $json = json_encode($data, JSON_UNESCAPED_UNICODE);
@@ -202,6 +295,19 @@ class MproHelper
     }
 
 
+    /**
+     * @ru
+     * Разбирает строку от `crypt` обратно в массив. Чужая строка или другой
+     * ключ дают пустой массив, исключения нет.
+     *
+     * `$data` — строка, `$key` — тот же ключ.
+     *
+     * @en
+     * Turns a string of `crypt` back into an array. A foreign string or another
+     * key gives an empty array, nothing is thrown.
+     *
+     * `$data` — the string, `$key` — the same key.
+     */
     public static function decrypt(string $data, string $key): array
     {
         $decoded = base64_decode($data);
@@ -212,6 +318,24 @@ class MproHelper
         return $result;
     }
 
+    /**
+     * @ru
+     * Печатает что угодно на страницу json-ом, для отладки. Ничего не
+     * возвращает.
+     *
+     * `$var` — что показать, `$showXmp` — обернуть в `<xmp>`; `false` печатает
+     * голый json.
+     *
+     *     {{ MproHelper::dump($item->fields()) }}
+     *
+     * @en
+     * Prints anything onto the page as json, for debugging. Returns nothing.
+     *
+     * `$var` — what to show, `$showXmp` — wrap it into `<xmp>`; `false` prints
+     * bare json.
+     *
+     *     {{ MproHelper::dump($item->fields()) }}
+     */
     public static function dump($var, bool $showXmp = true): void
     {
         try {
@@ -227,32 +351,97 @@ class MproHelper
         }
     }
 
-    // Ресайз на лету. Логика в MagicProSrc\Image\ImageJob, здесь только вход
-    // для блейдов: в них пишут без use и коротко.
+    /**
+     * @ru
+     * Ресайз по ширине, на лету и с кешем. Возвращает массив `path`, `x`, `y`,
+     * `mime`, `size`; исходник не трогается.
+     *
+     * `$file` — путь от корня сайта, `$width` — ширина в px,
+     * `$format` и `$quality` — пустые берутся из настроек.
+     *
+     *     $img = MproHelper::imageReduceX($item->img1['path'], 800);
+     *
+     * @en
+     * Resize by width, on the fly and cached. Returns `path`, `x`, `y`, `mime`,
+     * `size`; the original is not touched.
+     *
+     * `$file` — path from the root of the site, `$width` — width in px,
+     * `$format` and `$quality` — empty ones come from the settings.
+     *
+     *     $img = MproHelper::imageReduceX($item->img1['path'], 800);
+     */
     public static function imageReduceX(string $file, int $width, ?string $format = null, ?int $quality = null): array
     {
         return ImageJob::make($file, 'x', $width, $format, $quality);
     }
 
+    /**
+     * @ru
+     * То же, что `imageReduceX`, только по высоте.
+     *
+     * `$height` — высота в px, остальное как у ресайза по ширине.
+     *
+     * @en
+     * The same as `imageReduceX`, but by height.
+     *
+     * `$height` — height in px, the rest as in the resize by width.
+     */
     public static function imageReduceY(string $file, int $height, ?string $format = null, ?int $quality = null): array
     {
         return ImageJob::make($file, 'y', $height, $format, $quality);
     }
 
-    // Убирает все производные исходника, независимо от размера и формата.
+    /**
+     * @ru
+     * Убирает из кеша все производные одного исходника, любого размера и
+     * формата. Возвращает число удалённых файлов.
+     *
+     * `$file` — путь к исходнику, тот же, что даётся ресайзу.
+     *
+     * @en
+     * Removes every derivative of one source from the cache, of any size and
+     * format. Returns how many files went.
+     *
+     * `$file` — path of the source, the same one the resize is given.
+     */
     public static function imageCacheClear(string $file): int
     {
         return ImageJob::clear($file);
     }
 
-    // Sweeps the derivatives left without a source. Written as a helper on
-    // purpose: the cron of MagicPro calls a controller of an article, and a
-    // controller has no `use` — this is what it reaches for.
+    /**
+     * @ru
+     * Чистит кеш от производных, у которых не стало исходника. Возвращает
+     * `files`, `bytes`, `kept`, `skipped`. Зовётся из крона, через контроллер
+     * статьи.
+     *
+     *     return MproHelper::imageCacheCleanup();
+     *
+     * @en
+     * Sweeps the cache of derivatives whose source is gone. Returns `files`,
+     * `bytes`, `kept`, `skipped`. Called from the cron, through a controller of
+     * an article.
+     *
+     *     return MproHelper::imageCacheCleanup();
+     */
     public static function imageCacheCleanup(): array
     {
         return ImageJob::cleanup();
     }
 
+    /**
+     * @ru
+     * Mime картинки по расширению имени: `image/jpeg`, `image/png`,
+     * `image/webp`, `image/gif`. Прочее — пустая строка.
+     *
+     * `$text` — имя файла или путь.
+     *
+     * @en
+     * The mime of an image by the extension of its name: `image/jpeg`,
+     * `image/png`, `image/webp`, `image/gif`. Anything else is an empty string.
+     *
+     * `$text` — a file name or a path.
+     */
     public static function imageType(string $text): string
     {
         $text = match (strtolower(pathinfo($text, PATHINFO_EXTENSION))) {
@@ -266,21 +455,41 @@ class MproHelper
         return $text;
     }
 
-    // Текст записи ленты, готовый к выводу: подстановки #поле# и теги magic-
-    // компонентов внутри текста. Работа в MagicProSrc\Lenta\FeedText, здесь
-    // только вход для блейдов — там пишут без use и коротко:
-    //
-    //   {!! MproHelper::feedText($item, 'body') !!}
+    /**
+     * @ru
+     * Текст записи ленты, готовый к выводу: разворачивает подстановки `#поле#`
+     * и теги magic-компонентов внутри текста.
+     *
+     * `$item` — запись ленты, `$code` — имя её текстового поля.
+     *
+     *     {!! MproHelper::feedText($item, 'body') !!}
+     *
+     * @en
+     * The text of a feed record ready to print: unfolds the `#field#` marks and
+     * the tags of magic components inside it.
+     *
+     * `$item` — the record, `$code` — the name of its text field.
+     *
+     *     {!! MproHelper::feedText($item, 'body') !!}
+     */
     public static function feedText(FeedItem $item, string $code): string
     {
         return FeedText::render($item, $code);
     }
 
-    // Markdown of a feed record rendered to html. Unlike getDoc, the source here
-    // is written by an operator, so raw html inside it is stripped rather than
-    // passed through, and links that carry javascript are dropped.
-    // The admin preview calls this through the api, the site calls it directly,
-    // so both show the same thing.
+    /**
+     * @ru
+     * Markdown в html для текста, который пишет оператор: html внутри
+     * вырезается, ссылки с javascript выбрасываются.
+     *
+     * `$md` — исходный markdown.
+     *
+     * @en
+     * Markdown to html for a text written by an operator: html inside is
+     * stripped, links carrying javascript are dropped.
+     *
+     * `$md` — the markdown source.
+     */
     public static function mdToHtml(string $md): string
     {
         if (trim($md) === '') {
@@ -293,17 +502,12 @@ class MproHelper
         ]);
     }
 
-    // Строка -> кусок URL: латиница в нижнем регистре, цифры и дефис.
+    // A closed table: what is in it gets translated, the rest is dropped. So the
+    // address does not depend on what else arrives — hieroglyphs, emoji,
+    // invisible spaces simply will not be in the result.
     //
-    // Таблица закрытая: что в ней есть, то и переводится, остальное выбрасывается.
-    // Так адрес не зависит от того, какие ещё символы придут — иероглифы, эмодзи,
-    // невидимые пробелы: их просто не будет в результате.
-    //
-    // Пробелы, дефисы и подчёркивания сводятся к одному дефису: подчёркивание в
-    // адресе допустимо, но разделитель слов должен быть один.
-    //
-    // Обрезка идёт по границе слова, чтобы адрес не обрывался посреди слова, и
-    // держит длину заведомо ниже 255 символов колонки. $limit = 0 — не резать.
+    // Spaces, dashes and underscores come down to one dash: an underscore is
+    // allowed in an address, but the separator of words has to be one.
     private const TRANSLIT_URL = [
         'А' => 'a', 'Б' => 'b', 'В' => 'v', 'Г' => 'g', 'Д' => 'd', 'Е' => 'e',
         'Ё' => 'yo', 'Ж' => 'zh', 'З' => 'z', 'И' => 'i', 'Й' => 'y', 'К' => 'k',
@@ -341,6 +545,25 @@ class MproHelper
         ' ' => '-', '_' => '-', '-' => '-', '–' => '-', '—' => '-',
     ];
 
+    /**
+     * @ru
+     * Строка в кусок адреса: латиница в нижнем регистре, цифры и дефис. Что не
+     * переводится — выбрасывается.
+     *
+     * `$text` — исходная строка, `$limit` — потолок длины, режется по границе
+     * слова; `0` — не резать.
+     *
+     *     $slug = MproHelper::translitForUrl($item->title);
+     *
+     * @en
+     * A string into a piece of an address: lowercase latin, digits and a dash.
+     * What does not translate is dropped.
+     *
+     * `$text` — the source string, `$limit` — the cap of the length, cut on a
+     * word boundary; `0` — do not cut.
+     *
+     *     $slug = MproHelper::translitForUrl($item->title);
+     */
     public static function translitForUrl(string $text, int $limit = 200): string
     {
         // «й» может прийти как «и» с отдельным значком: в таком виде таблица его
@@ -373,7 +596,26 @@ class MproHelper
         return $result;
     }
 
-    //
+    /**
+     * @ru
+     * Чистый текст из размеченного: снимает теги и entity, выбрасывает эмодзи,
+     * сводит пробелы и переносы к одному пробелу. Для description и анонсов.
+     *
+     * `$text` — исходный текст, `$limit` — потолок длины, режется по границе
+     * слова; `0` — не резать.
+     *
+     *     $descr = MproHelper::trimAndCutText($item->body, 160);
+     *
+     * @en
+     * Plain text out of marked-up: takes off tags and entities, drops emoji,
+     * brings spaces and line breaks down to one space. For descriptions and
+     * announcements.
+     *
+     * `$text` — the source text, `$limit` — the cap of the length, cut on a word
+     * boundary; `0` — do not cut.
+     *
+     *     $descr = MproHelper::trimAndCutText($item->body, 160);
+     */
     public static function trimAndCutText(string $text, int $limit = 0): string
     {
         $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
@@ -389,7 +631,18 @@ class MproHelper
 
         return $text;
     }
-    // Parent article of the given one. Empty array for the root and for a missing id.
+    /**
+     * @ru
+     * Родительская статья. Пустой массив у корня и у несуществующего id.
+     *
+     * `$id` — id статьи.
+     *
+     * @en
+     * The parent article. An empty array for the root and for an id that is not
+     * there.
+     *
+     * `$id` — id of the article.
+     */
     public static function getParent(int $id): array
     {
         $parentId = Article::query()
@@ -404,7 +657,20 @@ class MproHelper
     }
 
 
-    //  Получить всех потомков записи.
+    /**
+     * @ru
+     * Дети статьи по её id, в порядке `npp`. Только те, у кого стоит `menuOn`:
+     * это меню. Поля `id`, `title`, `name`, `menuOn`, `updated_at`, `npp`.
+     *
+     * `$artId` — id родителя.
+     *
+     * @en
+     * The children of an article by its id, in `npp` order. Only those with
+     * `menuOn`: this is a menu. Fields `id`, `title`, `name`, `menuOn`,
+     * `updated_at`, `npp`.
+     *
+     * `$artId` — id of the parent.
+     */
     public static function getChildrenById(int $artId): array
     {
         return Article::query()
@@ -416,7 +682,22 @@ class MproHelper
             ->toArray();
     }
 
-    //  Получить всех потомков записи.
+    /**
+     * @ru
+     * То же меню, но родитель ищется по имени статьи. Обычный вход из блейда.
+     *
+     * `$name` — имя статьи-родителя.
+     *
+     *     $menu = MproHelper::getChildrenByName('topMenu');
+     *
+     * @en
+     * The same menu, but the parent is found by the name of the article. The
+     * usual entry from a blade.
+     *
+     * `$name` — name of the parent article.
+     *
+     *     $menu = MproHelper::getChildrenByName('topMenu');
+     */
     public static function getChildrenByName(string $name): array
     {
         $id = Article::select('id')->where('name', $name)->value('id');
@@ -431,6 +712,17 @@ class MproHelper
         return $result;
     }
 
+    /**
+     * @ru
+     * Статья по имени, все её поля. Нет такой — пустой массив.
+     *
+     * `$name` — имя статьи, оно же её адрес.
+     *
+     * @en
+     * An article by its name, all of its fields. Nothing found — an empty array.
+     *
+     * `$name` — the name of the article, which is also its address.
+     */
     public static function getArtByName(string $name): array
     {
         $result = Article::query()
@@ -441,6 +733,17 @@ class MproHelper
         return $result[0] ?? [];
     }
 
+    /**
+     * @ru
+     * Статья по id, все её поля. Нет такой — пустой массив.
+     *
+     * `$id` — id статьи.
+     *
+     * @en
+     * An article by id, all of its fields. Nothing found — an empty array.
+     *
+     * `$id` — id of the article.
+     */
     public static function getArtById(int $id): array
     {
         $result = Article::query()
@@ -451,7 +754,19 @@ class MproHelper
         return $result[0] ?? [];
     }
 
-    // 
+    /**
+     * @ru
+     * Путь от корня до статьи — массив имён по порядку, для хлебных крошек.
+     * Оборванная цепочка отдаёт то, что успело собраться.
+     *
+     * `$id` — id статьи.
+     *
+     * @en
+     * The path from the root down to an article — an array of names in order,
+     * for breadcrumbs. A broken chain gives back what was collected.
+     *
+     * `$id` — id of the article.
+     */
     public static function getPathToRootById(int $id): array
     {
         $path = [];

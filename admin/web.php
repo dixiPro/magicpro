@@ -18,6 +18,11 @@ $csrf = class_exists(\Illuminate\Foundation\Http\Middleware\PreventRequestForger
 
 Route::get('/a_dmin', [AdminController::class, 'index'])->name('magic.a_dmin');
 
+// Документация: phpdoc хелперов, читается из исходника
+Route::get('/a_dmin/documentation', function () {
+    return view('magicAdmin::documentation');
+})->name('magic.documentation');
+
 // Другое: витрина иконок и прочее по мелочи
 Route::get('/a_dmin/other', function () {
     return view('magicAdmin::other');

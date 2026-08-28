@@ -15,6 +15,7 @@
         ['route' => 'magic.cron', 'label' => 'cron', 'icon' => 'fas fa-clock'],
         ['route' => 'magic.crawler', 'label' => 'crawler', 'icon' => 'fas fa-spider'],
         ['route' => 'magic.dataBase', 'label' => 'dataBase', 'icon' => 'fas fa-database'],
+        ['route' => 'magic.documentation', 'label' => 'documentation', 'icon' => 'fas fa-book'],
         ['route' => 'magic.other', 'label' => 'other', 'icon' => 'fas fa-ellipsis-h'],
     ];
 

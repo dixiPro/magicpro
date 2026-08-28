@@ -4,6 +4,7 @@ import { apiFeed } from './api.js';
 import { formatDate } from '../CommonCom/formatDate.js';
 import InputText from 'primevue/inputtext';
 import dataTextField from './dataTextField.vue';
+import dataStringField from './dataStringField.vue';
 import dataImageField from './dataImageField.vue';
 
 import { useI18n } from 'vue-i18n';
@@ -314,10 +315,11 @@ onBeforeUnmount(() => {
             :editor="field.editor"
           />
 
-          <InputText
+          <!-- потолок у слота, а не у типа: строка внутри __data лежит в json -->
+          <dataStringField
             v-else-if="field.type === 'text'"
             v-model="values[field.code]"
-            class="form-control form-control-sm"
+            :max="field.column === '__data' ? 0 : 255"
           />
 
           <input

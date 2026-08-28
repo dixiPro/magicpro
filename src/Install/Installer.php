@@ -4,11 +4,14 @@ namespace MagicProSrc\Install;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use MagicProAdminControllers\API_ArticlesPostController;
 use MagicProDatabaseModels\Article;
 use MagicProDatabaseModels\MagicProUser;
+use MagicProSrc\Mail\AwsHookHandler;
 use MagicProSrc\Scheduling\Heartbeat;
 
 require_once __DIR__ . '/../../admin/controller/MagicProBuilder.php';
@@ -38,6 +41,15 @@ class Installer
 
     /** The scheduler is considered alive while its mark is younger than this. */
     private const CRON_MAX_AGE = 120;
+
+    /**
+     * How long we wait for the hook to answer its own site.
+     *
+     * Short on purpose: the request goes out and comes back into the same
+     * server, and a page of the admin panel waits for it. Better a wrong «does
+     * not answer» on a loaded server than a start page hanging for a minute.
+     */
+    private const HOOK_TIMEOUT = 5;
 
     /** Tools that cut images: how to ask for a version, how to install. */
     private const IMAGE_TOOLS = [
@@ -491,6 +503,7 @@ class Installer
         }
 
         $this->checkCron();
+        $this->checkAwsHook();
     }
 
     /**
@@ -518,5 +531,68 @@ class Installer
 
         $this->msgArr[] = "**{$note}** Scheduled mail is not sent.\n\nRun: `{$command}`";
         $this->writeLog($note);
+    }
+
+    /**
+     * The address AWS knocks at with the fate of every letter, and whether it
+     * still answers.
+     *
+     * The address is not taken from a setting: the site has one hook and it is
+     * its own url. It is printed because it is what goes into `aws-setup.ini`
+     * of the site — typed from memory, it ends up subscribed as something the
+     * topic will call for three days without an answer.
+     *
+     * The knock repeats what `magicpro:aws-webhook` does before it touches AWS:
+     * a POST with a Type of our own. The handler answers an unknown Type with
+     * `{"status": true}`, while the dynamic router of the site — the usual
+     * reason the address is silent — answers with a page. So the answer tells
+     * not only that something is alive, but that the hook is.
+     */
+    private function checkAwsHook(): void
+    {
+        if (! Route::has('magic.awsHook')) {
+            return;
+        }
+
+        $url = route('magic.awsHook');
+
+        try {
+            $answer = Http::timeout(self::HOOK_TIMEOUT)
+                ->withoutRedirecting()
+                ->post($url, ['Type' => AwsHookHandler::PING]);
+        } catch (\Throwable $e) {
+            $this->hookFail($url, 'does not answer: ' . $e->getMessage());
+
+            return;
+        }
+
+        if ($answer->redirect()) {
+            $this->hookFail($url, 'redirects to ' . $answer->header('Location'));
+
+            return;
+        }
+
+        if (! $answer->successful()) {
+            $this->hookFail($url, 'answers ' . $answer->status());
+
+            return;
+        }
+
+        if ($answer->json('status') !== true) {
+            $this->hookFail($url, 'answers, but not with the hook: the dynamic router took the address');
+
+            return;
+        }
+
+        $this->ok('install_ok_aws_hook', $url);
+    }
+
+    /** One shape for every trouble of the hook: the address, then what happened. */
+    private function hookFail(string $url, string $note): void
+    {
+        $this->msgArr[] = "**The AWS hook {$note}.** `{$url}`"
+            . "\n\nEvents of sent mail are not recorded. `POST /awsHook` has to reach `AwsHookHandler`.";
+
+        $this->writeLog('aws hook: ' . $note . ' ' . $url);
     }
 }
