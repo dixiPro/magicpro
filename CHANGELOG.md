@@ -12,6 +12,8 @@
 - New admin page `/a_dmin/documentation`: helpers of `MproHelper` with their doc, read from the phpdoc of the source.
 - Every public method of `MproHelper` carries a bilingual `@ru`/`@en` phpdoc.
 - A feed can set the order its record list opens in — a string field or a date, ascending or descending.
+- The eye in the header of the record list filters by visibility: all records, hidden only, visible only.
+- A feed can name the article that shows its records; the record form then links to `/<article>/<slug>`.
 - `translitString` now returns lowercase Latin text with normalized dashes.
 
 ### 2026-08-26

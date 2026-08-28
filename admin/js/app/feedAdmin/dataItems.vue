@@ -144,7 +144,7 @@ async function loadItems() {
     feedId: feedId.value,
     page: page.value,
     perPage: PER_PAGE,
-    filter: activeFilters.value,
+    filter: listFilters.value,
     orderBy: orderBy.value,
     direction: direction.value,
   });
@@ -339,6 +339,54 @@ const activeFilters = computed(() =>
   filters.value
     .filter((filter) => String(filter.value ?? '').trim() !== '')
     .map((filter) => ({ field: filter.field, op: filter.op, value: filter.value })),
+);
+
+/**
+ * Отбор по видимости — глаз в шапке своей колонки.
+ *
+ * Три состояния по кругу: все записи, только скрытые, только видимые. Скрытые
+ * первыми: их и ищут — заготовка, которую забыли открыть, иначе не находится
+ * ничем, кроме листания.
+ *
+ * Живёт отдельно от поиска: тот собирается по полям схемы, а `__visible` —
+ * системная колонка, её в выборе полей нет и быть не должно.
+ */
+const visibleOnly = ref(null);
+
+/**
+ * Глаз показывает не то, что на экране, а то, что даст нажатие: перечёркнутый —
+ * будут скрытые, зелёный — будут видимые, серый — снова все. Так одна иконка
+ * заменяет три подписи, а состояние списка и без неё видно по строкам.
+ */
+const eyeIcon = computed(() =>
+  visibleOnly.value === null
+    ? 'fas fa-eye-slash text-body'
+    : visibleOnly.value === false
+      ? 'fas fa-eye text-success'
+      : 'fas fa-eye text-muted'
+);
+
+const eyeTitle = computed(() =>
+  visibleOnly.value === null
+    ? t('feed_hidden_only')
+    : visibleOnly.value === false
+      ? t('feed_visible_only')
+      : t('feed_visible_any')
+);
+
+function toggleVisibleFilter() {
+  visibleOnly.value = visibleOnly.value === null ? false : visibleOnly.value === false ? true : null;
+
+  page.value = 1;
+
+  loadItems().catch(() => {});
+}
+
+// условия запроса целиком: поиск плюс глаз
+const listFilters = computed(() =>
+  visibleOnly.value === null
+    ? activeFilters.value
+    : [...activeFilters.value, { field: '__visible', op: '=', value: visibleOnly.value }],
 );
 
 function opsOf(code) {
@@ -665,7 +713,14 @@ onMounted(() => {
             <template v-else>{{ data.fields[column.code] }}</template>
           </template>
         </Column>
-        <Column :header="t('feed_visible')" headerStyle="width: 7rem">
+        <Column headerStyle="width: 7rem">
+          <!-- тот же глаз, что и в строке: в шапке он отбирает, в строке переключает -->
+          <template #header>
+            {{ t('feed_visible') }}
+
+            <i role="button" class="ms-1" :class="eyeIcon" :title="eyeTitle" @click="toggleVisibleFilter()"></i>
+          </template>
+
           <template #body="{ data }">
             <i
               role="button"

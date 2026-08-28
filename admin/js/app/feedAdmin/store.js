@@ -69,6 +69,10 @@ export const useFeedStore = defineStore('feed', () => {
   const orderByColumn = ref('');
   const orderDir = ref('asc');
 
+  // Статья, которой запись показывается на сайте. Отсюда собирается ссылка
+  // «Посмотреть» в форме записи: /<статья>/<slug>. Пусто — ссылки нет.
+  const viewArticle = ref('');
+
   // типы полей __data, порядок как в ТЗ
   const DATA_TYPES = ['string', 'text', 'integer', 'decimal', 'boolean', 'datetime', 'json', 'code', 'image'];
 
@@ -129,6 +133,7 @@ export const useFeedStore = defineStore('feed', () => {
       slugColumn.value = columnOfCode(schema.value.slugFrom ?? '');
       orderByColumn.value = columnOfCode(schema.value.orderBy ?? '');
       orderDir.value = schema.value.orderDir === 'desc' ? 'desc' : 'asc';
+      viewArticle.value = schema.value.viewArticle ?? '';
 
       groupFeeds.value = await apiFeed({ command: 'feedsList', groupId: feed.group_id });
 
@@ -679,6 +684,8 @@ export const useFeedStore = defineStore('feed', () => {
       // ни на что не влияет, а у старых лент ключа нет вовсе
       if (buildOrderBy() !== '' && orderDir.value !== (schema.value.orderDir ?? 'asc')) return true;
 
+      if (viewArticle.value.trim() !== (schema.value.viewArticle ?? '')) return true;
+
       // перетащенная колонка тоже правка, хотя поля при этом те же
       if (JSON.stringify(buildOrder()) !== JSON.stringify(schema.value.order ?? [])) return true;
 
@@ -721,6 +728,7 @@ export const useFeedStore = defineStore('feed', () => {
         slugFrom: buildSlugFrom(),
         orderBy: buildOrderBy(),
         orderDir: orderDir.value,
+        viewArticle: viewArticle.value.trim(),
         order: names,
         orderForm: buildOrderForm(),
         fields: fields,
@@ -732,6 +740,7 @@ export const useFeedStore = defineStore('feed', () => {
     slugColumn.value = columnOfCode(schema.value.slugFrom ?? '');
     orderByColumn.value = columnOfCode(schema.value.orderBy ?? '');
     orderDir.value = schema.value.orderDir === 'desc' ? 'desc' : 'asc';
+    viewArticle.value = schema.value.viewArticle ?? '';
   }
 
   return {
@@ -756,6 +765,7 @@ export const useFeedStore = defineStore('feed', () => {
     orderByColumn,
     orderDir,
     sortFields,
+    viewArticle,
     allFields,
     inList,
     notInList,

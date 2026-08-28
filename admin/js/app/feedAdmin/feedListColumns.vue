@@ -144,6 +144,18 @@ async function saveSchema() {
       </div>
     </div>
 
+    <!--
+      Имя статьи, а не готовый адрес: адрес записи собирается из него и её slug,
+      и ссылка в форме записи должна ломаться вместе с переименованием статьи,
+      а не тихо вести в никуда.
+    -->
+    <div class="mb-4">
+      <h2 class="h6 mb-2">{{ t('feed_view_article') }}</h2>
+      <p class="text-muted small mb-2">{{ t('feed_view_article_help') }}</p>
+
+      <input v-model="store.viewArticle" class="form-control form-control-sm" style="max-width: 40rem" />
+    </div>
+
     <div class="mb-4">
       <h2 class="h6 mb-2">{{ t('feed_form_order') }}</h2>
       <p class="text-muted small mb-2">{{ t('feed_form_order_help') }}</p>

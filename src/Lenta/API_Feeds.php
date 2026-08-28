@@ -483,6 +483,10 @@ class API_Feeds extends AbstractFeedApi
             'version'   => (int) ($schema['version'] ?? 1),
             'slugFrom'  => $this->checkSlugFrom($schema, $fields),
             'orderBy'   => $this->checkOrderBy($schema, $fields),
+            // Статья, которой запись показывается на сайте. Имя статьи, а не
+            // адрес: адрес записи собирается из него и её slug, а лишние слеши
+            // по краям только сломали бы ссылку
+            'viewArticle' => trim((string) ($schema['viewArticle'] ?? ''), " \t\n\r\0\x0B/"),
             'orderDir'  => strtolower((string) ($schema['orderDir'] ?? '')) === 'desc' ? 'desc' : 'asc',
             'order'     => is_array($order) ? array_values(array_filter($order, 'is_string')) : [],
             'orderForm' => is_array($orderForm) ? array_values(array_filter($orderForm, 'is_string')) : [],

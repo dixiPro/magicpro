@@ -26,6 +26,22 @@ const slug = ref(''); // адрес записи, системная колон�
 const slugAuto = computed(() => (feed.value.schema?.slugFrom ?? '') !== '');
 
 /**
+ * Адрес записи на сайте: статья ленты плюс slug записи.
+ *
+ * Нет статьи или нет адреса — ссылки нет: показывать «Посмотреть», ведущее на
+ * страницу статьи без записи, хуже, чем не показывать ничего.
+ *
+ * Адрес берётся из поля формы, а оно после сохранения перечитывается с сервера:
+ * у ленты с источником slug считает сервер, и до сохранения в поле стоит
+ * прежний.
+ */
+const viewUrl = computed(() => {
+  const article = feed.value.schema?.viewArticle ?? '';
+
+  return article && slug.value ? '/' + article + '/' + slug.value : '';
+});
+
+/**
  * Строковые слоты записи со своими значениями: из них окно загрузки предлагает
  * взять имя файла. Значение читается на момент открытия списка, поэтому имя
  * берётся то, что в форме сейчас, даже если запись ещё не сохранена.
@@ -243,6 +259,10 @@ onBeforeUnmount(() => {
       </RouterLink>
       {{ feed.title }}
       <span class="text-muted small">id {{ itemId }}</span>
+
+      <a v-if="viewUrl" :href="viewUrl" target="_blank" class="ms-3 fs-6 text-decoration-none">
+        {{ t('feed_view_item') }} &rarr;
+      </a>
     </h1>
 
     <div style="max-width: 100rem">
