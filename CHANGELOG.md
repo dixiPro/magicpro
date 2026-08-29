@@ -14,6 +14,12 @@
 - A feed can set the order its record list opens in — a string field or a date, ascending or descending.
 - The eye in the header of the record list filters by visibility: all records, hidden only, visible only.
 - A feed can name the article that shows its records; the record form then links to `/<article>/<slug>`.
+- New admin page `/a_dmin/mcp`: an AI agent is started on the server and talked to from the browser.
+- Settings of the AI agent are copied from the package on installation and arrive with an empty password, which keeps the section off.
+- An AI agent is not started without `AGENTS.md` in its working directory; an example of the rules ships with the docs.
+- The cleanup of forgotten agent sessions logs every session it closes or kills, with the tail of its screen.
+- Prompts of the MCP section: a saved list of texts, edited in the admin panel and pasted into the command field.
+- Admin diagnostics look for `tmux` once the AI agent is configured.
 - `translitString` now returns lowercase Latin text with normalized dashes.
 
 ### 2026-08-26

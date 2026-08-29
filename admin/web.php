@@ -23,6 +23,19 @@ Route::get('/a_dmin/documentation', function () {
     return view('magicAdmin::documentation');
 })->name('magic.documentation');
 
+// MCP: работа с AI-агентом, который ходит в локальный MCP
+use MagicProSrc\Ai\API_Ai;
+
+// страница
+Route::get('/a_dmin/mcp', function () {
+    return view('magicAdmin::mcp');
+})->name('magic.mcp');
+
+// АПИ
+Route::post('/a_dmin/api/mcp', [API_Ai::class, 'handle'])
+    ->middleware('magic.auth')
+    ->withoutMiddleware([$csrf]);
+
 // Другое: витрина иконок и прочее по мелочи
 Route::get('/a_dmin/other', function () {
     return view('magicAdmin::other');

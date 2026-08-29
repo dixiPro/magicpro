@@ -68,6 +68,7 @@ return [
     'file_manager' => 'Файл менеджер',
     'documentation' => 'Документация',
     'documentation_none' => 'Доки нет',
+    'mcp' => 'MCP',
     'artList' => 'Список статей',
 
     'other'                 => 'Другое',
@@ -86,6 +87,8 @@ return [
     'install_ok_php_extension'  => 'Расширение php',
     'install_ok_cron'           => 'Крон жив, последняя отметка',
     'install_ok_aws_hook'       => 'Хук AWS отвечает по адресу',
+    'install_ok_ai_config'      => 'Настройки AI-агента на месте',
+    'install_ok_tmux'           => 'tmux на месте',
 
 
 

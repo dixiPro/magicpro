@@ -11,6 +11,7 @@ use Illuminate\Support\Str;
 use MagicProAdminControllers\API_ArticlesPostController;
 use MagicProDatabaseModels\Article;
 use MagicProDatabaseModels\MagicProUser;
+use MagicProSrc\Ai\AiConfig;
 use MagicProSrc\Mail\AwsHookHandler;
 use MagicProSrc\Scheduling\Heartbeat;
 
@@ -504,6 +505,78 @@ class Installer
 
         $this->checkCron();
         $this->checkAwsHook();
+        $this->checkAiConfig();
+        $this->checkTmux();
+    }
+
+    /**
+     * Settings of the AI agent: the site must have its own copy.
+     *
+     * Checked on every visit, not only at the first installation: the file
+     * arrives with a new version of the package, and the site that was
+     * installed before it has none. Copying is the whole check — there is
+     * nothing to keep in sync afterwards, the site edits its copy and the
+     * package never touches it again.
+     *
+     * The password in the copy that comes with the package is empty, so the
+     * section arrives switched off.
+     */
+    private function checkAiConfig(): void
+    {
+        if (AiConfig::ready()) {
+            return;
+        }
+
+        try {
+            File::ensureDirectoryExists(dirname(AiConfig::path()));
+            File::copy(AiConfig::template(), AiConfig::path());
+
+            // the file is about to hold a password: nobody outside the site
+            @chmod(AiConfig::path(), 0640);
+        } catch (\Throwable $e) {
+            $this->msgArr[] = '**Cannot put the settings of the AI agent** into `'
+                . AiConfig::path() . "`\n\n`" . $e->getMessage() . '`';
+
+            $this->writeLog('ai config copy failed: ' . $e->getMessage());
+
+            return;
+        }
+
+        $this->ok('install_ok_ai_config', AiConfig::path());
+        $this->writeLog('ai config copied to ' . AiConfig::path());
+    }
+
+    /**
+     * tmux, the session of the AI agent lives in it.
+     *
+     * Asked about only where the section is switched on, that is where the
+     * settings hold a password: a site that never starts an agent has no use
+     * for tmux — a red line about it would be a lie.
+     *
+     * By the exit code, like the rest of the tools: "tmux: not found" arrives
+     * as text and reads like a successful answer.
+     */
+    private function checkTmux(): void
+    {
+        if (! AiConfig::on()) {
+            return;
+        }
+
+        $lines = [];
+        $code  = 1;
+
+        @exec('tmux -V 2>/dev/null', $lines, $code);
+
+        if ($code === 0) {
+            $this->ok('install_ok_tmux', trim($lines[0] ?? ''));
+
+            return;
+        }
+
+        $this->msgArr[] = "**tmux not found.** The AI agent of the `MCP` section will not start."
+            . "\n\nRun: `sudo apt install tmux`";
+
+        $this->writeLog('tmux not found');
     }
 
     /**

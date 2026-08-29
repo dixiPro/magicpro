@@ -68,6 +68,7 @@ return [
     'file_manager' => 'File manager',
     'documentation' => 'Documentation',
     'documentation_none' => 'No doc yet',
+    'mcp' => 'MCP',
     'artList' => 'Articles list',
 
     'other'                 => 'Other',
@@ -86,6 +87,8 @@ return [
     'install_ok_php_extension'  => 'php extension',
     'install_ok_cron'           => 'Cron is alive, last mark',
     'install_ok_aws_hook'       => 'The AWS hook answers at',
+    'install_ok_ai_config'      => 'Settings of the AI agent are in place',
+    'install_ok_tmux'           => 'tmux is in place',
 
 
 

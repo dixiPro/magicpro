@@ -16,6 +16,7 @@
         ['route' => 'magic.crawler', 'label' => 'crawler', 'icon' => 'fas fa-spider'],
         ['route' => 'magic.dataBase', 'label' => 'dataBase', 'icon' => 'fas fa-database'],
         ['route' => 'magic.documentation', 'label' => 'documentation', 'icon' => 'fas fa-book'],
+        ['route' => 'magic.mcp', 'label' => 'mcp', 'icon' => 'fas fa-rocket'],
         ['route' => 'magic.other', 'label' => 'other', 'icon' => 'fas fa-ellipsis-h'],
     ];
 

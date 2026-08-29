@@ -5,6 +5,7 @@ namespace MagicProSrc\Scheduling;
 use Cron\CronExpression;
 use Illuminate\Console\Scheduling\Schedule;
 use MagicProDatabaseModels\MagicProCronTask;
+use MagicProSrc\Ai\AiSession;
 use MagicProSrc\Mail\API_Mail;
 
 class MagicProSchedule
@@ -23,6 +24,14 @@ class MagicProSchedule
             ->call(fn () => API_Mail::run('sendQueue', []))
             ->everyMinute()
             ->name('magicpro:sendQueue');
+
+        // Зависшие сеансы AI-агента. Браузер закрывает сеанс сам, но браузер
+        // закрывают, перезагружают и просто бросают, а агент остаётся жить с
+        // открытым MCP. Cleanup молчит, если настроек нет.
+        $schedule
+            ->call(fn () => AiSession::cleanup())
+            ->everyMinute()
+            ->name('magicpro:aiCleanup');
 
         // Задачи из админки. Всё, что ниже, обязано молчать при любой беде:
         // heartbeat и очередь писем уже зарегистрированы и не должны страдать
