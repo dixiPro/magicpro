@@ -51,11 +51,6 @@ Route::get('/a_dmin/import_tab', function () {
     return view('magicAdmin::import_tab');
 })->name('magic.import_tab');
 
-// export
-Route::get('/a_dmin/export_tab', function () {
-    return view('magicAdmin::export_tab');
-})->name('magic.export_tab');
-
 // laravelUsers
 // страница
 Route::get('/a_dmin/laravelUsers', function () {
@@ -128,10 +123,33 @@ Route::get('/a_dmin/phpinfo', function () {
 
 // Импорт экспорт
 use MagicProAdminControllers\ImportExportController;
-// импорт
-Route::post('/a_dmin/importArticle', [ImportExportController::class, 'importArticle'])
+use MagicProSrc\Import\API_Import;
+use MagicProSrc\Import\Snapshots;
+
+// импорт: проверка, работа и сохранённые состояния
+Route::post('/a_dmin/api/import', [API_Import::class, 'handle'])
     ->middleware('magic.auth')
-    ->withoutMiddleware([$csrf])->name('magic.importArticle');
+    ->withoutMiddleware([$csrf]);
+
+// скачать сохранённое состояние
+Route::get('/a_dmin/api/importSnapshot', function (Request $request) {
+    return response()->download(Snapshots::path((string) $request->input('file')));
+})->middleware('magic.auth')->name('magic.importSnapshot');
+
+// проверка статей: прогон и отчёты
+use MagicProSrc\Cleanup\API_Cleanup;
+use MagicProSrc\Cleanup\CleanupReport;
+
+Route::post('/a_dmin/api/cleanup', [API_Cleanup::class, 'handle'])
+    ->middleware('magic.auth')
+    ->withoutMiddleware([$csrf]);
+
+// отчёт лежит в private, поэтому отдаётся отсюда, а не ссылкой на файл
+Route::get('/a_dmin/api/cleanupReport', function (Request $request) {
+    return response()->file(CleanupReport::path((string) $request->input('file')), [
+        'Content-Type' => 'text/html; charset=utf-8',
+    ]);
+})->middleware('magic.auth')->name('magic.cleanupReport');
 
 // экспорт
 Route::get('/a_dmin/api/exportArticle', [ImportExportController::class, 'exportArticle'])
@@ -204,14 +222,6 @@ Route::get('/a_dmin/logout', [AuthController::class, 'logout'])->name('magic.log
 Route::get('/login', function () {
     return redirect('/');
 })->name('login');
-
-
-Route::get('a_dmin/download-db', function () {
-    $path = base_path('database/database.sqlite');
-    return response()->download($path, 'db.sqlite');
-})
-    ->middleware('magic.auth:admin')
-    ->name('magic.downloadDb');
 //
 //
 // AWS SES/SNS webhook

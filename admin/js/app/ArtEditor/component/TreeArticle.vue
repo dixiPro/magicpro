@@ -170,8 +170,19 @@ function onRightClick(event, node) {
           },
         ]
       : []),
+    {
+      label: t('art_export'),
+      icon: 'fas fa-file-export',
+      command: () => exportRec(node),
+    },
   ];
   menu.value.show(event);
+}
+
+// the answer is an attachment: the file downloads, the page stays.
+// the article goes into it with everything under it — root means the whole site
+function exportRec(node) {
+  window.location.href = '/a_dmin/api/exportArticle?id=' + node.key;
 }
 
 async function pasteRec(node) {

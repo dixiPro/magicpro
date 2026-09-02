@@ -1,5 +1,34 @@
 # MagicPro CHANGELOG
 
+### 2026-08-31
+
+- New button on `/a_dmin/setup`: the article check finds what is wrong with the tree and repairs it in one go — route params without `useController`, articles with no parent, rings, numbers among the brothers, the folder flag, names, doubles, the root, and the generated files that do not match the base.
+- The check takes a snapshot of the tree before it repairs anything, and writes an html report kept in three copies under `storage/app/private/magic/dataTableCleanup/article/`.
+- The list of articles at `/a_dmin/artList` is sorted by clicking a header: name, title, id and last, with an arrow showing the way. The paging keeps the choice.
+- Import of articles is rebuilt: `/a_dmin/import_tab` now runs in two passes — a check that changes nothing and tells what is wrong and what the site loses, then the work.
+- The report carries errors and collisions only: what an import creates is what an import is, and a full import of a sound file reports nothing at all.
+- Restoring a saved state takes no snapshot of what it replaces.
+- Partial import hangs the tree of the file onto the site; where a name meets a name, the article of the site goes with its whole subtree.
+- Full import wipes the site and raises the file in its place; the root of the file pours into the root that cannot be deleted.
+- Saved states: a snapshot of the whole tree in `storage/app/private/magic/articles/`, made by hand or before an import, with download, restore and delete.
+- The name of a snapshot is typed by hand; the page offers `root_` and the date, and an existing name is overwritten only after a question.
+- The base of an import is written in one transaction; views and controllers are generated after the commit, in one run over the tree.
+- Import from XML is gone with `parseArticlesXml()` and the old `POST /a_dmin/importArticle`.
+- Export of articles moved into the tree: right-click an article and pick Export, and it goes into the file with its whole subtree.
+- The page `/a_dmin/export_tab` is gone with its route and its item in the left menu: it printed the models and every table of the database with their columns, and the export itself now lives in the tree.
+- `exportArticle` answers 404 on an unknown id instead of failing on a property of null.
+- The subtree is collected level by level, one query per level, and a ring in `parentId` no longer walks forever.
+
+### 2026-08-31 — AWS
+
+- `magicpro:aws-webhook` is merged into `magicpro:aws-setup`: one command sets a site up whole.
+- `magicpro:aws-setup` prints the settings it read and the resource names it counted, and asks before it touches AWS.
+- Declining a new access key no longer stops the run: the events are set up with the key left alone.
+- A webhook address that does not answer is a warning now, not a failure: everything but the subscription is still created.
+- The `webhook` line of `aws-setup.ini` holds a path now: the domain is glued on from `domain`, over https. It may be left out — the path defaults to `/awsHook`.
+- The result file ends with a commented `AWS_SES_CONFIGURATION_SET`, uncommented by hand once the webhook answers.
+- The id of the AWS setup key is typed hidden, like its secret.
+
 ### 2026-08-28
 
 - Added cleanup of orphaned image-cache files whose source image no longer exists.

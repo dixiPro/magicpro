@@ -121,7 +121,10 @@ abstract class AwsCommand extends Command
         $this->line('');
         $this->line('The setup key configures AWS. It is not the key the site sends mail with.');
 
-        $key    = trim((string) $this->ask('AWS setup key'));
+        // Both halves are asked hidden. The key id is not a secret by itself,
+        // but it is typed on a screen somebody may be looking at, and it names
+        // the account: half a credential is enough to start guessing.
+        $key    = trim((string) $this->secret('AWS setup key'));
         $secret = trim((string) $this->secret('AWS setup secret'));
 
         if ($key === '' || $secret === '') {

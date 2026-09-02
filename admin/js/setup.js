@@ -59,3 +59,28 @@ import i18n from './app/CommonCom/translate';
 app.use(i18n);
 
 app.mount('#setup');
+
+// the article check lives as an app of its own: its button stands elsewhere on
+// the page, and it shares no state with the settings
+import ArticleCheck from './app/Setup/component/ArticleCheck.vue';
+
+const check = createApp(ArticleCheck);
+
+components.forEach((component) => {
+  check.component(component.name, component);
+});
+
+check.use(PrimeVue, {
+  theme: {
+    preset: Aura,
+    options: {
+      cssLayer: { name: 'primevue', order: 'theme, base, primevue' },
+    },
+  },
+});
+
+check.use(ConfirmationService);
+check.use(ToastService);
+check.use(i18n);
+
+check.mount('#articleCheck');

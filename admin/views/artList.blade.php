@@ -17,6 +17,21 @@
     @if ($articles->total() === 0)
         <p>@magic_msg('no_records')</p>
     @else
+        @php
+            // A click on a header turns its own column over and drops the page:
+            // page three of the list sorted by name holds quite other articles
+            // once the list is sorted by date.
+            $sortLink = fn(string $key) => request()->fullUrlWithQuery([
+                'sort' => $key,
+                'dir' => $sort === $key && $dir === 'asc' ? 'desc' : 'asc',
+                'page' => 1,
+            ]);
+
+            $sortIcon = fn(string $key) => $sort !== $key
+                ? ''
+                : ' <i class="fas fa-arrow-' . ($dir === 'asc' ? 'up' : 'down') . '"></i>';
+        @endphp
+
         <table class="table table-striped  table-sm">
             <thead>
                 <tr>
@@ -24,12 +39,12 @@
                     <th></th>
                     <th></th>
                     <th></th>
-                    <th>name</th>
-                    <th>title</th>
-                    <th>id</th>
+                    <th><a class="text-decoration-none" href="{{ $sortLink('name') }}">name{!! $sortIcon('name') !!}</a></th>
+                    <th><a class="text-decoration-none" href="{{ $sortLink('title') }}">title{!! $sortIcon('title') !!}</a></th>
+                    <th><a class="text-decoration-none" href="{{ $sortLink('id') }}">id{!! $sortIcon('id') !!}</a></th>
                     <th>parent</th>
                     <th>npp</th>
-                    <th>last</th>
+                    <th><a class="text-decoration-none" href="{{ $sortLink('last') }}">last{!! $sortIcon('last') !!}</a></th>
                 </tr>
             </thead>
             <tbody>

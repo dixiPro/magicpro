@@ -46,6 +46,8 @@
         <pre id="result"></pre>
     </div>
 
+    <div id="articleCheck"></div>
+
     <div class=""><a href="/a_dmin/phpinfo">phpinfo</a></div>
 
     <div id="setup" class="my-3"></div>

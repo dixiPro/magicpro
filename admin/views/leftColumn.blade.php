@@ -7,7 +7,6 @@
         ['route' => 'magic.fileManager', 'label' => 'file_manager', 'icon' => 'fas fa-folder-open'],
         ['route' => 'magic.artList', 'label' => 'artList', 'icon' => 'fas fa-server'],
         ['route' => 'magic.import_tab', 'label' => 'import_tab', 'icon' => 'fas fa-file-import'],
-        ['route' => 'magic.export_tab', 'label' => 'export_tab', 'icon' => 'fas fa-file-export'],
         ['route' => 'magic.admin_list', 'label' => 'admins', 'icon' => 'fas fa-users-cog'],
         ['route' => 'magic.users', 'label' => 'users', 'icon' => 'fas fa-users'],
         ['route' => 'magic.mail', 'label' => 'mail', 'icon' => 'fas fa-envelope'],

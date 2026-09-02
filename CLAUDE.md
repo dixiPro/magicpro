@@ -27,6 +27,7 @@ touch, how to check the work, how to answer. Open it first.
 | `MproHelper`: дерево статей, логи, шифрование, тексты               | `docs/ru/helpers/`        |
 | MCP-сервер и его инструменты                                        | `docs/ru/mcp/`            |
 | AI-агент из админки: раздел MCP, сеансы, configAI.php               | `docs/ru/aiAgent/`        |
+| импорт статей из JSON, сохранённые состояния                        | `docs/ru/import/`         |
 
 В каждой папке три файла:
 

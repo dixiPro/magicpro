@@ -21,6 +21,7 @@ export default defineConfig({
         'admin/js/feedAdmin.js',
         'admin/js/cronAdmin.js',
         'admin/js/mcpAdmin.js',
+        'admin/js/importAdmin.js',
       ],
       refresh: true,
       hotFile: path.resolve(__dirname, '../../../storage/magicpro.vite.hot'),

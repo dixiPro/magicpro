@@ -615,8 +615,8 @@ class Installer
      * of the site — typed from memory, it ends up subscribed as something the
      * topic will call for three days without an answer.
      *
-     * The knock repeats what `magicpro:aws-webhook` does before it touches AWS:
-     * a POST with a Type of our own. The handler answers an unknown Type with
+     * The knock repeats what `magicpro:aws-setup` does before it subscribes
+     * the address in SNS: a POST with a Type of our own. The handler answers an unknown Type with
      * `{"status": true}`, while the dynamic router of the site — the usual
      * reason the address is silent — answers with a page. So the answer tells
      * not only that something is alive, but that the hook is.
