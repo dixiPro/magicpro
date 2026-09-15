@@ -39,13 +39,13 @@ class CleanupReport
      *
      * @param  array<int, array<int, array{id: ?int, name: string, was: string, now: string}>>  $rows
      */
-    public static function write(array $rows, string $snapshot): string
+    public static function write(array $rows): string
     {
         File::ensureDirectoryExists(self::dir());
 
         $file = date('Y-m-d_H-i') . '.html';
 
-        file_put_contents(self::dir() . '/' . $file, self::html($rows, $snapshot));
+        file_put_contents(self::dir() . '/' . $file, self::html($rows));
         @chmod(self::dir() . '/' . $file, 0640);
 
         self::rotate();
@@ -104,7 +104,7 @@ class CleanupReport
     }
 
     /** @param array<int, array<int, array>> $rows */
-    private static function html(array $rows, string $snapshot): string
+    private static function html(array $rows): string
     {
         $msg = fn (string $key) => e(MagicLang::getMsg($key));
 
@@ -123,7 +123,6 @@ class CleanupReport
 
         $html .= '<h1>' . $msg('cleanup_title') . '</h1>';
         $html .= '<p class="muted">' . $msg('cleanup_date') . ': ' . date('Y-m-d H:i')
-            . '<br>' . $msg('cleanup_snapshot') . ': ' . e($snapshot)
             . '<br>' . $msg('cleanup_total') . ': ' . $found . '</p>';
 
         if (! $found) {

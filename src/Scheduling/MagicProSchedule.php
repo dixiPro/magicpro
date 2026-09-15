@@ -2,6 +2,7 @@
 
 namespace MagicProSrc\Scheduling;
 
+use Illuminate\Support\Facades\Cache;
 use Cron\CronExpression;
 use Illuminate\Console\Scheduling\Schedule;
 use MagicProDatabaseModels\MagicProCronTask;
@@ -66,20 +67,36 @@ class MagicProSchedule
                     throw new \Exception('invalid cron expression: ' . $task->cron);
                 }
 
-                // name() до withoutOverlapping(): замок берёт имя отсюда, без
-                // него ларавель бросает LogicException.
+                // Без withoutOverlapping(): замок стоит внутри раннера, один
+                // на расписание и на кнопку «Запустить сейчас», и живёт десять
+                // минут, а не сутки, как у ларавеля после убитого процесса.
                 $schedule
                     ->call(fn () => CronTaskRunner::run($task))
                     ->cron($task->cron)
-                    ->name('magicpro:dynamic:' . $task->id)
-                    ->withoutOverlapping();
+                    ->name('magicpro:dynamic:' . $task->id);
             } catch (\Throwable $e) {
-                \MproHelper::addLog(CronTaskRunner::LOG, [
-                    'stage' => 'register',
-                    'id'    => $task->id,
-                    'name'  => $task->name,
-                    'error' => $e->getMessage(),
-                ]);
+                // Регистрация идёт каждую минуту, и жалоба на одну и ту же
+                // задачу писалась бы сорок тысяч раз в месяц, топя в себе всё
+                // остальное. Пишем раз в час на задачу: сломанное расписание
+                // никуда не денется, а лог остаётся читаемым.
+                //
+                // The complaint itself must not break anything. addLog() never
+                // throws, but the cache may — a file store owned by another
+                // user — and its exception would leave the register and take
+                // the whole schedule with it, mail and heartbeat too.
+                try {
+                    $said = 'magic:cron:register:' . $task->id . ':' . md5((string) $e->getMessage());
+
+                    if (Cache::add($said, 1, 3600)) {
+                        \MproHelper::addLog(CronTaskRunner::LOG, [
+                            'stage' => 'register',
+                            'id'    => $task->id,
+                            'name'  => $task->name,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+                } catch (\Throwable) {
+                }
             }
         }
     }

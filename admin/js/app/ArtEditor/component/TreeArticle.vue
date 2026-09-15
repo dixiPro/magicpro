@@ -266,18 +266,30 @@ async function deleteRec(node) {
 async function copyRec(node) {
   try {
     const article = await apiArt({ command: 'copyRec', id: node.key });
+
+    // the copy is the brother of the source, right after it — as the server
+    // put it. It used to get the source as its parent, the source's npp and
+    // the end of the list, and a drag of it before the reload was read as a
+    // change of parent and rolled back
     const newNode = {
       key: article.id,
       label: article.title,
-      parentId: node.key,
-      npp: node.npp,
+      parentId: article.parentId,
+      npp: article.npp,
+      menuOn: article.menuOn,
+      isRoute: article.isRoute,
       directory: false,
       leaf: true,
       children: [],
     };
     const parent = findParent(treeData.value, node.key);
     if (parent) {
-      parent.children.push(newNode);
+      // the server moved every later brother one down, the same is done here
+      parent.children.forEach((c) => {
+        if (c.npp > node.npp) c.npp++;
+      });
+      const at = parent.children.findIndex((c) => c.key === node.key);
+      parent.children.splice(at + 1, 0, newNode);
       expandedKeys.value = { ...expandedKeys.value, [parent.key]: true };
     }
     currentNodeId.value = article.id;

@@ -7,6 +7,48 @@ use Illuminate\Validation\ValidationException;
 
 class Article extends Model
 {
+    /**
+     * Route options of an article, one set for every way an article is born:
+     * the editor, the installer, МСП, the import, the «create» button.
+     *
+     * There used to be three: the editor turned utm on when it opened an
+     * article, the installer and МСП left it off, and a new article had none
+     * at all. Two articles made the same way behaved differently — one opened
+     * from an ad link, the other gave 404 — depending on who touched it first.
+     *
+     * utm is on: a link from an ad must not break the page.
+     */
+    public const ROUTE_PARAMS = [
+        'useController'   => false,
+        'adminOnly'       => false,
+        'utmParamsEnable' => true,
+        'getEnable'       => false,
+        'postEnable'      => false,
+        'bindKeys'        => false,
+        'keysArr'         => [],
+    ];
+
+    /**
+     * Route options with every key in place.
+     *
+     * A missing key takes its default, a present one is brought to its type.
+     * The router reads the keys without a fallback, and a half-filled array —
+     * `{"useController": false}` saved by a script — used to turn a published
+     * article into 404. Keys this list does not know are kept as they are.
+     */
+    public static function routeParams(mixed $params): array
+    {
+        $params = array_replace(self::ROUTE_PARAMS, is_array($params) ? $params : []);
+
+        foreach (self::ROUTE_PARAMS as $key => $default) {
+            $params[$key] = is_array($default)
+                ? array_values(array_map('strval', array_filter((array) $params[$key], 'is_scalar')))
+                : (bool) $params[$key];
+        }
+
+        return $params;
+    }
+
     protected $fillable = [
         'parentId',
         'npp',
@@ -45,6 +87,9 @@ class Article extends Model
     protected static function booted(): void
     {
         static::saving(function (self $m) {
+            // every key in place, whoever is saving
+            $m->routeParams = self::routeParams($m->routeParams);
+
             // Корень всегда parentId = 0
             if ($m->id == 1) {
 

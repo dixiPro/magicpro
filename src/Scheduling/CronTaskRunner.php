@@ -2,6 +2,7 @@
 
 namespace MagicProSrc\Scheduling;
 
+use Illuminate\Support\Facades\Cache;
 use MagicProDatabaseModels\MagicProCronTask;
 use MagicProSrc\Config\MagicGlobals;
 
@@ -22,8 +23,30 @@ use MagicProSrc\Config\MagicGlobals;
  */
 class CronTaskRunner
 {
-    /** Log file name, storage/logs/cron.log. */
+    /**
+     * Name of the log. The file on disk is dated — `storage/logs/cron-ГГГГ-ММ-ДД.log`:
+     * `addLog()` hands the name to a rotating handler, and a day is a file.
+     */
     public const LOG = 'cron';
+
+    /**
+     * How long the lock of a running task lives, in seconds.
+     *
+     * One lock for both ways in — the scheduler and the «run now» button — so
+     * a task never runs twice at once: the button pressed while the scheduler
+     * is inside the task gets «already running», and the other way round.
+     *
+     * Released when the task ends. The term is for a process that was killed
+     * midway and could not release it: `withoutOverlapping()` held such a lock
+     * for a day, and the task was silently skipped all that time. The price of
+     * ten minutes: a task that runs longer may be started once more over
+     * itself.
+     */
+    public const LOCK_SECONDS = 600;
+
+    public const ERRORS = [
+        'running' => 'the task is already running',
+    ];
 
     /**
      * Parameters go as one array, the json of the task, and the method takes
@@ -38,6 +61,14 @@ class CronTaskRunner
 
         ['article' => $article, 'method' => $method] = CronTaskChecker::parse($task->controller);
 
+        // Not written into the log: the scheduler meets a busy task every
+        // minute while a long one runs, and that is not news.
+        $lock = self::lock($task);
+
+        if ($lock === false) {
+            return ['ms' => 0, 'error' => self::ERRORS['running']];
+        }
+
         try {
             // The only thing asked before the call. CronTaskChecker is not
             // called here: it goes to the database, and the admin panel has
@@ -45,6 +76,12 @@ class CronTaskRunner
             // itself, with a text no worse than ours.
             if ($article === '' || $method === '' || ! class_exists(CronTaskChecker::className($article))) {
                 throw new \Exception(CronTaskChecker::ERRORS['class_missing']);
+            }
+
+            // the same name rule as the admin panel: without it a task written
+            // past the panel could call a constructor the controller declares
+            if (! CronTaskChecker::methodName($method)) {
+                throw new \Exception(CronTaskChecker::ERRORS['method_invalid']);
             }
 
             // Stamped before the call: the mark says the scheduler reached this
@@ -55,13 +92,24 @@ class CronTaskRunner
             // the constructor.
             $controller = app(CronTaskChecker::className($article));
 
+            // The checker refuses an inherited method when a task is saved, but
+            // tasks saved before it did are still in the table. `handle()` is
+            // the dangerous one: it catches everything inside and answers with
+            // a 500 response, so cron would see no exception and write down a
+            // successful run.
+            if (! CronTaskChecker::ownMethod(CronTaskChecker::className($article), $method)) {
+                throw new \Exception(CronTaskChecker::ERRORS['method_foreign']);
+            }
+
             // Whatever comes back is dropped. Cron has nothing to do with it.
             $controller->{$method}($params);
 
             $ms = self::ms($start);
 
             if (MagicGlobals::$INI['CRON_LOG_SUCCESS'] ?? true) {
-                self::log($task, $article, $method, $ms, ['params' => $params]);
+                // имена, а не значения: в параметрах задачи живут токены
+                // ботов и ключи, а лог хранится две недели и читается многими
+                self::log($task, $article, $method, $ms, ['params' => implode(', ', array_keys($params))]);
             }
 
             return ['ms' => $ms, 'error' => ''];
@@ -72,6 +120,31 @@ class CronTaskRunner
             self::log($task, $article, $method, $ms, ['error' => $e->getMessage()]);
 
             return ['ms' => $ms, 'error' => $e->getMessage()];
+        } finally {
+            try {
+                $lock?->release();
+            } catch (\Throwable) {
+                // not released — it goes away by its term
+            }
+        }
+    }
+
+    /**
+     * The lock of the task: the lock itself, false when somebody holds it, null
+     * when the cache cannot give one.
+     *
+     * A cache that does not answer — a file store owned by another user — does
+     * not stop the task: running it without a lock is the old behaviour, and a
+     * task that is not run at all is worse.
+     */
+    private static function lock(MagicProCronTask $task): \Illuminate\Contracts\Cache\Lock|false|null
+    {
+        try {
+            $lock = Cache::lock('magicpro:cron:run:' . $task->id, self::LOCK_SECONDS);
+
+            return $lock->get() ? $lock : false;
+        } catch (\Throwable) {
+            return null;
         }
     }
 
@@ -82,6 +155,8 @@ class CronTaskRunner
         int $ms,
         array $extra
     ): void {
+        // addLog() never throws: a log that cannot be written does not turn a
+        // successful task into a failed one
         \MproHelper::addLog(self::LOG, array_merge([
             'id'         => $task->id,
             'name'       => $task->name,

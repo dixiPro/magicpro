@@ -78,7 +78,7 @@ export function snippetsBlade(editor) {
     { tabTrigger: '', name: '_helper_feedText', content: '{!! MproHelper::feedText($${1:item}, \'${2:body}\') !!}' },
     { tabTrigger: '', name: '_helper_imageReduceX', content: '\\$img =MproHelper::imageReduceX($${1:file}, ${2:800})' },
     { tabTrigger: '', name: '_helper_imageReduceY', content: '\\$img =MproHelper::imageReduceY($${1:file}, ${2:600})' },
-    { tabTrigger: '', name: '_helper_getDoc', content: "{!! MproHelper::getDoc('${1:main/use}') !!}" },
+    { tabTrigger: '', name: '_helper_getDoc', content: "{!! MproHelper::getDoc('${1:mainUse/use}') !!}" },
     { tabTrigger: '', name: '_helper_mdToHtml', content: '{!! MproHelper::mdToHtml($${1:md}) !!}' },
     { tabTrigger: '', name: '_helper_trimAndCutText', content: '\\$text =MproHelper::trimAndCutText($${1:text}, ${2:160})' },
     { tabTrigger: '', name: '_helper_translitForUrl', content: '\\$slug =MproHelper::translitForUrl($${1:text})' },

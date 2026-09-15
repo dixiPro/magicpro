@@ -128,6 +128,7 @@ function formatStatusDate(statusValue, referenceValue) {
 // статусы письма -> иконка + класс цвета
 const MAIL_STATUS_ICONS = {
   queued: { icon: 'fa-clock', class: 'text-secondary' },
+  sending: { icon: 'fa-paper-plane', class: 'text-secondary' },
   sent: { icon: 'fa-envelope', class: 'text-secondary' },
   delivered: { icon: 'fa-check-circle', class: 'text-success' },
   open: { icon: 'fa-envelope-open-text', class: 'text-info' },

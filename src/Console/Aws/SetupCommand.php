@@ -21,29 +21,46 @@ use MagicProSrc\Mail\AwsHookHandler;
  * through DNS: there is nothing to automate about a CNAME.
  *
  * Everything the command touches, it brings to shape whatever was there
- * before. The one thing it asks about is the access key: reissuing it stops
- * mail until the new key reaches `.env_mpro`. Answering no there is the way to
- * run the command for the events alone.
+ * before. The one thing it asks about is the access key, and there the command
+ * only adds: a new key is issued beside the old one, which keeps working until
+ * the new secret is in the project. Nothing is deactivated and nothing is
+ * deleted here — that is `magicpro:aws-remove`. Answering no is the way to run
+ * the command for the events alone.
  */
 class SetupCommand extends AwsCommand
 {
     protected $signature = 'magicpro:aws-setup
         {--file=aws-setup.ini : settings of the site}
-        {--out= : where to write the result, by default aws-domain-date.result}';
+        {--out= : where to write the result, by default storage/app/private/magic/aws/aws-domain-date.result}';
 
     protected $description = 'Sets a site up in AWS: keys to send mail with, events back';
 
-    /** Events the configuration set sends to the topic. */
+    /**
+     * Events the configuration set sends to the topic: the four the hook acts
+     * on. There used to be eight — send, click, reject and rendering failure
+     * came too, were taken and thrown away, and cost an SNS message each.
+     */
     private const EVENTS = [
-        'SEND',
         'DELIVERY',
         'BOUNCE',
         'COMPLAINT',
         'OPEN',
-        'CLICK',
-        'REJECT',
-        'RENDERING_FAILURE',
     ];
+
+    /** Where the result goes when --out says nothing: not served, not in git. */
+    private const RESULT_DIR = 'app/private/magic/aws';
+
+    /** Ports the SES SMTP interface answers on. 465 is ssl, the rest are tls. */
+    private const SMTP_PORTS = ['25', '465', '587', '2465', '2587'];
+
+    /** How many access keys AWS allows one user, inactive ones counted. */
+    private const KEY_LIMIT = 2;
+
+    /** Where the result went: chosen once, written into more than once. */
+    private string $resultFile = '';
+
+    /** The first writing failed: nothing more is written anywhere, see writeResult(). */
+    private bool $resultFailed = false;
 
     /** Lines of the result file, filled as the work goes. */
     private array $env = [];
@@ -63,7 +80,11 @@ class SetupCommand extends AwsCommand
         $this->region = $settings['region'];
         $domain       = $settings['domain'];
         $user         = $settings['user'];
-        $smtpPort     = $settings['smtp_port'] ?? '587';
+        $smtpPort     = $this->smtpPort($settings['smtp_port'] ?? '587');
+
+        if ($smtpPort === '' || ! $this->checkUser($user)) {
+            return self::FAILURE;
+        }
         $names        = $this->names($user);
         $webhook      = $this->webhook($settings, $domain);
 
@@ -79,6 +100,8 @@ class SetupCommand extends AwsCommand
 
         $this->line('');
 
+        $failed = false;
+
         try {
             if (! $this->checkDomain($domain)) {
                 return self::FAILURE;
@@ -88,11 +111,28 @@ class SetupCommand extends AwsCommand
             $this->policy($user, $names['policy']);
 
             if ($this->confirmNewKey()) {
-                $this->accessKey($user);
+                $failed = ! $this->accessKey($user);
+
                 $this->smtp($smtpPort);
 
+                // A guess, not an answer: the command knows the domain and
+                // nothing about the mailbox the site should write from. The
+                // note beside it says so, so that a blind copy does not replace
+                // a working address with `info@`.
                 $this->env['MAIL_FROM_ADDRESS'] = 'info@' . $domain;
                 $this->env['MAIL_FROM_NAME']    = '"' . $user . '"';
+
+                $this->notes[] = 'MAIL_FROM_ADDRESS and MAIL_FROM_NAME above are a guess by the domain:';
+                $this->notes[] = 'put the address the site really writes from, and a name for people.';
+
+                // The secret is written down the moment it exists. Everything
+                // after this — the topic, the subscription, the wait for the
+                // webhook — takes time and can be interrupted, and AWS shows a
+                // secret once: an interrupted run would leave a key nobody can
+                // use and a place in the user taken by it.
+                if (! $failed && ! $this->writeResult($domain)) {
+                    $failed = true;
+                }
             } else {
                 $this->wait('the access key is left as it is');
             }
@@ -100,15 +140,29 @@ class SetupCommand extends AwsCommand
             $this->events($names, $user, $webhook);
         } catch (\Throwable $e) {
             $this->err($this->awsMessage($e));
+
+            $failed = true;
         }
 
         // The result is written even after a failure: the secret is handed out
         // once, and an issued key must not disappear with the error message.
         // No key issued — no secret, so there is nothing to write and the one
         // line that matters goes on the screen.
-        $this->env
-            ? $this->writeResult($domain)
-            : $this->showNotes();
+        if (! $this->env) {
+            $this->showNotes();
+        } elseif (! $this->writeResult($domain)) {
+            $failed = true;
+        }
+
+        // A half-done setup is not a success. The message alone is not enough:
+        // a run inside a deploy script is read by its exit code, and zero after
+        // a broken IAM or a subscription that never confirmed would let the
+        // deployment go on with mail that does not work.
+        if ($failed) {
+            $this->err('the setup did not finish: read the messages above, fix the cause and run it again.');
+
+            return self::FAILURE;
+        }
 
         return self::SUCCESS;
     }
@@ -196,6 +250,10 @@ class SetupCommand extends AwsCommand
     /**
      * The tags are the whole point of this step: a year later a pile of IAM
      * users says nothing about which site each of them serves.
+     *
+     * They are a mark of the creation — who made the user, for which domain,
+     * when — and are written once. A user that exists keeps its tags: a later
+     * run for another domain does not rewrite the history of the first one.
      */
     private function user(string $user, string $domain): void
     {
@@ -224,7 +282,14 @@ class SetupCommand extends AwsCommand
         $this->notes[] = 'IAM user:      ' . $user;
     }
 
-    /** Inline, two actions: the user exists for one job. */
+    /**
+     * Inline, two actions: the user exists for one job.
+     *
+     * The policy with this name belongs to MagicPro and is written whole on
+     * every run, whatever was in it. The same holds for the topic policy
+     * below. Hand edits of either are not kept — that is the price of a
+     * command that brings everything to one shape.
+     */
     private function policy(string $user, string $policy): void
     {
         $this->iam()->putUserPolicy([
@@ -248,48 +313,111 @@ class SetupCommand extends AwsCommand
     private function confirmNewKey(): bool
     {
         $this->line('');
-        $this->line('A new Access Key will be issued, every earlier key of the user is deactivated.');
-        $this->line('Mail stops going out until the new key reaches .env_mpro.');
-        $this->line('No — the key is left alone and only the events are set up.');
+        $this->line('A new Access Key will be issued. Earlier keys of the user are left as they are:');
+        $this->line('the old one keeps working until you put the new one into the project and delete it.');
+        $this->line('No — no key is touched and only the events are set up.');
 
         return $this->confirm('Issue a new key?', false);
     }
 
-    /** The secret goes straight into the result: it is handed out once. */
-    private function accessKey(string $user): void
+    /**
+     * A new key for the user. The secret goes straight into the result: it is
+     * handed out once.
+     *
+     * Nothing else is touched. The old key is not deactivated and not deleted,
+     * because that is the one thing this command must not decide: the site
+     * keeps sending mail with it until somebody puts the new secret into the
+     * project and checks that mail still goes. Deleting comes after that, by
+     * hand or by `magicpro:aws-remove`.
+     *
+     * AWS allows two access keys per user, counting inactive ones. Two is
+     * exactly enough for a change of keys and not enough for a third: with both
+     * places taken the command says so and touches nothing — deactivating
+     * somebody's working key to free a place is not its business.
+     *
+     * False means a key was asked for and not issued: the run is not a success,
+     * whatever else went well.
+     */
+    private function accessKey(string $user): bool
     {
-        $iam = $this->iam();
+        $iam  = $this->iam();
+        $keys = $iam->listAccessKeys(['UserName' => $user])->get('AccessKeyMetadata') ?? [];
 
-        foreach ($iam->listAccessKeys(['UserName' => $user])->get('AccessKeyMetadata') ?? [] as $key) {
-            if (($key['Status'] ?? '') !== 'Active') {
-                continue;
+        if (count($keys) >= self::KEY_LIMIT) {
+            $this->err('user ' . $user . ' already has ' . self::KEY_LIMIT . ' access keys, AWS allows no more.');
+
+            foreach ($keys as $key) {
+                $this->line('    ' . $key['AccessKeyId']
+                    . '  ' . str_pad((string) ($key['Status'] ?? ''), 8)
+                    . '  created ' . $this->when($key['CreateDate'] ?? null));
             }
 
-            $iam->updateAccessKey([
-                'UserName'    => $user,
-                'AccessKeyId' => $key['AccessKeyId'],
-                'Status'      => 'Inactive',
-            ]);
+            $this->line('Delete one of them — magicpro:aws-remove --key — and run this again.');
 
-            $this->ok('old key ' . $key['AccessKeyId'] . ' deactivated');
+            return false;
         }
 
         $created = $iam->createAccessKey(['UserName' => $user])->get('AccessKey');
 
         $this->ok('access key ' . $created['AccessKeyId'] . ' created');
 
+        foreach ($keys as $key) {
+            $this->wait('old key ' . $key['AccessKeyId'] . ' still works, delete it when the new one is in place');
+        }
+
         $this->env['AWS_SesV2Client']       = 'true';
         $this->env['AWS_ACCESS_KEY_ID']     = $created['AccessKeyId'];
         $this->env['AWS_SECRET_ACCESS_KEY'] = $created['SecretAccessKey'];
-        // The key is issued in one region and works in that one only: it must
-        // travel to the project together with the region it belongs to.
+        // The key itself works in every region; the region here says where SES
+        // and its events live, and it travels to the project with the key.
         $this->env['AWS_DEFAULT_REGION']    = $this->region;
+
+        $this->notes[] = 'Access key:    ' . $created['AccessKeyId'];
+
+        return true;
+    }
+
+    /** A date of AWS as a day, whatever type the sdk handed over. */
+    private function when(mixed $date): string
+    {
+        if ($date === null) {
+            return 'unknown';
+        }
+
+        try {
+            return (new \DateTimeImmutable((string) $date))->format('Y-m-d');
+        } catch (\Throwable) {
+            return 'unknown';
+        }
     }
 
     /**
      * The SMTP password is the secret run through the signing chain of SigV4.
      * Counted here, locally: AWS is not asked and has nothing to answer.
      */
+    /**
+     * The port of the SES SMTP interface, checked before anything is done.
+     *
+     * SES answers on four of them and nowhere else. An unknown number used to
+     * travel through the whole setup into the result file, and the site then
+     * failed on the first letter, far away from the cause.
+     *
+     * An empty answer means the setup must not start.
+     */
+    private function smtpPort(string $port): string
+    {
+        $port = trim($port);
+
+        if (in_array($port, self::SMTP_PORTS, true)) {
+            return $port;
+        }
+
+        $this->err('smtp_port = ' . $port . ': SES answers on ' . implode(', ', self::SMTP_PORTS) . '.');
+        $this->line('587 is the usual one; 465 is the same over ssl.');
+
+        return '';
+    }
+
     private function smtp(string $port): void
     {
         $signature = hash_hmac('sha256', '11111111', 'AWS4' . $this->env['AWS_SECRET_ACCESS_KEY'], true);
@@ -336,6 +464,9 @@ class SetupCommand extends AwsCommand
         $this->notes[] = '';
         $this->notes[] = 'Set the webhook up at the address above, then uncomment the line below:';
         $this->notes[] = 'AWS_SES_CONFIGURATION_SET=' . $names['config_set'];
+        $this->notes[] = '';
+        $this->notes[] = 'And this one, so the hook takes events of this topic alone:';
+        $this->notes[] = 'AWS_SNS_TOPIC_ARN=' . $arn;
     }
 
     /** CreateTopic answers with the existing one when the name is taken. */
@@ -493,7 +624,7 @@ class SetupCommand extends AwsCommand
      * We knock at the address before it is handed to SNS.
      *
      * SNS confirms a subscription by knocking too, and a knock that lands
-     * nowhere leaves a PENDING subscription hanging for three days — while the
+     * nowhere leaves a PENDING subscription hanging for 48 hours — while the
      * command reports success on everything else. Cheaper to find out now.
      *
      * The knock is a POST with a Type of our own: the handler answers a Type it
@@ -552,16 +683,29 @@ class SetupCommand extends AwsCommand
     /**
      * The only place where the secrets of the project are written down. Never
      * the screen, never a log.
+     *
+     * By default the file goes to `storage/app/private/magic/aws/`: the web
+     * does not serve it and git does not see it. The command used to write it
+     * into the project root and add `*.result` to `.gitignore` on its own —
+     * one more file of the site changed by a command about AWS.
+     *
+     * The file is born with the rights of its owner alone, 0600, and never
+     * lands on a file that was there before: a secret written over somebody's
+     * file, or readable for a moment by anybody, is worse than a refusal.
+     * The second writing of the same run goes through a temporary file and
+     * rename(), so the file is whole at every moment.
+     *
+     * False means the file is not written. The key is then useless — AWS shows
+     * its secret once — and the message says what to do with it.
      */
-    private function writeResult(string $domain): void
+    private function writeResult(string $domain): bool
     {
-        $path = (string) $this->option('out');
-
-        if ($path === '') {
-            $path = 'aws-' . $domain . '-' . date('Y-m-d_His') . '.result';
+        // once refused, always refused: a second try at the end of the run
+        // would go through replaceSecretFile() and land on the very file the
+        // first one declined to overwrite
+        if ($this->resultFailed) {
+            return false;
         }
-
-        $file = $this->resolvePath($path);
 
         $text = '# magicpro:aws-setup, ' . $domain . ', ' . date('Y-m-d H:i') . PHP_EOL . PHP_EOL;
 
@@ -575,14 +719,98 @@ class SetupCommand extends AwsCommand
             $text .= ($note === '' ? '' : '# ' . $note) . PHP_EOL;
         }
 
-        file_put_contents($file, $text);
+        $first = $this->resultFile === '';
+
+        // The name is chosen once: the file is written the moment the secret
+        // appears and again at the end, and the second writing lands on the
+        // same file instead of leaving two.
+        if ($first) {
+            $path = (string) $this->option('out');
+
+            $this->resultFile = $path !== ''
+                ? $this->resolvePath($path)
+                : storage_path(self::RESULT_DIR . '/aws-' . $domain . '-' . date('Y-m-d_His') . '.result');
+        }
+
+        $file  = $this->resultFile;
+        $error = $first ? $this->createSecretFile($file, $text) : $this->replaceSecretFile($file, $text);
+
+        if ($error !== '') {
+            $this->resultFailed = true;
+
+            $this->err('the result is not written: ' . $error);
+
+            if (isset($this->env['AWS_ACCESS_KEY_ID'])) {
+                $this->line('The new key is useless without its secret: delete it —');
+                $this->line('magicpro:aws-remove --key=' . $this->env['AWS_ACCESS_KEY_ID'] . ' — and run the setup again.');
+            }
+
+            return false;
+        }
+
+        if ($first) {
+            $this->line('');
+            $this->ok('result: ' . $file);
+            $this->line('Copy the upper block into .env, then delete the file.');
+        }
+
+        return true;
+    }
+
+    /** A new file, 0600 from birth. Empty string — written; otherwise the reason. */
+    private function createSecretFile(string $file, string $text): string
+    {
+        $dir = dirname($file);
+
+        if (! is_dir($dir) && ! @mkdir($dir, 0700, true) && ! is_dir($dir)) {
+            return 'cannot create the folder ' . $dir;
+        }
+
+        // umask decides the rights of a new file; 0077 leaves the owner alone,
+        // so there is no moment when the file is readable for anybody else
+        $umask  = umask(0077);
+        $handle = @fopen($file, 'x');
+        umask($umask);
+
+        if ($handle === false) {
+            return is_file($file)
+                ? $file . ' already exists, it is not overwritten: give another --out or move it away'
+                : 'cannot create ' . $file;
+        }
+
+        $written = @fwrite($handle, $text);
+        $closed  = @fclose($handle);
+
+        if ($written !== strlen($text) || ! $closed) {
+            @unlink($file);
+
+            return 'cannot write ' . $file;
+        }
+
         @chmod($file, 0600);
 
-        $this->gitIgnore('*.result');
+        return '';
+    }
 
-        $this->line('');
-        $this->ok('result: ' . $file);
-        $this->line('Copy the upper block into .env_mpro, then delete the file.');
+    /** The same file once more, whole at every moment: a temporary one and rename(). */
+    private function replaceSecretFile(string $file, string $text): string
+    {
+        // tempnam() creates the file with 0600 itself
+        $temp = @tempnam(dirname($file), '.aws-');
+
+        if ($temp === false) {
+            return 'cannot create a temporary file beside ' . $file;
+        }
+
+        if (@file_put_contents($temp, $text) !== strlen($text) || ! @rename($temp, $file)) {
+            @unlink($temp);
+
+            return 'cannot rewrite ' . $file;
+        }
+
+        @chmod($file, 0600);
+
+        return '';
     }
 
     /** No key issued, so no file: the notes are all there is, and no secret in them. */
@@ -593,10 +821,14 @@ class SetupCommand extends AwsCommand
         }
 
         $this->line('');
-        $this->line('For .env_mpro:');
+        $this->line('For .env:');
 
         foreach ($this->notes as $note) {
             $this->line($note === '' ? '' : '  ' . $note);
         }
+
+        $this->line('');
+        $this->line('The configuration set line is the switch of the events: uncomment it when');
+        $this->line('the webhook really answers, not before.');
     }
 }

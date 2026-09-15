@@ -9,6 +9,7 @@ import EditArticle from './component/EditArticle.vue';
 import FileManager from '../CommonCom/FileManager.vue';
 import TosatConfirm from '../CommonCom/ToastConfirm.vue';
 import Autocomplete from './component/Autocomplete.vue';
+import ArchivePanel from './component/ArchivePanel.vue';
 
 import { useArticleStore } from './store';
 const store = useArticleStore();
@@ -46,6 +47,7 @@ const onPopState = (event) => {
   <!-- тосты -->
   <TosatConfirm></TosatConfirm>
   <Autocomplete></Autocomplete>
+  <ArchivePanel v-if="store.articleReady"></ArchivePanel>
 </template>
 
 <style>

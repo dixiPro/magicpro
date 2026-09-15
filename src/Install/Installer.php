@@ -342,7 +342,7 @@ class Installer
                 $index->npp         = (int) DB::table('articles')->where('parentId', 1)->max('npp') + 1;
                 $index->body        = '<p>Index page</p>';
                 $index->isRoute     = true;
-                $index->routeParams = ['utmParamsEnable' => true] + $this->defaultRouteParams();
+                $index->routeParams = $this->defaultRouteParams();
                 $index->save();
 
                 Article::where('id', 1)->update(['directory' => true]);
@@ -357,15 +357,7 @@ class Installer
     /** Полный набор ключей маршрута, всё выключено. */
     private function defaultRouteParams(): array
     {
-        return [
-            'useController'   => false,
-            'adminOnly'       => false,
-            'utmParamsEnable' => false,
-            'getEnable'       => false,
-            'postEnable'      => false,
-            'bindKeys'        => false,
-            'keysArr'         => [],
-        ];
+        return Article::ROUTE_PARAMS;
     }
 
     /** Creates an article, checks both generated files, removes everything. */

@@ -56,9 +56,15 @@ abstract class AbstractFeedApi
                 'request'  => $params,
             ];
         } catch (Throwable $e) {
+            // файл и строка — в лог, а не в ответ: ответ читает браузер
+            \MproHelper::addLog('feed', [
+                'command' => $command,
+                'error'   => $e->getMessage(),
+                'where'   => $e->getFile() . ' ' . $e->getLine(),
+            ]);
+
             return [
                 'status'   => false,
-                'line'     => $e->getFile() . ' ' . $e->getLine(),
                 'errorMsg' => $e->getMessage(),
                 'data'     => [],
                 'request'  => $params,

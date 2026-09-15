@@ -7,12 +7,10 @@ use Illuminate\Http\Request;
 use MagicProSrc\Api\AbstractApi;
 
 /**
- * Import of articles and the saved states: POST /a_dmin/api/import.
+ * Import of articles: POST /a_dmin/api/import.
  *
  * The file itself never lands on the server: it lives in the browser and comes
  * in the body of every call, so the two passes need nothing kept between them.
- * A saved state is another matter — that one is a file of the site, and it is
- * written on purpose.
  *
  * Every command works up to the first error and throws; the shape of the answer
  * is built by AbstractApi::run().
@@ -25,12 +23,8 @@ class API_Import extends AbstractApi
     ];
 
     protected array $map = [
-        'check'     => 'checkFile',
-        'run'       => 'runImport',
-        'snapshots' => 'snapshotList',
-        'save'      => 'snapshotSave',
-        'delete'    => 'snapshotDelete',
-        'restore'   => 'snapshotRestore',
+        'check' => 'checkFile',
+        'run'   => 'runImport',
     ];
 
     /**
@@ -60,50 +54,7 @@ class API_Import extends AbstractApi
     /** Second pass: the same checks, then the work. */
     protected function runImport(array $params): array
     {
-        return ImportTree::run(
-            self::text($params),
-            self::mode($params),
-            (bool) ($params['snapshot'] ?? true),
-        );
-    }
-
-    protected function snapshotList(array $params): array
-    {
-        return ['snapshots' => Snapshots::all()];
-    }
-
-    protected function snapshotSave(array $params): array
-    {
-        return [
-            'file'      => Snapshots::save((string) ($params['name'] ?? '')),
-            'snapshots' => Snapshots::all(),
-        ];
-    }
-
-    protected function snapshotDelete(array $params): array
-    {
-        Snapshots::delete((string) ($params['file'] ?? ''));
-
-        return ['snapshots' => Snapshots::all()];
-    }
-
-    /**
-     * A state is put back the same way a file is imported, whole: the site is
-     * wiped and raised from the snapshot.
-     *
-     * No state is saved before that. Putting one back is what a saved state is
-     * for, and a snapshot of the tree somebody has just decided to throw away
-     * is a file nobody will ever open.
-     */
-    protected function snapshotRestore(array $params): array
-    {
-        $text = Snapshots::read((string) ($params['file'] ?? ''));
-
-        $result = ImportTree::run($text, ImportTree::FULL, false);
-
-        $result['snapshots'] = Snapshots::all();
-
-        return $result;
+        return ImportTree::run(self::text($params), self::mode($params));
     }
 
     private static function text(array $params): string

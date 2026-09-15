@@ -13,9 +13,9 @@ use Spatie\MediaLibrary\Support\PathGenerator\DefaultPathGenerator;
  * files of the module are together and apart from whatever else the site keeps
  * on the same disk.
  *
- * The generator is set in the media library config and applies to the whole
- * application, which is why MagicServiceProvider only claims it when nobody has
- * changed it before.
+ * It is claimed for `FeedItem` alone: MagicServiceProvider calls
+ * `PathGeneratorFactory::setCustomPathGenerators()` with that model, so
+ * whatever else the site keeps in the media library keeps its own layout.
  */
 class FeedPathGenerator extends DefaultPathGenerator
 {

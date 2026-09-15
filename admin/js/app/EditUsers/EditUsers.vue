@@ -9,11 +9,14 @@ const { t } = useI18n();
 const allUsers = ref([]);
 const apiActive = ref(false);
 const newUser = ref({
-  name: 'newUser',
-  email: 'barsik@barsik.com',
-  password: '1234',
+  name: '',
+  email: '',
   role: 'user',
 });
+
+// пароль только что созданного админа: сервер отдаёт его один раз, в базе
+// остаётся только хеш — показать его снова будет нельзя
+const created = ref(null);
 let numerUserInAllUsers = 0; // номер редактируемого пользователя в allUsers
 const dialogUserForm = ref({
   show: false,
@@ -95,9 +98,8 @@ function startEdit(selectedUser) {
 
 function startAdd() {
   newUser.value = {
-    name: 'newUser',
-    email: 'barsik@barsik.com',
-    password: '1234',
+    name: '',
+    email: '',
     role: 'user',
   };
   dialogUserForm.value.show = true;
@@ -112,6 +114,8 @@ async function addUser() {
       command: 'addUser',
       data: newUser.value,
     });
+    created.value = { email: res.email, password: res.password };
+    delete res.password;
     res.edit = false;
     allUsers.value.push(res);
     dialogUserForm.value.show = false;
@@ -127,6 +131,12 @@ onUnmounted(() => {});
 <template>
   <!-- не container: он центрируется и съедает ширину, отступы даёт шаблон админки -->
   <div class="my-3">
+    <div v-if="created" class="alert alert-success">
+      {{ t('admin_new_password') }} <b>{{ created.email }}</b>:
+      <code class="fs-6">{{ created.password }}</code>
+      <div class="small">{{ t('admin_new_password_once') }}</div>
+    </div>
+
     <template v-for="(user, index) in allUsers" :key="index">
       <div class="row my-2">
         <div class="col-1">
@@ -141,9 +151,6 @@ onUnmounted(() => {});
         </div>
         <div class="col-2">
           <span v-text="user.email"></span>
-        </div>
-        <div class="col-2">
-          <span v-text="user.password"></span>
         </div>
         <div class="col-2">
           <span v-text="user.role"></span>
@@ -164,8 +171,11 @@ onUnmounted(() => {});
     <div class="my-2">
       <input type="text" class="form-control" v-model="newUser.email" placeholder="email" />
     </div>
-    <div class="my-2"><input type="text" class="form-control" v-model="newUser.password" placeholder="password" /></div>
-    <div class="my-2"><input type="text" class="form-control" v-model="newUser.role" placeholder="password" /></div>
+    <!-- при добавлении пароль придумывает сервер; при правке пустое поле — пароль не меняется -->
+    <div class="my-2" v-if="dialogUserForm.mode === 'edit'">
+      <input type="text" class="form-control" v-model="newUser.password" :placeholder="t('admin_password_keep')" />
+    </div>
+    <div class="my-2"><input type="text" class="form-control" v-model="newUser.role" placeholder="role: admin / user" /></div>
 
     <button class="btn btn-sm btn-success" v-if="dialogUserForm.mode === 'add'" @click="addUser">{{ t('create') }}</button>
     <button class="btn btn-sm btn-success" v-if="dialogUserForm.mode === 'edit'" @click="editUser">{{ t('save') }}</button>

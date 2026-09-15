@@ -23,8 +23,20 @@ Route::get('/a_dmin/documentation', function () {
     return view('magicAdmin::documentation');
 })->name('magic.documentation');
 
-// MCP: работа с AI-агентом, который ходит в локальный MCP
-use MagicProSrc\Ai\API_Ai;
+// исходный markdown страницы документации: читать его удобнее в редакторе
+Route::get('/a_dmin/documentationFile', function (Request $request) {
+    $path = \MagicProSrc\Docs\DocsTree::file(
+        \MagicProSrc\Docs\DocsTree::lang(),
+        (string) $request->query('p', '')
+    );
+
+    abort_if($path === '', 404);
+
+    return response()->download($path);
+})->middleware('magic.auth')->name('magic.documentationFile');
+
+// MCP: токен, которым агент с чужой машины ходит в МСП по https
+use MagicProSrc\Mcp\API_McpToken;
 
 // страница
 Route::get('/a_dmin/mcp', function () {
@@ -32,9 +44,18 @@ Route::get('/a_dmin/mcp', function () {
 })->name('magic.mcp');
 
 // АПИ
-Route::post('/a_dmin/api/mcp', [API_Ai::class, 'handle'])
-    ->middleware('magic.auth')
-    ->withoutMiddleware([$csrf]);
+// архив папки агента для Windows: адрес МСП вписан при сборке
+Route::get('/a_dmin/mcpInstall', function () {
+    return response()
+        ->download(\MagicProSrc\Mcp\InstallArchive::build(), \MagicProSrc\Mcp\InstallArchive::FILE)
+        ->deleteFileAfterSend();
+})->middleware('magic.auth')->name('magic.mcpInstall');
+
+Route::post('/a_dmin/api/mcpToken', [API_McpToken::class, 'handle'])
+    ->middleware('magic.auth');
+
+// Раздел AI-агента в tmux (src/Ai, API_Ai) остался в пакете, но выключен:
+// маршрута нет, значит и раздела нет. Почему — docs/ru/aiAgent/about.md.
 
 // Другое: витрина иконок и прочее по мелочи
 Route::get('/a_dmin/other', function () {
@@ -62,8 +83,7 @@ Route::get('/a_dmin/laravelUsers', function () {
 use MagicProSrc\Api\API_Auth;
 
 Route::post('/a_dmin/api/laravelUsers', [API_Auth::class, 'handle'])
-    ->middleware('magic.auth')
-    ->withoutMiddleware([$csrf]);
+    ->middleware('magic.auth');
 
 
 // Почтовая система
@@ -76,8 +96,7 @@ Route::get('/a_dmin/mailSystem', function () {
 
 // АПИ
 Route::post('/a_dmin/api/mailSystem', [API_Mail::class, 'handle'])
-    ->middleware('magic.auth')
-    ->withoutMiddleware([$csrf]);
+    ->middleware('magic.auth');
 
 // Крон: задачи расписания из админки
 use MagicProSrc\Scheduling\API_Cron;
@@ -89,8 +108,7 @@ Route::get('/a_dmin/cron', function () {
 
 // АПИ
 Route::post('/a_dmin/api/cron', [API_Cron::class, 'handle'])
-    ->middleware('magic.auth')
-    ->withoutMiddleware([$csrf]);
+    ->middleware('magic.auth');
 
 // Ленты
 use MagicProSrc\Lenta\API_Feeds;
@@ -102,8 +120,7 @@ Route::get('/a_dmin/feed', function () {
 
 // АПИ
 Route::post('/a_dmin/api/feed', [API_Feeds::class, 'handle'])
-    ->middleware('magic.auth')
-    ->withoutMiddleware([$csrf]);
+    ->middleware('magic.auth');
 
 
 
@@ -124,25 +141,17 @@ Route::get('/a_dmin/phpinfo', function () {
 // Импорт экспорт
 use MagicProAdminControllers\ImportExportController;
 use MagicProSrc\Import\API_Import;
-use MagicProSrc\Import\Snapshots;
 
-// импорт: проверка, работа и сохранённые состояния
+// импорт: проверка и работа
 Route::post('/a_dmin/api/import', [API_Import::class, 'handle'])
-    ->middleware('magic.auth')
-    ->withoutMiddleware([$csrf]);
-
-// скачать сохранённое состояние
-Route::get('/a_dmin/api/importSnapshot', function (Request $request) {
-    return response()->download(Snapshots::path((string) $request->input('file')));
-})->middleware('magic.auth')->name('magic.importSnapshot');
+    ->middleware('magic.auth');
 
 // проверка статей: прогон и отчёты
 use MagicProSrc\Cleanup\API_Cleanup;
 use MagicProSrc\Cleanup\CleanupReport;
 
 Route::post('/a_dmin/api/cleanup', [API_Cleanup::class, 'handle'])
-    ->middleware('magic.auth')
-    ->withoutMiddleware([$csrf]);
+    ->middleware('magic.auth');
 
 // отчёт лежит в private, поэтому отдаётся отсюда, а не ссылкой на файл
 Route::get('/a_dmin/api/cleanupReport', function (Request $request) {
@@ -160,8 +169,7 @@ Route::get('/a_dmin/api/exportArticle', [ImportExportController::class, 'exportA
 use MagicProAdminControllers\API_ArticlesPostController;
 
 Route::post('/a_dmin/api/articles', [API_ArticlesPostController::class, 'handle'])
-    ->middleware('magic.auth')
-    ->withoutMiddleware([$csrf]);
+    ->middleware('magic.auth');
 
 // страница редактирования статьи
 Route::get('/a_dmin/artEditor', function () {
@@ -177,8 +185,7 @@ Route::get('/a_dmin/fileManager', function () {
 use MagicProAdminControllers\API_FileManagerPostController;
 
 Route::post('/a_dmin/api/fileManager', [API_FileManagerPostController::class, 'handle'])
-    ->middleware('magic.auth')
-    ->withoutMiddleware([$csrf]);
+    ->middleware('magic.auth');
 
 
 // страница паука
@@ -201,22 +208,21 @@ use MagicProAdminControllers\API_EditUsersController;
 
 // API редактирования админов мппро доступна только админу
 Route::post('/a_dmin/api/editUsers', [API_EditUsersController::class, 'handle'])
-    ->middleware('magic.auth:admin')
-    ->withoutMiddleware([$csrf]);
+    ->middleware('magic.auth:admin');
 
 
 // API настройки
 use MagicProAdminControllers\API_Setup;
 
 Route::post('/a_dmin/api/setup', [API_Setup::class, 'handle'])
-    ->middleware('magic.auth:admin')
-    ->withoutMiddleware([$csrf]);
+    ->middleware('magic.auth:admin');
 
 // авторизация Мпро
 use MagicProAdminControllers\AuthController;
 
 Route::post('/a_dmin/login', [AuthController::class, 'login'])->name('magic.login');
-Route::get('/a_dmin/logout', [AuthController::class, 'logout'])->name('magic.logout');
+// выход — POST с токеном формы: GET-ссылку дёргала бы любая чужая страница
+Route::post('/a_dmin/logout', [AuthController::class, 'logout'])->name('magic.logout');
 
 // переадрессаця стандартного логина
 Route::get('/login', function () {
@@ -242,7 +248,17 @@ $removeStartSlash = array_map(function ($route) {
     return trim($route, '/');
 }, MagicGlobals::$INI['EXCLUDED_ROUTES']);
 
-$pattern = '^(?!(' . implode('|', array_map('preg_quote', $removeStartSlash)) . ')).*$';
+// Пустой список исключений давал `^(?!()).*$`: пустая группа совпадает в начале
+// любой строки, отрицание всегда проваливается, и динамический маршрут не
+// подходил ни к одному адресу — сайт отвечал 404 везде.
+//
+// И граница сегмента: без неё исключение `admin` выключало не только `/admin`,
+// но и `/administrator`, и любую статью, чьё имя с него начинается.
+$removeStartSlash = array_filter($removeStartSlash, static fn ($route) => $route !== '');
+
+$pattern = $removeStartSlash
+    ? '^(?!(' . implode('|', array_map('preg_quote', $removeStartSlash)) . ')(/|$)).*$'
+    : '.*';
 
 
 // ⚙️ Динамический маршрут

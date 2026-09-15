@@ -82,6 +82,15 @@ return [
     ],
 
 
+    'ARCHIVE_DAYS' => [
+        'label'   => 'archive_days',
+        'type'    => 'integer',
+        'min'     => 0,
+        'max'     => 3650,
+        'default' => 30,
+        'mutable' => true,
+    ],
+
     'RESIZE' => [
         'label'   => 'resize_params',
         'type'    => 'group',

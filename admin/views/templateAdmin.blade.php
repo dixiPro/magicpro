@@ -4,6 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {{-- токен формы для API админки: фронт кладёт его в заголовок X-CSRF-TOKEN --}}
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title')</title>
     <link rel="stylesheet" href="/vendor/dixipro/magicpro/bootstrap5/css/bootstrap.min.css" />
     <link rel="stylesheet" href="/vendor/dixipro/magicpro/fontawesome-free/css/all.min.css" />
@@ -31,8 +33,11 @@
                     <div class="px-2"><a class="text-white" href="/">@magic_msg('site')</a></div>
                     <div class="px-2"><a class="text-white" href="/a_dmin/">@magic_msg('title')</a></div>
                     <div class="px-2"><a class="text-white" href="/a_dmin/artEditor#1">@magic_msg('root')</a></div>
-                    <div class="px-2"><a href="{{ route('magic.logout') }}" type="submit"
-                            class="btn btn-sm btn-success">@magic_msg('logout') </a></div>
+                    <div class="px-2">
+                        <form method="POST" action="{{ route('magic.logout') }}" class="m-0">@csrf
+                            <button type="submit" class="btn btn-sm btn-success">@magic_msg('logout')</button>
+                        </form>
+                    </div>
                 </div>
             </div>
             @if ($GLOBALS['nolfetMenu'] ?? false == true)

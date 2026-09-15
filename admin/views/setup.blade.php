@@ -36,7 +36,7 @@
         <a href="#"
             onclick="fetch('/a_dmin/api/articles', {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
+                    headers: {'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content},
                     body: JSON.stringify({command: 'regenerateAll'})
                 })
                 .then(r => r.json())
@@ -47,6 +47,8 @@
     </div>
 
     <div id="articleCheck"></div>
+
+    <div id="articleArchive"></div>
 
     <div class=""><a href="/a_dmin/phpinfo">phpinfo</a></div>
 

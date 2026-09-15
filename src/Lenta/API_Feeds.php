@@ -769,9 +769,9 @@ class API_Feeds extends AbstractFeedApi
     /**
      * A new record at the end of the feed.
      *
-     * It starts hidden and with the defaults from the schema: the position and
-     * the visibility are set by the model itself, the same way for every path
-     * that creates a record.
+     * It starts hidden and with the defaults from the schema. The position is
+     * counted by the model itself; the hidden part is the default of the
+     * `__visible` column in the migration — the model has no say in it.
      */
     protected function itemCreate(array $params): array
     {

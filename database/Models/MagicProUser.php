@@ -9,6 +9,15 @@ class MagicProUser extends Authenticatable
 {
     protected $table = 'magicPro_users';
 
+    /**
+     * Shortest password of an admin.
+     *
+     * Checked where the password is still text — the console command and the
+     * admin screen: the model itself only ever sees a hash, and a hash is
+     * always long.
+     */
+    public const PASSWORD_MIN = 6;
+
     protected $fillable = ['name', 'email', 'password', 'role'];
 
     protected $hidden = ['password', 'remember_token'];
@@ -44,10 +53,12 @@ class MagicProUser extends Authenticatable
 
         $data = $this->attributesToArray();
 
+        // no rule for the password: attributesToArray() leaves hidden fields
+        // out, and what reaches the model is a hash anyway. The length is
+        // checked by the callers, see PASSWORD_MIN
         $rules = [
             'name'     => 'required|string|max:255',
             'email'    => "required|email|unique:magicPro_users,email,{$id}",
-            'password' => 'sometimes|nullable|string|min:4',
             'role'     => 'nullable|in:admin,user',
         ];
 

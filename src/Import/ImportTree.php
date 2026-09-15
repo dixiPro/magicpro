@@ -33,7 +33,8 @@ require_once __DIR__ . '/../../admin/controller/MagicProBuilder.php';
  * otherwise, and what has to be kept is prepared by hand, before the import.
  *
  * The base is written in one transaction. Blade views and controllers are
- * generated after the commit, in one run over the whole tree: half-generated
+ * generated after the commit, in one run over the whole tree that does not stop
+ * at the first trouble: what could not be written is reported by name. Half-generated
  * files after a failure would be worse than none.
  */
 class ImportTree
@@ -91,7 +92,7 @@ class ImportTree
     }
 
     /** Second pass: the same checks, then the work. */
-    public static function run(string $text, string $mode, bool $snapshot): array
+    public static function run(string $text, string $mode): array
     {
         $tree = new self();
 
@@ -99,17 +100,6 @@ class ImportTree
 
         if (! $tree->ok) {
             return ['ok' => false, 'report' => $tree->report];
-        }
-
-        // Before the work and after the checks: a state saved for a file that
-        // turns out to be garbage is a state saved for nothing.
-        if ($snapshot) {
-            array_unshift($tree->report, [
-                'code'   => 'snapshot',
-                'params' => ['file' => Snapshots::save()],
-                'error'  => false,
-                'done'   => true,
-            ]);
         }
 
         try {
@@ -123,10 +113,25 @@ class ImportTree
             throw $e;
         }
 
-        self::generate($gone);
+        $failed = self::generate($gone);
 
         foreach ($tree->report as &$line) {
             $line['done'] = true;
+        }
+
+        unset($line);
+
+        // База уже приняла дерево — это свершилось и не отменяется. Поэтому
+        // ответ остаётся успешным, а неудавшиеся файлы идут отдельными строками
+        // отчёта: повторять импорт из-за них не надо и вредно, надо чинить эти
+        // статьи.
+        foreach ($failed as $trouble) {
+            $tree->report[] = [
+                'code'   => 'file_failed',
+                'params' => $trouble,
+                'error'  => true,
+                'done'   => false,
+            ];
         }
 
         return ['ok' => true, 'report' => $tree->report];
@@ -471,15 +476,41 @@ class ImportTree
      *
      * @param  array<int, string>  $gone
      */
-    private static function generate(array $gone): void
+    /**
+     * Файлы статей после коммита.
+     *
+     * Обход не останавливается на первой беде. Раньше исключение с одной статьи
+     * прерывало проход, и сайт оставался в смеси: база уже новая, часть файлов
+     * новая, часть старая, часть удалена. Наружу при этом уходила ошибка, и
+     * человек повторял импорт, который на самом деле уже применился.
+     *
+     * Теперь остальные статьи всё равно получают свои файлы, а список тех, кому
+     * не досталось, возвращается наверх — чинить надо их, а не повторять
+     * импорт.
+     *
+     * @return array<int, array{name: string, error: string}>
+     */
+    private static function generate(array $gone): array
     {
+        $failed = [];
+
         foreach ($gone as $name) {
-            \MagicProAdminControllers\deleteMpro(['name' => $name]);
+            try {
+                \MagicProAdminControllers\deleteMpro(['name' => $name]);
+            } catch (\Throwable $e) {
+                $failed[] = ['name' => $name, 'error' => $e->getMessage()];
+            }
         }
 
         foreach (Article::orderBy('id')->get() as $article) {
-            \MagicProAdminControllers\createMpro($article->toArray());
+            try {
+                \MagicProAdminControllers\createMpro($article->toArray());
+            } catch (\Throwable $e) {
+                $failed[] = ['name' => (string) $article->name, 'error' => $e->getMessage()];
+            }
         }
+
+        return $failed;
     }
 
     // ==================================================================

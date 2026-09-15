@@ -33,6 +33,13 @@ class MagicFile
             throw new RuntimeException(sprintf('Failed to write file "%s".', $filename));
         }
         clearstatcache(true, $filename);
+
+        // Контроллеры статей — обычный php, и opcache держит их скомпилированными.
+        // Без сброса сервер с выключенной проверкой времени файла продолжит
+        // выполнять прежнюю версию: правка сохранилась, а сайт её не видит.
+        if (function_exists('opcache_invalidate')) {
+            @opcache_invalidate($filename, true);
+        }
         return;
     }
 

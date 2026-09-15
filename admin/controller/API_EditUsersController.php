@@ -41,13 +41,17 @@ class API_EditUsersController extends Controller
                 'request' => $request->all(),
             ]);
         } catch (\Throwable $th) {
-            $msg = $th->getMessage();
-            if ($th->getFile()) $msg .= ' in ' . $th->getFile();
-            if ($th->getLine()) $msg .= ' on line ' . $th->getLine();
+            // место ошибки — в лог, наружу только текст
+            \MproHelper::addLog('api', [
+                'api'     => static::class,
+                'command' => $request->string('command')->toString(),
+                'error'   => $th->getMessage(),
+                'where'   => $th->getFile() . ' ' . $th->getLine(),
+            ]);
 
             return response()->json([
                 'status'   => false,
-                'errorMsg' => $msg,
+                'errorMsg' => $th->getMessage(),
                 'request'  => $request->all(),
             ]);
         }
@@ -65,18 +69,36 @@ class API_EditUsersController extends Controller
 
     // ================================
     // ➕ add user
+    /**
+     * A new admin with a password made here.
+     *
+     * The password used to be `bcrypt($request->string(Str::random(10)))` — a
+     * field of the request under a random name, that is nothing, so every
+     * admin added from the screen got the hash of an empty string and signed
+     * in with an empty password field.
+     *
+     * Now it is random, twelve letters and digits — easy to copy, no symbol to
+     * lose in a messenger. The answer carries it once, as text; the base keeps
+     * only the hash, so it cannot be shown again: a forgotten one is replaced
+     * by editing.
+     */
     private function addUser(Request $request): array
     {
         $data = (array) $request->input('data');
-        $id = (int)($data['id'] ?? 0);
+
+        // a password never comes from the form here, and the id is the base's
+        unset($data['password'], $data['id']);
+
+        $password = Str::password(12, symbols: false);
 
         $user = new MagicProUser();
 
         $user->fill($data);
-        $user->password = bcrypt($request->string(Str::random(10)));
+        $user->password = Hash::make($password);
         $user->save();
 
-        return $user->toArray();
+        return $user->only(['id', 'name', 'email', 'role', 'created_at', 'updated_at'])
+            + ['password' => $password];
     }
 
     // ================================
@@ -98,6 +120,11 @@ class API_EditUsersController extends Controller
         ]);
 
         if (!empty($data['password'])) {
+            // the model sees only the hash: the length is checked while it is text
+            if (mb_strlen((string) $data['password']) < MagicProUser::PASSWORD_MIN) {
+                throw new \InvalidArgumentException('password must be at least ' . MagicProUser::PASSWORD_MIN . ' characters');
+            }
+
             $user->password = Hash::make($data['password']);
         }
 

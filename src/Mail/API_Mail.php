@@ -29,11 +29,26 @@ class API_Mail extends AbstractMailApi
      * Centralized error messages (dynamic parameters are omitted here and
      * built at throw site), so blade can display them consistently.
      */
+    /** Сколько строк отдают списки: по умолчанию и не больше этого. */
+    protected const LIST_DEFAULT = 30;
+
+    protected const LIST_MAX = 200;
+
+    /**
+     * Очередь: сколько писем читается из базы за раз и сколько секунд проход
+     * берёт новые. Замок очереди живёт 300 секунд, проход укладывается в 240 —
+     * остальное уйдёт следующей минутой.
+     */
+    protected const QUEUE_BATCH = 50;
+
+    protected const QUEUE_SECONDS = 240;
+
     protected const ERRORS = [
         'email_required'            => 'to (email) required',
         'subject_too_short'         => 'subject must be at least 8 characters',
         'html_too_short'            => 'html must be at least 16 characters',
         'email_blocked'             => 'email blocked',
+        'email_invalid'             => 'to (email) is not an email address',
         'duplicate_email'           => 'duplicate email',
         'too_frequent'              => 'too frequent send to this address',
         'make_email_failed'         => 'failed to build email',
@@ -71,6 +86,23 @@ class API_Mail extends AbstractMailApi
      * Время следующей попытки отправки по номеру попытки.
      * 1 -> +5м, 2 -> +10м, 3 -> +30м, дальше — больше попыток нет (исключение).
      */
+    /**
+     * Сколько строк отдать списку.
+     *
+     * Потолок нужен не ради красоты: без него `count` из запроса тянет из базы
+     * сколько попросят, а письма хранят html целиком.
+     */
+    protected static function listCount(array $params): int
+    {
+        $count = (int) ($params['count'] ?? self::LIST_DEFAULT);
+
+        if ($count < 1) {
+            return self::LIST_DEFAULT;
+        }
+
+        return min($count, self::LIST_MAX);
+    }
+
     public static function nextSchedule(int $attempts): \Illuminate\Support\Carbon
     {
         $timeAttempts = [
@@ -97,13 +129,22 @@ class API_Mail extends AbstractMailApi
         if ($email === '') {
             throw new \Exception(self::ERRORS['email_required']);
         }
-        $address = MagicProEmailAddress::where('email', $email)->first();
-        if (!$address) {
-            $address = MagicProEmailAddress::create([
-                'email'      => $email,
-                'ip_address' => request()->ip(),
-            ]);
+
+        // формат проверяется здесь, до реестра: иначе строка вроде
+        // `not-an-email` заводила бы себе адрес и оставалась в нём навсегда,
+        // потому что письмо всё равно будет отклонено ниже
+        if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            throw new \Exception(self::ERRORS['email_invalid']);
         }
+
+        // два первых письма на новый адрес в одну секунду оба не находили
+        // строку, оба вставляли, и второе падало на unique. createOrFirst()
+        // ловит нарушение unique и перечитывает строку соседа
+        $address = MagicProEmailAddress::where('email', $email)->first()
+            ?? MagicProEmailAddress::createOrFirst(
+                ['email' => $email],
+                ['ip_address' => request()->ip()]
+            );
 
         if ($address->blocked) {
             $reason = trim((string) $address->block_reason);
@@ -123,7 +164,7 @@ class API_Mail extends AbstractMailApi
     protected static function buildLetterParams(array $params): array
     {
         $letterParams = [
-            'to'       => self::checkEmail($params['to']),
+            'to'       => self::checkEmail((string) ($params['to'] ?? '')),
             'subject'  => (string) ($params['subject'] ?? ''),
             'html'     => (string) ($params['html'] ?? ''),
             'from'     => trim((string) ($params['from'] ?? '')) ?: (string) config('mail.from.address', ''),
@@ -195,11 +236,15 @@ class API_Mail extends AbstractMailApi
             return;
         }
 
-        if (in_array($last->status, self::QUEUE_STATUSES, true)) {
+        // sending — такое же письмо прямо сейчас уходит
+        if (
+            in_array($last->status, self::QUEUE_STATUSES, true)
+            || $last->status === MagicProMailMessage::STATUS_SENDING
+        ) {
             throw new \Exception(self::ERRORS['duplicate_email']);
         }
 
-        $retryTime = (int) env('retryTimeEmail', 60);
+        $retryTime = (int) config('magicpro_mail.retry_time', 60);
 
         if (
             $last->sent_at
@@ -207,6 +252,59 @@ class API_Mail extends AbstractMailApi
         ) {
             throw new \Exception(self::ERRORS['too_frequent']);
         }
+    }
+
+    /**
+     * Замок на пару «адрес + тема» от проверки дублей до записи строки.
+     *
+     * Проверка и запись шли порознь, и два одинаковых запроса в одну секунду
+     * оба проходили findDduplicates(): ни один ещё не записал своё письмо.
+     * Под замком второй ждёт, пока первый запишет строку, и видит её.
+     *
+     * Держится миллисекунды — отправка идёт уже после, её прикрывает сама
+     * строка в статусе sending. Занят дольше трёх секунд — отказ как дублю.
+     * Кеш не даёт замка вовсе — отправка идёт без него: письмо, которое не
+     * ушло из-за кеша, хуже редкого дубля.
+     */
+    protected static function letterLock(string $to, string $subject): ?\Illuminate\Contracts\Cache\Lock
+    {
+        try {
+            $lock = Cache::lock('API_Mail::letter:' . md5(mb_strtolower(trim($to)) . "\n" . $subject), 30);
+        } catch (\Throwable) {
+            return null;
+        }
+
+        try {
+            $lock->block(3);
+        } catch (\Illuminate\Contracts\Cache\LockTimeoutException) {
+            throw new \Exception(self::ERRORS['duplicate_email']);
+        } catch (\Throwable) {
+            return null;
+        }
+
+        return $lock;
+    }
+
+    protected static function releaseLock(?\Illuminate\Contracts\Cache\Lock $lock): void
+    {
+        try {
+            $lock?->release();
+        } catch (\Throwable) {
+            // не отпустился — уйдёт сам по сроку
+        }
+    }
+
+    /**
+     * Беда записи в базу после того, как письмо уже ушло. Ответ вызывающему
+     * от неё не меняется: письмо у провайдера, отказ был бы враньём.
+     */
+    protected static function logAfterSend(string $mailId, \Throwable $e): void
+    {
+        \MproHelper::addLog('mail', [
+            'api'     => static::class,
+            'mail_id' => $mailId,
+            'error'   => 'the letter went, its row was not updated: ' . $e->getMessage(),
+        ]);
     }
 
     // ==================================================================
@@ -220,24 +318,30 @@ class API_Mail extends AbstractMailApi
     protected static function sendLater(array $params): array
     {
         $letterParams = self::buildLetterParams($params);
-        self::findDduplicates($params);
 
         if (($params['scheduled_at'] ?? '') === '') {
             $params['scheduled_at'] = now()->addSeconds(60);
         }
 
-        $message = MagicProMailMessage::create([
-            'from_name'    => $letterParams['fromName'],
-            'from_email'   => $letterParams['from'],
-            'to_email'     => $letterParams['to'],
-            'reply_to'     => $letterParams['replyTo'],
-            'subject'      => $letterParams['subject'],
-            'html'         => $letterParams['html'],
-            'scheduled_at' => $params['scheduled_at'] ?? null,
-            'status'       => MagicProMailMessage::STATUS_QUEUED,
-            'raw_message'  => '',
+        $lock = self::letterLock($letterParams['to'], $letterParams['subject']);
 
-        ]);
+        try {
+            self::findDduplicates($params);
+
+            $message = MagicProMailMessage::create([
+                'from_name'    => $letterParams['fromName'],
+                'from_email'   => $letterParams['from'],
+                'to_email'     => $letterParams['to'],
+                'reply_to'     => $letterParams['replyTo'],
+                'subject'      => $letterParams['subject'],
+                'html'         => $letterParams['html'],
+                'scheduled_at' => $params['scheduled_at'] ?? null,
+                'status'       => MagicProMailMessage::STATUS_QUEUED,
+                'raw_message'  => '',
+            ]);
+        } finally {
+            self::releaseLock($lock);
+        }
 
         return [
             'id'           => $message->id,
@@ -249,56 +353,75 @@ class API_Mail extends AbstractMailApi
     /**
      * Отправить письмо мгновенно.
      * Params: from?, fromName?, to, replyTo?, subject (>= 8), html (>= 16).
+     *
+     * Строка пишется до отправки, в статусе sending, и после ответа транспорта
+     * меняется. Раньше было наоборот: письмо уходило, а INSERT падал — и
+     * вызывающий получал отказ за доставленное письмо, а в базе не оставалось
+     * строки ни для вебхука, ни для защиты от повтора. Теперь база не пишет —
+     * письмо не уходит вовсе.
+     *
+     * Процесс убили посреди отправки — строка остаётся в sending. Очередь её
+     * не берёт: ушло письмо или нет, неизвестно, а второе хуже.
      */
     protected static function sendNow(array $params): array
     {
         $letterParams = self::buildLetterParams($params);
-        self::findDduplicates($params);
+        $mailId       = (string) Str::uuid();
 
-        $SesV2Client = env('AWS_SesV2Client', false);
-        if ($SesV2Client) {
+        $lock = self::letterLock($letterParams['to'], $letterParams['subject']);
+
+        try {
+            self::findDduplicates($params);
+
+            $message = MagicProMailMessage::create([
+                'mail_id'     => $mailId,
+                'from_email'  => $letterParams['from'],
+                'from_name'   => $letterParams['fromName'],
+                'to_email'    => $letterParams['to'],
+                'reply_to'    => $letterParams['replyTo'],
+                'subject'     => $letterParams['subject'],
+                'html'        => $letterParams['html'],
+                'raw_message' => '',
+                'status'      => MagicProMailMessage::STATUS_SENDING,
+                'attempts'    => 1,
+            ]);
+        } finally {
+            // строка записана — дальше второе такое же письмо остановит она
+            self::releaseLock($lock);
+        }
+
+        $letterParams['mail_id'] = $mailId;
+
+        if (config('magicpro_mail.ses_api')) {
             $sent = self::sendByAwsApi($letterParams);
         } else {
             $sent = self::sendBySmtp($letterParams);
         }
 
         if ($sent['status']) {
-            $message = MagicProMailMessage::create([
-                'mail_id'              => $sent['mail_id'],
-                'from_email'           => $letterParams['from'],
-                'from_name'            => $letterParams['fromName'],
-                'to_email'             => $letterParams['to'],
-                'reply_to'             => $letterParams['replyTo'],
-                'subject'              => $letterParams['subject'],
-                'html'                 => $letterParams['html'],
-                'raw_message'          => $sent['raw_message'],
-                'provider_message_id'  => $sent['provider_message_id'],
-                'status'               => MagicProMailMessage::STATUS_SENT,
-                'sent_at'              => now(),
-                'attempts'             => 1,
-            ]);
+            try {
+                $message->update([
+                    'raw_message'         => $sent['raw_message'],
+                    'provider_message_id' => $sent['provider_message_id'],
+                    'status'              => MagicProMailMessage::STATUS_SENT,
+                    'sent_at'             => now(),
+                ]);
+            } catch (\Throwable $e) {
+                self::logAfterSend($mailId, $e);
+            }
 
             return [
                 'id'                  => $message->id,
-                'mail_id'             => $message->mail_id,
-                'provider_message_id' => $message->provider_message_id,
-                'status'              => $message->status,
-                '$SesV2Client'        => $SesV2Client
+                'mail_id'             => $mailId,
+                'provider_message_id' => $sent['provider_message_id'],
+                'status'              => MagicProMailMessage::STATUS_SENT,
             ];
         }
 
-        MagicProMailMessage::create([
-            'mail_id'      => $sent['mail_id'],
-            'from_email'   => $letterParams['from'],
-            'from_name'    => $letterParams['fromName'],
-            'to_email'     => $letterParams['to'],
-            'reply_to'     => $letterParams['replyTo'],
-            'subject'      => $letterParams['subject'],
-            'html'         => $letterParams['html'],
-            'raw_message'  => $sent['raw_message'],
-            'status'       => MagicProMailMessage::STATUS_RETRYING,
-            'attempts'     => 1,
-            'errors'       => [[
+        $message->update([
+            'raw_message' => $sent['raw_message'],
+            'status'      => MagicProMailMessage::STATUS_RETRYING,
+            'errors'      => [[
                 'ts'      => now()->toDateTimeString(),
                 'message' => $sent['errorMsg'],
             ]],
@@ -335,83 +458,150 @@ class API_Mail extends AbstractMailApi
         }
     }
 
+    /**
+     * Проход очереди.
+     *
+     * Письма читаются пачками по QUEUE_BATCH, по порядку id, а не все разом:
+     * письмо хранит html целиком, и большая очередь съедала память. Новые
+     * письма берутся QUEUE_SECONDS секунд — проход укладывается в срок замка,
+     * остальное уходит следующей минутой. Раньше долгий проход переживал
+     * замок, и следующий процесс начинал слать те же письма.
+     *
+     * Каждое письмо перед отправкой забирается: статус меняется на sending
+     * одним UPDATE с условием на прежний статус. Не изменилось ни строки —
+     * письмо уже забрал кто-то другой, оно пропускается. Так одно письмо
+     * уходит один раз, даже если два прохода всё-таки встретились.
+     */
     protected static function sendQueueLocked(array $params): array
     {
-        $messages = MagicProMailMessage::query()
-            ->whereIn('status', [
-                MagicProMailMessage::STATUS_QUEUED,
-                MagicProMailMessage::STATUS_RETRYING,
-            ])
-            ->where(function ($q) {
-                $q->whereNull('scheduled_at')
-                    ->orWhere('scheduled_at', '<=', now());
-            })
-            ->get();
+        $deadline = microtime(true) + self::QUEUE_SECONDS;
 
+        $total       = 0;
         $sentCount   = 0;
         $failedCount = 0;
+        $retryCount  = 0;
+        $stopCount   = 0;
 
-        foreach ($messages as $message) {
-            $sent = self::sendBySmtp([
-                'to'       => $message->to_email,
-                'subject'  => $message->subject,
-                'html'     => $message->html,
-                'from'     => $message->from_email,
-                'fromName' => $message->from_name ?? '',
-                'replyTo'  => $message->reply_to ?? '',
-                'mail_id'  => $message->mail_id ?: null,
-            ]);
+        do {
+            $batch = MagicProMailMessage::query()
+                ->whereIn('status', self::QUEUE_STATUSES)
+                ->where(function ($q) {
+                    $q->whereNull('scheduled_at')
+                        ->orWhere('scheduled_at', '<=', now());
+                })
+                ->orderBy('id')
+                ->limit(self::QUEUE_BATCH)
+                ->get();
 
-            if ($sent['status']) {
-                // успешная отправка
-                $message->update([
-                    'mail_id'              => $sent['mail_id'],
-                    'raw_message'          => $sent['raw_message'],
-                    'provider_message_id'  => $sent['provider_message_id'],
-                    'status'               => MagicProMailMessage::STATUS_SENT,
-                    'sent_at'              => now(),
-                    'attempts'             => $message->attempts + 1,
-                ]);
+            foreach ($batch as $message) {
+                if (microtime(true) > $deadline) {
+                    break 2;
+                }
 
-                $sentCount++;
-                continue;
+                $taken = MagicProMailMessage::query()
+                    ->whereKey($message->id)
+                    ->where('status', $message->status)
+                    ->update(['status' => MagicProMailMessage::STATUS_SENDING]);
+
+                if ($taken === 0) {
+                    continue;
+                }
+
+                // модель знает прежний статус. Без этой строки update() на
+                // retrying у письма, которое и было retrying, не счёл бы поле
+                // изменённым и не записал бы его — в базе осталось бы sending
+                $message->forceFill(['status' => MagicProMailMessage::STATUS_SENDING])->syncOriginal();
+
+                $total++;
+
+                self::sendQueued($message, $sentCount, $failedCount, $retryCount, $stopCount);
             }
+        } while ($batch->count() === self::QUEUE_BATCH && microtime(true) < $deadline);
 
-            $failedCount++;
-            $attempts = $message->attempts + 1;
+        // `failed` — неудачные отправки этого прохода, поэтому `total` всегда
+        // равен `sent + failed`. Что с ними стало дальше, говорят два других
+        // числа: `retrying` получили новую дату, `stopped` больше не будут
+        // пытаться
+        return [
+            'total'    => $total,
+            'sent'     => $sentCount,
+            'failed'   => $failedCount,
+            'retrying' => $retryCount,
+            'stopped'  => $stopCount,
+        ];
+    }
 
+    /** Одно забранное письмо очереди: отправка и запись итога. */
+    protected static function sendQueued(
+        MagicProMailMessage $message,
+        int &$sentCount,
+        int &$failedCount,
+        int &$retryCount,
+        int &$stopCount
+    ): void {
+        $sent = self::sendBySmtp([
+            'to'       => $message->to_email,
+            'subject'  => $message->subject,
+            'html'     => $message->html,
+            'from'     => $message->from_email,
+            'fromName' => $message->from_name ?? '',
+            'replyTo'  => $message->reply_to ?? '',
+            'mail_id'  => $message->mail_id ?: null,
+        ]);
+
+        if ($sent['status']) {
             try {
-                $scheduledAt = self::nextSchedule($attempts);
-                // есть новая дата отправки
-
                 $message->update([
-                    'mail_id'      => $sent['mail_id'],
-                    'raw_message'  => $sent['raw_message'],
-                    'status'       => MagicProMailMessage::STATUS_RETRYING,
-                    'attempts'     => $attempts,
-                    'scheduled_at' => $scheduledAt,
+                    'mail_id'             => $sent['mail_id'],
+                    'raw_message'         => $sent['raw_message'],
+                    'provider_message_id' => $sent['provider_message_id'],
+                    'status'              => MagicProMailMessage::STATUS_SENT,
+                    'sent_at'             => now(),
+                    'attempts'            => $message->attempts + 1,
                 ]);
             } catch (\Throwable $e) {
-                // повторная отправка невозможна, например количество повторов превышено
-                $message->update([
-                    'mail_id'     => $sent['mail_id'],
-                    'raw_message' => $sent['raw_message'],
-                    'status'      => MagicProMailMessage::STATUS_FAILED,
-                    'attempts'    => $attempts,
-                ]);
+                // письмо ушло; строка остаётся в sending и второй раз его
+                // не отправит
+                self::logAfterSend((string) $sent['mail_id'], $e);
             }
 
-            $message->appendError([
-                'ts'      => now()->toDateTimeString(),
-                'message' => $sent['errorMsg'],
-            ]);
+            $sentCount++;
+
+            return;
         }
 
-        return [
-            'total'  => $messages->count(),
-            'sent'   => $sentCount,
-            'failed' => $failedCount,
-        ];
+        $failedCount++;
+        $attempts = $message->attempts + 1;
+
+        try {
+            $scheduledAt = self::nextSchedule($attempts);
+            // есть новая дата отправки
+
+            $message->update([
+                'mail_id'      => $sent['mail_id'],
+                'raw_message'  => $sent['raw_message'],
+                'status'       => MagicProMailMessage::STATUS_RETRYING,
+                'attempts'     => $attempts,
+                'scheduled_at' => $scheduledAt,
+            ]);
+
+            $retryCount++;
+        } catch (\Throwable $e) {
+            // повторная отправка невозможна, например количество повторов превышено
+            $message->update([
+                'mail_id'     => $sent['mail_id'],
+                'raw_message' => $sent['raw_message'],
+                'status'      => MagicProMailMessage::STATUS_FAILED,
+                'attempts'    => $attempts,
+            ]);
+
+            $stopCount++;
+        }
+
+        $message->appendError([
+            'ts'      => now()->toDateTimeString(),
+            'message' => $sent['errorMsg'],
+        ]);
     }
 
     /**
@@ -469,10 +659,7 @@ class API_Mail extends AbstractMailApi
         $section = ($params['section'] ?? 'sent') === 'queue' ? 'queue' : 'sent';
         $search  = mb_strtolower(trim((string) ($params['search'] ?? '')));
 
-        $count = (int) ($params['count'] ?? 30);
-        if ($count < 1) {
-            $count = 30;
-        }
+        $count = self::listCount($params);
 
         $offset = max(0, (int) ($params['offset'] ?? 0));
 
@@ -533,10 +720,7 @@ class API_Mail extends AbstractMailApi
     {
         $search = mb_strtolower(trim((string) ($params['search'] ?? '')));
 
-        $count = (int) ($params['count'] ?? 30);
-        if ($count < 1) {
-            $count = 30;
-        }
+        $count = self::listCount($params);
 
         $offset = max(0, (int) ($params['offset'] ?? 0));
 
@@ -684,10 +868,7 @@ class API_Mail extends AbstractMailApi
                     $mailId
                 );
 
-            $configurationSet = trim((string) env(
-                'AWS_SES_CONFIGURATION_SET',
-                ''
-            ));
+            $configurationSet = (string) config('magicpro_mail.configuration_set', '');
 
             if ($configurationSet !== '') {
                 $email->getHeaders()->addTextHeader(
@@ -784,7 +965,7 @@ class API_Mail extends AbstractMailApi
                 ],
             ];
 
-            $configurationSet = trim((string) env('AWS_SES_CONFIGURATION_SET', ''));
+            $configurationSet = (string) config('magicpro_mail.configuration_set', '');
 
             if ($configurationSet !== '') {
                 $request['ConfigurationSetName'] = $configurationSet;

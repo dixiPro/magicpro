@@ -10,11 +10,14 @@ namespace MagicProSrc\Console\Aws;
  * whole run — one refusal must not hide the rest of the picture.
  *
  * The last section is about the project itself. A setup correct in AWS and an
- * .env_mpro that knows nothing about it look exactly the same from outside:
+ * .env that knows nothing about it look exactly the same from outside:
  * mail goes out, events never arrive.
  */
 class StatusCommand extends AwsCommand
 {
+    /** Some section failed: the run goes on, the exit code says so at the end. */
+    private bool $failed = false;
+
     protected $signature = 'magicpro:aws-status
         {--file=aws-setup.ini : settings of the site}';
 
@@ -38,12 +41,15 @@ class StatusCommand extends AwsCommand
         $this->line('');
         $this->line('Region: ' . $this->region);
 
+        $this->section('IAM', fn () => $this->iamUser($settings['user']));
         $this->section('SES', fn () => $this->identities($settings['domain']));
         $this->section('SNS', fn () => $this->topic($names['topic']));
         $this->section('SES events', fn () => $this->events($names['config_set']));
         $this->section('MagicPro', fn () => $this->project());
 
-        return self::SUCCESS;
+        // a picture with a hole in it is not a success: a deploy script reads
+        // the exit code, not the red line in the middle
+        return $this->failed ? self::FAILURE : self::SUCCESS;
     }
 
     /** One refused section is a line, not the end of the run. */
@@ -56,6 +62,75 @@ class StatusCommand extends AwsCommand
             $body();
         } catch (\Throwable $e) {
             $this->err($this->awsMessage($e));
+
+            $this->failed = true;
+        }
+    }
+
+    /**
+     * The user of the site and what he holds.
+     *
+     * This is the part you look at before changing keys: how many there are,
+     * how old they are, and which one the project is using right now. AWS
+     * allows two per user, and a place taken by a forgotten key is the reason
+     * a change of keys fails.
+     */
+    private function iamUser(string $user): void
+    {
+        $iam = $this->iam();
+
+        try {
+            $found = $iam->getUser(['UserName' => $user])->get('User');
+        } catch (\Aws\Iam\Exception\IamException $e) {
+            if ($e->getAwsErrorCode() === 'NoSuchEntity') {
+                $this->wait('user ' . $user . ' does not exist');
+
+                return;
+            }
+
+            throw $e;
+        }
+
+        $this->ok('user ' . $user . ', created ' . $this->when($found['CreateDate'] ?? null));
+
+        $current = trim((string) config('services.ses.key', ''));
+        $keys    = $iam->listAccessKeys(['UserName' => $user])->get('AccessKeyMetadata') ?? [];
+
+        foreach ($keys as $key) {
+            $id   = (string) $key['AccessKeyId'];
+            $used = $iam->getAccessKeyLastUsed(['AccessKeyId' => $id])->get('AccessKeyLastUsed');
+
+            $this->line('       ' . $id
+                . '  ' . str_pad((string) ($key['Status'] ?? ''), 8)
+                . '  created ' . $this->when($key['CreateDate'] ?? null)
+                . '  used ' . $this->when($used['LastUsedDate'] ?? null)
+                . ($id === $current && $current !== '' ? '   <- the project sends with this one' : ''));
+        }
+
+        count($keys) < 2
+            ? $this->ok(count($keys) . ' of 2 access keys, a place for a new one')
+            : $this->wait('2 of 2 access keys: a new one cannot be issued until one is deleted');
+
+        foreach ($iam->listUserPolicies(['UserName' => $user])->get('PolicyNames') ?? [] as $name) {
+            $this->line('       policy ' . $name . ' (inline)');
+        }
+
+        foreach ($iam->listAttachedUserPolicies(['UserName' => $user])->get('AttachedPolicies') ?? [] as $policy) {
+            $this->line('       policy ' . ($policy['PolicyName'] ?? '') . ' (attached)');
+        }
+    }
+
+    /** A date of AWS as a day, whatever type the sdk handed over. */
+    private function when(mixed $date): string
+    {
+        if ($date === null) {
+            return 'never';
+        }
+
+        try {
+            return (new \DateTimeImmutable((string) $date))->format('Y-m-d');
+        } catch (\Throwable) {
+            return 'unknown';
         }
     }
 
@@ -85,13 +160,21 @@ class StatusCommand extends AwsCommand
             . (float) ($quota['MaxSendRate'] ?? 0) . '/sec, sent '
             . (int) ($quota['SentLast24Hours'] ?? 0));
 
-        $identities = $ses->listEmailIdentities()->get('EmailIdentities') ?? [];
+        // the list comes in pages; the first one alone looked like the whole
+        // list on an account with many identities
+        $token = null;
 
-        foreach ($identities as $row) {
-            $this->line('       ' . str_pad((string) ($row['IdentityType'] ?? ''), 14)
-                . ($row['IdentityName'] ?? '')
-                . (($row['SendingEnabled'] ?? false) ? '' : '  (sending off)'));
-        }
+        do {
+            $answer = $ses->listEmailIdentities($token ? ['NextToken' => $token] : []);
+
+            foreach ($answer->get('EmailIdentities') ?? [] as $row) {
+                $this->line('       ' . str_pad((string) ($row['IdentityType'] ?? ''), 14)
+                    . ($row['IdentityName'] ?? '')
+                    . (($row['SendingEnabled'] ?? false) ? '' : '  (sending off)'));
+            }
+
+            $token = $answer->get('NextToken');
+        } while ($token);
     }
 
     private function topic(string $name): void
@@ -170,9 +253,11 @@ class StatusCommand extends AwsCommand
     /** What the site itself reads. Written in AWS is only half the answer. */
     private function project(): void
     {
-        $set = trim((string) env('AWS_SES_CONFIGURATION_SET', ''));
+        // config(), а не env(): показывается то, что сайт реально читает,
+        // в том числе после config:cache
+        $set = (string) config('magicpro_mail.configuration_set', '');
 
-        env('AWS_SesV2Client', false)
+        config('magicpro_mail.ses_api')
             ? $this->ok('AWS_SesV2Client=true, mail goes through the SES API')
             : $this->line('       AWS_SesV2Client is off, mail goes through SMTP');
 

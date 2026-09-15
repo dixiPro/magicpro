@@ -8,6 +8,17 @@ import i18n from './CommonCom/translate.js';
 
 const t = (key) => i18n.global.t(key);
 
+/**
+ * Токен формы из шаблона админки.
+ *
+ * API админки проверяет CSRF: сессия у страницы та же, что и у любого чужого
+ * сайта, открытого в соседней вкладке, и без токена чужая страница могла бы
+ * нажать «удалить» или «импорт» за тебя.
+ */
+export function csrfToken() {
+  return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
+}
+
 export async function apiFile(data, logResult = false) {
   const url = '/a_dmin/api/fileManager';
   try {
@@ -78,6 +89,7 @@ export async function apiCall(params = {}) {
       method,
       headers: {
         'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': csrfToken(),
       },
       body: JSON.stringify(data),
     });

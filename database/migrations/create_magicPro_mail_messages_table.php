@@ -14,7 +14,8 @@ return new class extends Migration
             // Message-ID почтового провайдера (SES), матч вебхука / deleteEmail
             $table->string('provider_message_id')->nullable()->unique();
 
-            // собственный идентификатор письма (X-SES-MESSAGE-TAGS mail_id=...)
+            // собственный идентификатор письма: уходит в письмо заголовком
+            // X-MagicPro-Mail-ID, по нему письмо находится обратно
             $table->string('mail_id')->nullable()->unique();
 
             $table->string('from_email');

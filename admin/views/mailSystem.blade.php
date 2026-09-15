@@ -3,7 +3,7 @@
 @section('title', 'Mail')
 
 @section('body')
-    @if (Auth::guard('magic')->user()->role === 'admin')
+    @if (Auth::guard('magic')->user()?->role === 'admin')
         <div id="mailSystemAdmin"></div>
         @vite('admin/js/mailSystemAdmin.js', 'vendor/dixipro/magicpro')
     @else

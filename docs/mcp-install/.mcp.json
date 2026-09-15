@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "magicpro": {
+      "type": "http",
+      "url": "__MCP_URL__",
+      "headers": {
+        "Authorization": "Bearer ${MAGICPRO_TOKEN}"
+      }
+    }
+  }
+}

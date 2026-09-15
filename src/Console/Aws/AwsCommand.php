@@ -101,6 +101,28 @@ abstract class AwsCommand extends Command
     }
 
     /**
+     * `user` becomes the IAM user, the policy, the topic, the configuration set
+     * and the event destination at once, and each service has its own rules
+     * for a name. Checked here, before anything is created: a name IAM took
+     * used to fail on SNS, with the user and its policy already in AWS.
+     *
+     * The common ground of all of them: latin letters, digits, hyphen and
+     * underscore. The length is that of the tightest one — the event
+     * destination, 64, of which `-sns` takes four.
+     */
+    protected function checkUser(string $user): bool
+    {
+        if (preg_match('/^[A-Za-z0-9_-]{1,60}$/', $user)) {
+            return true;
+        }
+
+        $this->err('user = ' . $user . ': latin letters, digits, hyphen and underscore only, 60 characters at most.');
+        $this->line('The name goes into IAM, SNS and SES at once, and this is what all of them accept.');
+
+        return false;
+    }
+
+    /**
      * Asks for the setup key. False means there is nothing to work with.
      */
     protected function askSetupKey(): bool
@@ -188,34 +210,6 @@ abstract class AwsCommand extends Command
         }
 
         return $e->getMessage();
-    }
-
-    /**
-     * Adds a line to .gitignore and says so. A generated file is a file nobody
-     * meant to commit, and remembering that by hand is exactly what gets
-     * forgotten.
-     */
-    protected function gitIgnore(string $pattern): void
-    {
-        $file = base_path('.gitignore');
-
-        $lines = is_file($file)
-            ? preg_split('/\R/', (string) file_get_contents($file)) ?: []
-            : [];
-
-        foreach ($lines as $line) {
-            if (trim($line) === $pattern) {
-                return;
-            }
-        }
-
-        $text = ($lines && trim(end($lines)) !== '' ? PHP_EOL : '')
-            . '# magicpro aws' . PHP_EOL
-            . $pattern . PHP_EOL;
-
-        file_put_contents($file, $text, FILE_APPEND);
-
-        $this->ok('.gitignore: added ' . $pattern);
     }
 
     protected function ok(string $text): void

@@ -18,7 +18,8 @@ return new class extends Migration
             // the method is the public one the task calls
             $table->string('controller');
 
-            // call parameters, always sent as POST; may be empty
+            // call parameters: the runner passes them to the method as one
+            // array, straight — no Request and no POST anywhere. May be empty
             $table->json('params')->nullable();
 
             // cron expression, five fields, server timezone

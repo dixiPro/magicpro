@@ -24,8 +24,15 @@ use ReflectionNamedType;
  */
 class PhpDoc
 {
-    /** Parsed classes, one json per class. */
-    private const CACHE_DIR = 'app/private/magic/phpdoc';
+    /**
+     * Parsed classes, one json per class.
+     *
+     * The number in the path is the version of what lies inside. It changed
+     * when the cache started keeping the markdown as it is written instead of
+     * ready html: an old file has the wrong shape, and a folder of its own is
+     * cheaper than a check on every read.
+     */
+    private const CACHE_DIR = 'app/private/magic/phpdoc/2';
 
     /** The language of the tag everything falls back to. */
     private const FALLBACK = 'en';
@@ -33,24 +40,47 @@ class PhpDoc
     /**
      * Public methods of the class with their doc, in the order they are written.
      *
+     * `$renderHtml` false gives the markdown as it is written in the source:
+     * that is what the console command needs, and the page needs html.
+     *
      * @return array<int, array{name: string, signature: string, doc: string, documented: bool}>
      */
-    public static function methods(string $class, string $lang = ''): array
+    public static function methods(string $class, string $lang = '', bool $renderHtml = true): array
     {
         $lang = $lang !== '' ? $lang : self::FALLBACK;
 
         $rows = [];
 
-        foreach (self::parsed($class) as $row) {
+        foreach (self::parsed($class)['methods'] as $row) {
+            $doc = $row['doc'][$lang] ?? $row['doc'][self::FALLBACK] ?? reset($row['doc']) ?: '';
+
             $rows[] = [
                 'name'       => $row['name'],
                 'signature'  => $row['signature'],
-                'doc'        => $row['doc'][$lang] ?? $row['doc'][self::FALLBACK] ?? reset($row['doc']) ?: '',
+                'doc'        => $renderHtml ? Str::markdown($doc) : $doc,
                 'documented' => $row['doc'] !== [],
             ];
         }
 
         return $rows;
+    }
+
+    /**
+     * The block written above the class itself.
+     *
+     * The introduction of a page lives there: what the whole set is for and how
+     * it is called. It belongs to the set and not to any single method, and the
+     * only place where it stays next to the code is the class comment.
+     */
+    public static function about(string $class, string $lang = '', bool $renderHtml = true): string
+    {
+        $lang = $lang !== '' ? $lang : self::FALLBACK;
+
+        $blocks = self::parsed($class)['about'];
+
+        $text = $blocks[$lang] ?? $blocks[self::FALLBACK] ?? (reset($blocks) ?: '');
+
+        return $renderHtml ? Str::markdown($text) : $text;
     }
 
     /**
@@ -76,13 +106,20 @@ class PhpDoc
 
         $rows = self::read($reflection);
 
-        File::ensureDirectoryExists(dirname($cache));
-        File::put($cache, json_encode($rows, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+        // the cache is a convenience and not a condition: the page is served by
+        // the web user and the console command by a person, and whichever of
+        // them cannot write here has still parsed the class and has the answer
+        try {
+            File::ensureDirectoryExists(dirname($cache));
+            File::put($cache, json_encode($rows, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+        } catch (\Throwable) {
+            //
+        }
 
         return $rows;
     }
 
-    /** Reads the class: own public methods, their signature and their blocks. */
+    /** Reads the class: its own block, own public methods, their blocks. */
     private static function read(ReflectionClass $reflection): array
     {
         $rows = [];
@@ -100,7 +137,10 @@ class PhpDoc
             ];
         }
 
-        return $rows;
+        return [
+            'about'   => self::blocks((string) $reflection->getDocComment()),
+            'methods' => $rows,
+        ];
     }
 
     /**
@@ -148,7 +188,7 @@ class PhpDoc
             $body = trim(implode("\n", $lines));
 
             if ($body !== '') {
-                $blocks[$code] = Str::markdown($body);
+                $blocks[$code] = $body;
             }
         }
 

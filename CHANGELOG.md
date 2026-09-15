@@ -1,5 +1,40 @@
 # MagicPro CHANGELOG
 
+### 2026-09-09 — Дока одним деревом, удаление статьи через МСП
+
+- The documentation section of the admin panel is built from `docs/ru/index.json`: three levels — sections, the pages of a section, the page itself — with the source markdown downloadable from any page.
+- The order and the human names of the pages live in that index and nowhere else; a language without an `index.json` says so instead of showing another one.
+- `list-docs` is fed by the same index, so an agent sees the same names and the same order a person does. A page reaches it only with `"agent": true` on the entry or on its group — everything else stays in the admin panel alone.
+- `docs/ru/helpers/use.md` is no longer written by hand: `php artisan magicpro:docs` builds it from the phpdoc of `MproHelper`, the block above the class becoming the introduction.
+- The МСП server tells an agent about MagicPro itself: `$instructions` are read from `docs/ru/agentSetup/mcpInstructions.md`, so the text lives in one place.
+- New tools `list-docs` and `get-doc`: an agent working over http has no files of the package, and this is how it reads the documentation.
+- New tool `delete-article`, in two steps: without `confirm` it only shows the article and the whole subtree that would go with it, and only a second call deletes. The root cannot be deleted.
+- `save-article` says in its description that a field which is sent is replaced whole, so the article has to be read before it is written.
+- The page `MCP` carries the saved states of the tree: take a snapshot, then let an agent work. The same block serves the import page — one component, one place to fix.
+
+### 2026-09-08 — Архив версий статьи
+
+- Every save of an article now leaves a copy of it in `magicPro_article_versions`: the article whole, as plain json in a `longtext`, with who saved it and when.
+- The editor got a button with a clock next to the lamp: the list of versions, a click opens the saved article with its blade and controller to read and to copy from, and the buttons below restore it or close.
+- Restoring is an ordinary save — the files are regenerated, and the state that was replaced stays in the archive.
+- A save that changed nothing writes no version: three saves in a row are one state.
+- Saves through МСП land in the archive with an author too: the middleware makes the owner of the token the user of the request.
+- The import does not touch the archive and the archive knows nothing about the import: the import has its own snapshots of the tree.
+- `ARCHIVE_DAYS` in the settings says how long the history is kept, thirty days by default and `0` for forever; the newest version of an article is never swept.
+- Versions of deleted articles stay — there is no foreign key on purpose — and leave only by the button on `/a_dmin/setup`.
+- The migration of the table is written but not run: `php artisan migrate` is the site owner's call.
+
+### 2026-09-08 — МСП по https
+
+- The same МСП server now answers over https at `/mcp/magicpro`, so an agent on somebody's own machine works with the site through the fifteen tools and has no shell on the server at all.
+- A token is issued in the admin panel, section `MCP`, and shown once: the site keeps a `sha256` of it in `storage/app/private/magic/mcpTokens/<user_id>.php`, one file per person, and a new token overwrites the old one.
+- The token dies an hour after the last call and a day after it was issued, and it is accepted only from the address it was issued at.
+- The token travels in an environment variable typed at the start of the agent, so it never reaches the disk of the local machine: the commands for Windows and Linux are in `docs/ru/mcp/use.md`.
+- Every call and every refusal goes into `storage/logs/mcp.log`, fourteen days back, with the method and the name of the tool but without the arguments and without the token.
+- The page `MCP` shows, under the token, the config of codex and of Claude Code with the real address filled in, and two commands to start each of them with the token already in place: nothing is typed by hand.
+- The page `MCP` shows the documentation of `docs/ru/mcp/use.md` right under the button: whoever came for a token reads there what to do with it, including the config of Claude Code and of Codex.
+- The section of the AI agent in `tmux` is switched off: `POST /a_dmin/api/mcp` is gone and the page `MCP` now holds the token. The code of `src/Ai/` stays where it was.
+
 ### 2026-08-31
 
 - New button on `/a_dmin/setup`: the article check finds what is wrong with the tree and repairs it in one go — route params without `useController`, articles with no parent, rings, numbers among the brothers, the folder flag, names, doubles, the root, and the generated files that do not match the base.

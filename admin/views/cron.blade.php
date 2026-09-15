@@ -3,7 +3,7 @@
 @section('title', 'Cron')
 
 @section('body')
-    @if (Auth::guard('magic')->user()->role === 'admin')
+    @if (Auth::guard('magic')->user()?->role === 'admin')
         <div id="cronAdmin"></div>
         @vite('admin/js/cronAdmin.js', 'vendor/dixipro/magicpro')
     @else

@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue';
+import { csrfToken } from '../apiCall.js';
 
 import { useI18n } from 'vue-i18n';
 const { t } = useI18n(); //
@@ -43,6 +44,7 @@ function uploadFile(file, index) {
     });
 
     xhr.open('POST', `/a_dmin/api/fileManager?${params.toString()}`, true);
+    xhr.setRequestHeader('X-CSRF-TOKEN', csrfToken());
     xhr.responseType = 'json';
 
     // Per-file progress

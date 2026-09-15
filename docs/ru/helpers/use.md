@@ -1,172 +1,405 @@
+<!-- Собрано командой `php artisan magicpro:docs` из phpdoc класса MproHelper.
+     Руками не править: правка потеряется при следующей сборке. -->
+
 # Хелперы: как пользоваться
 
-Все методы статические, класс лежит в глобальном пространстве имён и подключается
-сам. В блейдах и контроллерах статей пишется сразу, без `use`:
+Набор функций, доступных отовсюду: из блейда статьи, из её контроллера, из
+компонента и из ленты.
+
+Все методы статические, класс лежит в глобальном пространстве имён и
+подключается сам. В блейдах и контроллерах статей пишется сразу, без `use`:
+
+    MproHelper::getArtById(139);
+
+**Дерево статей.** Два семейства, и путать их дорого. `getArtById`,
+`getArtByName` и `getParent` отдают статью целиком, со всеми полями.
+`getChildrenById` и `getChildrenByName` отдают короткие записи для меню —
+`id`, `title`, `name`, `menuOn`, `updated_at`, а по id ещё и `npp`, — и
+отсеивают всё, у чего `menuOn = false`.
+
+    <ul>
+    @foreach (MproHelper::getChildrenByName('topMenu') as $child)
+        <li><a href="/{{ $child['name'] }}">{{ $child['title'] }}</a></li>
+    @endforeach
+    </ul>
+
+    @php( $parent = MproHelper::getParent($Env['artId']) )
+
+    @if ($parent)
+        <a href="/{{ $parent['name'] }}">Вверх: {{ $parent['title'] }}</a>
+    @endif
+
+Ничего не найдено — приходит пустой массив, а не ошибка: и у несуществующего
+id, и у корня, у которого родителя нет.
+
+**Какой метод под какую задачу**
+
+| Задача | Метод |
+| --- | --- |
+| статья, её родитель, дети, путь до корня | `getArtById`, `getArtByName`, `getParent`, `getChildrenById`, `getChildrenByName`, `getPathToRootById` |
+| показать страницу документации пакета | `getDoc` |
+| отправить письмо прямо сейчас | `sendMail` |
+| написать в свой дневной лог | `addLog` |
+| сообщение в телеграм | `telegramSend` |
+| reCAPTCHA: ключ и проверка | `getRecaptureKey`, `verifyRecapture` |
+| зашифровать и расшифровать массив | `crypt`, `decrypt` |
+| уменьшить картинку, почистить её кеш | `imageReduceX`, `imageReduceY`, `imageCacheClear`, `imageCacheCleanup` |
+| MIME по расширению | `imageType` |
+| текст записи ленты с подстановками | `feedText` |
+| markdown оператора в html | `mdToHtml` |
+| строка в кусок адреса, текст под мета-теги | `translitForUrl`, `trimAndCutText` |
+| посмотреть значение при отладке | `dump` |
+
+## Методы
+
+[getDoc](#getdoc) · [getRecaptureKey](#getrecapturekey) · [verifyRecapture](#verifyrecapture) · [sendMail](#sendmail) · [addLog](#addlog) · [telegramSend](#telegramsend) · [crypt](#crypt) · [decrypt](#decrypt) · [dump](#dump) · [imageReduceX](#imagereducex) · [imageReduceY](#imagereducey) · [imageCacheClear](#imagecacheclear) · [imageCacheCleanup](#imagecachecleanup) · [imageType](#imagetype) · [feedText](#feedtext) · [mdToHtml](#mdtohtml) · [translitForUrl](#translitforurl) · [trimAndCutText](#trimandcuttext) · [getParent](#getparent) · [getChildrenById](#getchildrenbyid) · [getChildrenByName](#getchildrenbyname) · [getArtByName](#getartbyname) · [getArtById](#getartbyid) · [getPathToRootById](#getpathtorootbyid)
+
+### getDoc
 
 ```php
-MproHelper::getArtById(139);
+MproHelper::getDoc(string $name, string $lang = '', bool $renderHtml = true): string
 ```
 
-## Дерево статей
+Страница документации пакета в html, источник — markdown в `docs/<язык>/`.
 
-| Метод                             | Что делает                                                                               |
-| --------------------------------- | ---------------------------------------------------------------------------------------- |
-| `getArtById(int $id)`             | статья целиком, все поля. Не найдена — пустой массив                                     |
-| `getArtByName(string $name)`      | то же по имени                                                                           |
-| `getParent(int $id)`              | родительская статья целиком. Для корня и несуществующего id — пустой массив, а не ошибка |
-| `getChildrenById(int $artId)`     | дети по id, **только `menuOn = true`**, по порядку `npp`                                 |
-| `getChildrenByName(string $name)` | то же, но родитель ищется по имени                                                       |
-| `getPathToRootById(int $id)`      | путь до корня массивом имён, от корня к статье. Ограничен 100 шагами от зацикливания     |
+`$name` — имя файла без `.md`, можно с папкой: `mainUse/use`.
+`$lang` — пустой берётся из настроек; нет перевода — покажется ru.
+`$renderHtml` — `false` отдаёт markdown как есть.
 
-Разница между семействами: `getArt*` и `getParent` отдают статью со всеми полями,
-`getChildren*` — короткие записи для меню и отсеивают всё, у чего `menuOn = false`.
+    {!! MproHelper::getDoc('feed/use') !!}
 
-```blade
-<ul>
-@foreach (MproHelper::getChildrenByName('topMenu') as $child)
-    <li><a href="/{{ $child['name'] }}">{{ $child['title'] }}</a></li>
-@endforeach
-</ul>
-
-@php( $parent = MproHelper::getParent($Env['artId']) )
-
-@if ($parent)
-    <a href="/{{ $parent['name'] }}">Вверх: {{ $parent['title'] }}</a>
-@endif
-```
-
-Поля у детей: `id`, `title`, `name`, `menuOn`, `updated_at`, а у `getChildrenById`
-ещё и `npp`.
-
-## Почта и логи
-
-| Метод                                          | Что делает                                                                                                            |
-| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `sendMail(array $params)`                      | отправляет письмо сразу. Возвращает `status / errorMsg / data`, исключений не бросает |
-| `addLog(string $logName, string\|array $data)` | пишет в `storage/logs/{$logName}.log` с ротацией за 14 дней                                                           |
-
-Каждая попытка отправки, удачная и нет, попадает в лог `mail`. Массив в `addLog`
-раскладывается построчно в `ключ: значение`, вложенные — в JSON.
+### getRecaptureKey
 
 ```php
-$res = MproHelper::sendMail([
-    'email'    => 'user@example.com',
-    'subj'     => 'Тема письма',
-    'html'     => '<h1>Привет</h1>',
-    'replyTo'  => 'client@example.com', // необязательно
-    'fromName' => 'Магазин',            // необязательно
-]);
-
-if (! $res['status']) {
-    MproHelper::addLog('myLog', ['error' => $res['errorMsg']]);
-}
+MproHelper::getRecaptureKey(): string
 ```
 
-Ключи письма:
+Публичный site key reCAPTCHA из `RECAPTCHA_SITE_KEY`. Тот, что виден в
+исходнике страницы; секретный ключ сюда не приходит.
 
-| Ключ       | Обяз. | Что это                                                                             |
-| ---------- | ----- | ----------------------------------------------------------------------------------- |
-| `email`    | да    | получатель. Заблокированный адрес отправку не проходит                              |
-| `subj`     | да    | тема, не короче 8 символов                                                          |
-| `html`     | да    | тело письма, не короче 16 символов                                                  |
-| `replyTo`  | нет   | куда уйдёт ответ                                                                    |
-| `fromName` | нет   | имя отправителя перед адресом                                                       |
+### verifyRecapture
 
-`replyTo` — потому что письмо уходит с `MAIL_FROM_ADDRESS`, а его никто не
-читает. Заявка с формы приходит менеджеру, и «Ответить» должно вести клиенту, а
-не роботу.
+```php
+MproHelper::verifyRecapture(string $response): bool
+```
 
-`fromName` — только подпись перед адресом: `Магазин <info@dixipro.net>`. Сам
-адрес не меняется, менять его нельзя — он подтверждён в SES. Пусто — берётся имя
-из настроек проекта, `MAIL_FROM_NAME`.
+Проверяет токен reCAPTCHA у Google. `true` только при успехе, любая
+ошибка сети даёт `false`.
 
-Оба необязательных ключа ведут себя одинаково: нет ключа и пустая строка — одно
-и то же. Непустой `replyTo` проверяется как email, кривой уронит отправку в
-`errorMsg`.
+`$response` — токен из формы. Секретный ключ берётся из
+`RECAPTCHA_SECRET_KEY` внутри и не передаётся.
 
-Лишние ключи молча игнорируются — опечатка в имени выглядит как «параметр не
+### sendMail
+
+```php
+MproHelper::sendMail(array $params): array
+```
+
+Отправляет письмо сразу. Возвращает `status`, `errorMsg`, `data`; ошибка
+не бросается, а приходит в ответе, и всё пишется в лог `mail`.
+
+`$params`: `email`, `subj`, `html`, необязательные `replyTo` и `fromName`.
+
+| Ключ       | Обяз. | Что это                                          |
+| ---------- | ----- | ------------------------------------------------ |
+| `email`    | да    | получатель; заблокированный адрес не пройдёт     |
+| `subj`     | да    | тема, не короче 8 символов; короче — отказ        |
+| `html`     | да    | тело письма, не короче 16 символов               |
+| `replyTo`  | нет   | куда уйдёт ответ                                 |
+| `fromName` | нет   | имя отправителя перед адресом                    |
+
+    MproHelper::sendMail(['email' => $to, 'subj' => 'Заказ принят', 'html' => $html]);
+
+`replyTo` нужен потому, что письмо уходит с `MAIL_FROM_ADDRESS`, а его
+никто не читает: заявка с формы приходит менеджеру, и «Ответить» должно
+вести клиенту, а не роботу. Непустой `replyTo` проверяется как адрес,
+кривой уронит отправку в `errorMsg`.
+
+`fromName` — только подпись перед адресом: `Магазин <info@site.ru>`. Сам
+адрес не меняется, он подтверждён в SES. Пусто — берётся `MAIL_FROM_NAME`
+из настроек проекта.
+
+У обоих необязательных ключей отсутствие и пустая строка — одно и то же.
+Лишние ключи молча игнорируются: опечатка выглядит как «параметр не
 сработал», а не как ошибка.
 
 Отложенная отправка и очередь — не сюда, это `docs/ru/mail/`.
 
-## Внешние сервисы
-
-| Метод                                                         | Что делает                                                                          |
-| ------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| `telegramSend($message, $chat_id, $botToken, $mode = 'HTML')` | шлёт сообщение ботом, возвращает ответ API массивом, попытку пишет в лог `telegram` |
-| `getRecaptureKey()`                                           | публичный site key reCAPTCHA из `RECAPTCHA_SITE_KEY`                                |
-| `verifyRecapture(string $response)`                           | проверяет токен. `true` только при успехе, любая ошибка сети даёт `false`           |
-
-Site key виден в исходнике страницы, так и задумано. Секретный ключ сюда не
-попадает: его читает API при проверке токена.
-
-## Шифрование
-
-AES-256-CBC со случайным IV. Удобно для токенов в ссылках подтверждения.
-
-| Метод                                | Что делает                                                                |
-| ------------------------------------ | ------------------------------------------------------------------------- |
-| `crypt(array $data, string $key)`    | шифрует массив в строку base64, IV кладётся в начало                      |
-| `decrypt(string $data, string $key)` | обратно. При неверном ключе или битых данных — пустой массив, а не ошибка |
+### addLog
 
 ```php
-$token = MproHelper::crypt(['id' => 42, 'email' => $email], $key);
-$data  = MproHelper::decrypt($token, $key);   // ['id' => 42, 'email' => ...]
+MproHelper::addLog(string $logName, array|string $data): void
 ```
 
-## Текст и файлы
+Пишет строку в свой лог. Файл на день и хранится две недели, поэтому на
+диске он датирован: `storage/logs/<имя>-ГГГГ-ММ-ДД.log`, а `<имя>.log` —
+только имя, которое даётся ротации.
 
-| Метод                                                              | Что делает                                                                                                                               |
-| ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `trimAndCutText(string $text, int $limit = 0)`                     | чистит текст под мета-теги: снимает HTML, раскодирует сущности, убирает эмодзи и лишние пробелы. При `$limit > 0` режет по границе слова |
-| `imageType(string $text)`                                          | MIME по расширению: jpg, jpeg, png, webp, gif. Прочее — пустая строка. Нужен для `og:image:type`                                         |
-| `mdToHtml(string $md)`                                             | markdown в html. Сырой html внутри вырезается, javascript-ссылки выбрасываются                                                           |
-| `getDoc(string $name, string $lang = '', bool $renderHtml = true)` | страница документации пакета в html                                                                                                      |
-| `translitForUrl(string $text, int $limit = 200)`                   | строка в кусок адреса: латиница в нижнем регистре, цифры и дефис                                                                         |
-| `feedText(FeedItem $item, string $code)`                           | текст записи ленты с развёрнутыми подстановками `#поле#` и magic-компонентами                                                            |
+`$logName` — имя лога, оно же имя файла. `$data` — строка или массив;
+массив разворачивается в строки `ключ: значение`, а вложенный массив —
+в JSON.
 
-`mdToHtml` рассчитан на текст, который написал оператор в ленте, поэтому и режет
-html. `getDoc` читает файлы самого пакета и им доверяет.
+    MproHelper::addLog('order', ['id' => $id, 'sum' => $sum]);
 
-`translitForUrl` переводит русский и сербский, пробелы, дефисы и подчёркивания
-сводит к одному дефису и обрезает его по краям. Таблица закрытая: чего в ней нет
-— знаки препинания, кавычки, иероглифы, эмодзи — просто выбрасывается, поэтому из
-«Как выбрать ноутбук?» получится `kak-vybrat-noutbuk`, а из строки без единой
-знакомой буквы — пустая строка. `$limit` режет по границе слова, `0` — не резать.
+Исключений не бросает. Не записался лог — права на файл, место на диске —
+строка уходит в системный лог PHP (`error_log`), а вызывающий работает
+дальше: задача крона, письмо и страница из-за лога не падают.
 
-Этим считается `__slug` записи ленты. К именам статей она отношения не имеет: там
-свои правила и свой транслит в браузере.
+### telegramSend
 
-У `getDoc` имя — это файл `docs/{язык}/{имя}.md` без расширения. Язык не указан —
-берётся из настроек, перевода нет — покажется русский оригинал.
-
-```blade
-{!! MproHelper::getDoc('common') !!}
+```php
+MproHelper::telegramSend(string $message, string $chat_id, string $botToken, string $mode = 'HTML'): array
 ```
 
-## Картинки
+Шлёт сообщение в телеграм. Возвращает ответ телеграма как есть, запись
+уходит в лог `telegram`.
 
-| Метод                                                                                   | Что делает                   |
-| --------------------------------------------------------------------------------------- | ---------------------------- |
-| `imageReduceX(string $file, int $width, ?string $format = null, ?int $quality = null)`  | уменьшить по ширине          |
-| `imageReduceY(string $file, int $height, ?string $format = null, ?int $quality = null)` | уменьшить по высоте          |
-| `imageCacheClear(string $file)`                                                         | снести производные исходника |
-| `imageCacheCleanup()`                                                                   | снести производные, у которых не стало исходника |
+`$message` — текст, `$chat_id` — чат, `$botToken` — токен бота,
+`$mode` — разметка текста: `HTML` или `Markdown`.
 
-Это входы в ресайзер, подробности — `docs/ru/image/use.md`.
+### crypt
 
-`imageCacheCleanup()` возвращает `files`, `bytes`, `kept` и `skipped`. Работа не
-для страницы: обход читает каждый каталог исходников, место ему в кроне или под
-кнопкой в `/a_dmin/setup`.
-
-## Отладка
-
-| Метод                              | Что делает                                                                                                                  |
-| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `dump($var, bool $showXmp = true)` | печатает переменную как JSON с отступами. При `$showXmp = true` оборачивает в `<xmp>`, чтобы разметка внутри не рендерилась |
-
-Ничего не возвращает, выводит сразу.
-
-```blade
-{{ MproHelper::dump($Env) }}
+```php
+MproHelper::crypt(array $data, string $key): string
 ```
+
+Шифрует массив в строку AES-256-CBC со случайным IV. IV кладётся в начало.
+Обратно — `decrypt` с тем же ключом.
+
+Строка обычная base64, в ней бывают `+`, `/` и `=`. В адрес её класть
+через `urlencode()`, иначе часть символов потеряется по дороге.
+
+Подписи нет: шифр скрывает содержимое, но не доказывает, что его не
+подменили. Для ссылки подтверждения этого хватает — подобрать ключ, чтобы
+получился осмысленный json, нельзя, — а вот доверять расшифрованному как
+подписанному не стоит.
+
+`$data` — массив, `$key` — ключ шифрования.
+
+Удобно для токенов в ссылках подтверждения: положил в ссылку, получил
+обратно массив.
+
+    $token = MproHelper::crypt(['id' => 42, 'email' => $email], $key);
+    $data  = MproHelper::decrypt($token, $key);   // ['id' => 42, ...]
+
+### decrypt
+
+```php
+MproHelper::decrypt(string $data, string $key): array
+```
+
+Разбирает строку от `crypt` обратно в массив. Чужая строка или другой
+ключ дают пустой массив, исключения нет.
+
+`$data` — строка, `$key` — тот же ключ.
+
+### dump
+
+```php
+MproHelper::dump($var, bool $showXmp = true): void
+```
+
+Печатает что угодно на страницу json-ом, для отладки. Ничего не
+возвращает.
+
+`$var` — что показать, `$showXmp` — обернуть в `<xmp>`; `false` печатает
+голый json.
+
+    {{ MproHelper::dump($item->fields()) }}
+
+### imageReduceX
+
+```php
+MproHelper::imageReduceX(string $file, int $width, ?string $format = null, ?int $quality = null): array
+```
+
+Ресайз по ширине, на лету и с кешем. Исходник не трогается.
+
+`$file` — **абсолютный путь в файловой системе**. Путь из поля картинки
+ленты — это url, его надо развернуть: `public_path($item->img1['path'])`.
+Один и тот же файл, переданный по-разному, попадёт в разные ветки кеша.
+
+`$width` — ширина в px, `$format` и `$quality` без значения берутся из
+настроек. Шкала четвёртого аргумента зависит от формата: у webp, avif и
+jpg это качество 10–100, у png — сжатие 0–9.
+
+Возвращает `path`, `width`, `height`, `size`, `ms`, `rotated`,
+`rotateMs`, `cmd`, `errorMsg`. При ошибке `path` пустой, причина в
+`errorMsg`, заглушка не подставляется.
+
+    $img = MproHelper::imageReduceX(public_path($item->img1['path']), 800);
+
+Это вход в ресайзер, подробности — `docs/ru/image/use.md`.
+
+### imageReduceY
+
+```php
+MproHelper::imageReduceY(string $file, int $height, ?string $format = null, ?int $quality = null): array
+```
+
+То же, что `imageReduceX`, только по высоте.
+
+`$height` — высота в px, остальное как у ресайза по ширине.
+
+### imageCacheClear
+
+```php
+MproHelper::imageCacheClear(string $file): int
+```
+
+Убирает из кеша все производные одного исходника, любого размера и
+формата. Возвращает число удалённых файлов.
+
+`$file` — абсолютный путь к исходнику, тот же, что даётся ресайзу. Сам
+файл может быть уже удалён: для поиска производных нужен только путь.
+
+### imageCacheCleanup
+
+```php
+MproHelper::imageCacheCleanup(): array
+```
+
+Чистит кеш от производных, у которых не стало исходника. Возвращает
+`files`, `bytes`, `kept`, `skipped`. Зовётся из крона, через контроллер
+статьи.
+
+    return MproHelper::imageCacheCleanup();
+
+### imageType
+
+```php
+MproHelper::imageType(string $text): string
+```
+
+Mime картинки по расширению имени: `image/jpeg`, `image/png`,
+`image/webp`, `image/gif`. Прочее — пустая строка.
+
+`$text` — имя файла или путь.
+
+### feedText
+
+```php
+MproHelper::feedText(MagicProDatabaseModels\FeedItem $item, string $code): string
+```
+
+Текст записи ленты, готовый к выводу: разворачивает подстановки `#поле#`
+и теги magic-компонентов внутри текста.
+
+`$item` — запись ленты, `$code` — имя её текстового поля.
+
+    {!! MproHelper::feedText($item, 'body') !!}
+
+### mdToHtml
+
+```php
+MproHelper::mdToHtml(string $md): string
+```
+
+Markdown в html для текста, который пишет оператор: html внутри
+вырезается, ссылки с javascript выбрасываются. Тем и отличается от
+`getDoc`: тот читает файлы самого пакета и им доверяет.
+
+`$md` — исходный markdown.
+
+### translitForUrl
+
+```php
+MproHelper::translitForUrl(string $text, int $limit = 200): string
+```
+
+Строка в кусок адреса: латиница в нижнем регистре, цифры и дефис. Что не
+переводится — выбрасывается.
+
+`$text` — исходная строка, `$limit` — потолок длины, режется по границе
+слова; `0` — не резать. Одно слово длиннее лимита режется по лимиту:
+пустой адрес хуже обрубка.
+
+    $slug = MproHelper::translitForUrl($item->title);
+
+Таблица закрытая: русский и сербский переводятся, пробелы, дефисы и
+подчёркивания сводятся к одному дефису, а всё прочее — знаки препинания,
+кавычки, иероглифы, эмодзи — просто выбрасывается. Из «Как выбрать
+ноутбук?» получится `kak-vybrat-noutbuk`, а из строки без единой знакомой
+буквы — пустая.
+
+Этим считается `__slug` записи ленты. К именам статей отношения не имеет:
+там свои правила и свой транслит в браузере.
+
+### trimAndCutText
+
+```php
+MproHelper::trimAndCutText(string $text, int $limit = 0): string
+```
+
+Чистый текст из размеченного: снимает теги и entity, выбрасывает эмодзи,
+сводит пробелы и переносы к одному пробелу. Для description и анонсов.
+
+`$text` — исходный текст, `$limit` — потолок длины, режется по границе
+слова; `0` — не резать.
+
+    $descr = MproHelper::trimAndCutText($item->body, 160);
+
+### getParent
+
+```php
+MproHelper::getParent(int $id): array
+```
+
+Родительская статья. Пустой массив у корня и у несуществующего id.
+
+`$id` — id статьи.
+
+### getChildrenById
+
+```php
+MproHelper::getChildrenById(int $artId): array
+```
+
+Дети статьи по её id, в порядке `npp`. Только те, у кого стоит `menuOn`:
+это меню. Поля `id`, `title`, `name`, `menuOn`, `updated_at`, `npp`.
+
+`$artId` — id родителя.
+
+### getChildrenByName
+
+```php
+MproHelper::getChildrenByName(string $name): array
+```
+
+То же меню, но родитель ищется по имени статьи. Обычный вход из блейда.
+
+`$name` — имя статьи-родителя.
+
+    $menu = MproHelper::getChildrenByName('topMenu');
+
+### getArtByName
+
+```php
+MproHelper::getArtByName(string $name): array
+```
+
+Статья по имени, все её поля. Нет такой — пустой массив.
+
+`$name` — имя статьи, оно же её адрес.
+
+### getArtById
+
+```php
+MproHelper::getArtById(int $id): array
+```
+
+Статья по id, все её поля. Нет такой — пустой массив.
+
+`$id` — id статьи.
+
+### getPathToRootById
+
+```php
+MproHelper::getPathToRootById(int $id): array
+```
+
+Путь от корня до статьи — массив имён по порядку, для хлебных крошек.
+Оборванная цепочка отдаёт то, что успело собраться. Кольцо в `parentId`
+тоже: обход останавливается, второй раз в ту же статью не заходит.
+
+`$id` — id статьи.

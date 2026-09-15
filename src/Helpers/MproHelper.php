@@ -15,6 +15,56 @@ use Monolog\Level;
 use Monolog\Handler\RotatingFileHandler;
 
 
+/**
+ * @ru
+ * Набор функций, доступных отовсюду: из блейда статьи, из её контроллера, из
+ * компонента и из ленты.
+ *
+ * Все методы статические, класс лежит в глобальном пространстве имён и
+ * подключается сам. В блейдах и контроллерах статей пишется сразу, без `use`:
+ *
+ *     MproHelper::getArtById(139);
+ *
+ * **Дерево статей.** Два семейства, и путать их дорого. `getArtById`,
+ * `getArtByName` и `getParent` отдают статью целиком, со всеми полями.
+ * `getChildrenById` и `getChildrenByName` отдают короткие записи для меню —
+ * `id`, `title`, `name`, `menuOn`, `updated_at`, а по id ещё и `npp`, — и
+ * отсеивают всё, у чего `menuOn = false`.
+ *
+ *     <ul>
+ *     @foreach (MproHelper::getChildrenByName('topMenu') as $child)
+ *         <li><a href="/{{ $child['name'] }}">{{ $child['title'] }}</a></li>
+ *     @endforeach
+ *     </ul>
+ *
+ *     @php( $parent = MproHelper::getParent($Env['artId']) )
+ *
+ *     @if ($parent)
+ *         <a href="/{{ $parent['name'] }}">Вверх: {{ $parent['title'] }}</a>
+ *     @endif
+ *
+ * Ничего не найдено — приходит пустой массив, а не ошибка: и у несуществующего
+ * id, и у корня, у которого родителя нет.
+ *
+ * **Какой метод под какую задачу**
+ *
+ * | Задача | Метод |
+ * | --- | --- |
+ * | статья, её родитель, дети, путь до корня | `getArtById`, `getArtByName`, `getParent`, `getChildrenById`, `getChildrenByName`, `getPathToRootById` |
+ * | показать страницу документации пакета | `getDoc` |
+ * | отправить письмо прямо сейчас | `sendMail` |
+ * | написать в свой дневной лог | `addLog` |
+ * | сообщение в телеграм | `telegramSend` |
+ * | reCAPTCHA: ключ и проверка | `getRecaptureKey`, `verifyRecapture` |
+ * | зашифровать и расшифровать массив | `crypt`, `decrypt` |
+ * | уменьшить картинку, почистить её кеш | `imageReduceX`, `imageReduceY`, `imageCacheClear`, `imageCacheCleanup` |
+ * | MIME по расширению | `imageType` |
+ * | текст записи ленты с подстановками | `feedText` |
+ * | markdown оператора в html | `mdToHtml` |
+ * | строка в кусок адреса, текст под мета-теги | `translitForUrl`, `trimAndCutText` |
+ * | посмотреть значение при отладке | `dump` |
+ *
+ */
 class MproHelper
 {
     // language the documentation is written in, the one translations fall back to
@@ -24,7 +74,7 @@ class MproHelper
      * @ru
      * Страница документации пакета в html, источник — markdown в `docs/<язык>/`.
      *
-     * `$name` — имя файла без `.md`, можно с папкой: `main/use`.
+     * `$name` — имя файла без `.md`, можно с папкой: `mainUse/use`.
      * `$lang` — пустой берётся из настроек; нет перевода — покажется ru.
      * `$renderHtml` — `false` отдаёт markdown как есть.
      *
@@ -34,7 +84,7 @@ class MproHelper
      * A documentation page of the package as html, the source is markdown in
      * `docs/<lang>/`.
      *
-     * `$name` — file name without `.md`, a folder is allowed: `main/use`.
+     * `$name` — file name without `.md`, a folder is allowed: `mainUse/use`.
      * `$lang` — empty takes the one from the settings; no translation shows ru.
      * `$renderHtml` — `false` returns the markdown untouched.
      *
@@ -122,7 +172,30 @@ class MproHelper
      *
      * `$params`: `email`, `subj`, `html`, необязательные `replyTo` и `fromName`.
      *
-     *     MproHelper::sendMail(['email' => $to, 'subj' => 'Заказ', 'html' => $html]);
+     * | Ключ       | Обяз. | Что это                                          |
+     * | ---------- | ----- | ------------------------------------------------ |
+     * | `email`    | да    | получатель; заблокированный адрес не пройдёт     |
+     * | `subj`     | да    | тема, не короче 8 символов; короче — отказ        |
+     * | `html`     | да    | тело письма, не короче 16 символов               |
+     * | `replyTo`  | нет   | куда уйдёт ответ                                 |
+     * | `fromName` | нет   | имя отправителя перед адресом                    |
+     *
+     *     MproHelper::sendMail(['email' => $to, 'subj' => 'Заказ принят', 'html' => $html]);
+     *
+     * `replyTo` нужен потому, что письмо уходит с `MAIL_FROM_ADDRESS`, а его
+     * никто не читает: заявка с формы приходит менеджеру, и «Ответить» должно
+     * вести клиенту, а не роботу. Непустой `replyTo` проверяется как адрес,
+     * кривой уронит отправку в `errorMsg`.
+     *
+     * `fromName` — только подпись перед адресом: `Магазин <info@site.ru>`. Сам
+     * адрес не меняется, он подтверждён в SES. Пусто — берётся `MAIL_FROM_NAME`
+     * из настроек проекта.
+     *
+     * У обоих необязательных ключей отсутствие и пустая строка — одно и то же.
+     * Лишние ключи молча игнорируются: опечатка выглядит как «параметр не
+     * сработал», а не как ошибка.
+     *
+     * Отложенная отправка и очередь — не сюда, это `docs/ru/mail/`.
      *
      * @en
      * Sends a letter right away. Returns `status`, `errorMsg`, `data`; nothing
@@ -130,7 +203,7 @@ class MproHelper
      *
      * `$params`: `email`, `subj`, `html`, optional `replyTo` and `fromName`.
      *
-     *     MproHelper::sendMail(['email' => $to, 'subj' => 'Order', 'html' => $html]);
+     *     MproHelper::sendMail(['email' => $to, 'subj' => 'Order accepted', 'html' => $html]);
      */
     public static function sendMail(array $params): array
     {
@@ -165,14 +238,10 @@ class MproHelper
                 'data'     => $res['data'] ?? [],
             ];
         } catch (\Throwable $e) {
-
-            self::addLog('mail', [
-                'status' => false,
-                'error'  => $e->getMessage(),
-                'email'  => $params['email'] ?? '',
-                'subj'   => $params['subj'] ?? '',
-            ]);
-
+            // в лог `mail` эту беду уже записал API — там же, где она случилась,
+            // и с командой. Второй записью получалась та же строка дважды.
+            // Здесь остаётся только ответ вызывающему: исключений этот метод не
+            // бросает, страница из-за почты падать не должна
             return [
                 'status'   => false,
                 'errorMsg' => $e->getMessage(),
@@ -183,24 +252,53 @@ class MproHelper
 
     /**
      * @ru
-     * Пишет строку в свой лог `storage/logs/<имя>.log`, файл на день, хранится
-     * две недели.
+     * Пишет строку в свой лог. Файл на день и хранится две недели, поэтому на
+     * диске он датирован: `storage/logs/<имя>-ГГГГ-ММ-ДД.log`, а `<имя>.log` —
+     * только имя, которое даётся ротации.
      *
      * `$logName` — имя лога, оно же имя файла. `$data` — строка или массив;
-     * массив разворачивается в строки `ключ: значение`.
+     * массив разворачивается в строки `ключ: значение`, а вложенный массив —
+     * в JSON.
      *
      *     MproHelper::addLog('order', ['id' => $id, 'sum' => $sum]);
      *
+     * Исключений не бросает. Не записался лог — права на файл, место на диске —
+     * строка уходит в системный лог PHP (`error_log`), а вызывающий работает
+     * дальше: задача крона, письмо и страница из-за лога не падают.
+     *
      * @en
-     * Writes a line into its own log, `storage/logs/<name>.log`, a file per day,
-     * kept for two weeks.
+     * Writes a line into its own log. A file per day, kept for two weeks, so on
+     * disk it is dated: `storage/logs/<name>-YYYY-MM-DD.log`; `<name>.log` is
+     * only the name given to the rotation.
      *
      * `$logName` — the name of the log and of the file. `$data` — a string or an
      * array; an array is unfolded into `key: value` lines.
      *
      *     MproHelper::addLog('order', ['id' => $id, 'sum' => $sum]);
+     *
+     * Never throws. A log that cannot be written — file permissions, a full
+     * disk — goes to the PHP system log (`error_log`), and the caller goes on:
+     * a cron task, a letter or a page do not fall because of a log.
      */
     public static function addLog(string $logName, string|array $data): void
+    {
+        // имя уходит в путь файла, поэтому из него не должно получиться пути:
+        // ни слэша, ни точек. Своё имя тут всегда константа, а вот принесённое
+        // из запроса без этой строки писало бы файл где угодно
+        $logName = preg_replace('/[^A-Za-z0-9_-]/', '', $logName) ?: 'magic';
+
+        try {
+            self::writeLog($logName, $data);
+        } catch (\Throwable $e) {
+            // файл лога бывает чужим: крон работает от одного пользователя,
+            // сайт от другого, и кто первым создал файл дня, тот им и владеет.
+            // Беда лога — не беда того, кто пишет, поэтому наружу она не идёт;
+            // а чтобы не пропала совсем, строка уходит в системный лог PHP
+            @error_log('magicpro addLog(' . $logName . ') failed: ' . $e->getMessage());
+        }
+    }
+
+    private static function writeLog(string $logName, string|array $data): void
     {
         $logger = new Logger($logName);
 
@@ -256,11 +354,23 @@ class MproHelper
     {
         $url = 'https://api.telegram.org/bot' . $botToken . '/sendMessage';
 
-        $response = \Illuminate\Support\Facades\Http::post($url, [
-            'chat_id'    => $chat_id,
-            'text'       => $message,
-            'parse_mode' => $mode,
-        ]);
+        try {
+            $response = \Illuminate\Support\Facades\Http::post($url, [
+                'chat_id'    => $chat_id,
+                'text'       => $message,
+                'parse_mode' => $mode,
+            ]);
+        } catch (\Throwable $e) {
+            // сеть не ответила: наружу это уходит тем же массивом, что и отказ
+            // телеграма, иначе страница падает из-за недоступного бота
+            self::addLog('telegram', [
+                'status'  => false,
+                'chat_id' => $chat_id,
+                'error'   => $e->getMessage(),
+            ]);
+
+            return ['ok' => false, 'description' => $e->getMessage()];
+        }
 
         self::addLog('telegram', [
             'status' =>  $response->successful(),
@@ -268,16 +378,36 @@ class MproHelper
             'message'   => $message,
         ]);
 
-        return $response->json();
+        $answer = $response->json();
+
+        // телеграм отвечает объектом, но пустое или не-json тело даёт не массив,
+        // а тип обещан массивом
+        return is_array($answer)
+            ? $answer
+            : ['ok' => false, 'description' => 'telegram answered ' . $response->status()];
     }
 
 
     /**
      * @ru
-     * Шифрует массив в строку AES-256-CBC, пригодную для ссылки или письма.
+     * Шифрует массив в строку AES-256-CBC со случайным IV. IV кладётся в начало.
      * Обратно — `decrypt` с тем же ключом.
      *
+     * Строка обычная base64, в ней бывают `+`, `/` и `=`. В адрес её класть
+     * через `urlencode()`, иначе часть символов потеряется по дороге.
+     *
+     * Подписи нет: шифр скрывает содержимое, но не доказывает, что его не
+     * подменили. Для ссылки подтверждения этого хватает — подобрать ключ, чтобы
+     * получился осмысленный json, нельзя, — а вот доверять расшифрованному как
+     * подписанному не стоит.
+     *
      * `$data` — массив, `$key` — ключ шифрования.
+     *
+     * Удобно для токенов в ссылках подтверждения: положил в ссылку, получил
+     * обратно массив.
+     *
+     *     $token = MproHelper::crypt(['id' => 42, 'email' => $email], $key);
+     *     $data  = MproHelper::decrypt($token, $key);   // ['id' => 42, ...]
      *
      * @en
      * Encrypts an array into an AES-256-CBC string fit for a link or a letter.
@@ -310,12 +440,26 @@ class MproHelper
      */
     public static function decrypt(string $data, string $key): array
     {
-        $decoded = base64_decode($data);
-        $iv = substr($decoded, 0, 16);
-        $encrypted = substr($decoded, 16);
-        $decrypted = openssl_decrypt($encrypted, 'AES-256-CBC', $key, 0, $iv);
-        $result = $decrypted ? json_decode($decrypted, true) : [];
-        return $result;
+        $decoded = base64_decode($data, true);
+
+        // короче IV — это не наша строка. Без проверки openssl получал обрезок
+        // и ронял warning про длину IV, а обработчик ошибок Laravel умеет
+        // превращать warning в исключение: обещание «молча пустой массив»
+        // держалось только в консоли
+        if ($decoded === false || strlen($decoded) <= 16) {
+            return [];
+        }
+
+        $decrypted = openssl_decrypt(substr($decoded, 16), 'AES-256-CBC', $key, 0, substr($decoded, 0, 16));
+
+        if ($decrypted === false) {
+            return [];
+        }
+
+        $result = json_decode($decrypted, true);
+
+        // расшифроваться может и число, и строка: тип обещан массивом
+        return is_array($result) ? $result : [];
     }
 
     /**
@@ -339,36 +483,65 @@ class MproHelper
     public static function dump($var, bool $showXmp = true): void
     {
         try {
+            // json_encode молча возвращает false на ресурсе и на битом utf-8:
+            // без этой ветки метод печатал пустоту и выглядел сломанным
+            $json = json_encode($var, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+            if ($json === false) {
+                $json = '// ' . json_last_error_msg() . ' (' . get_debug_type($var) . ')';
+            }
+
             if ($showXmp) {
+                // `</xmp>` внутри данных закрывает контейнер, и всё после него
+                // становится разметкой страницы. Отладочный вывод не повод
+                // отдавать страницу тому, чей текст мы печатаем
                 echo '<xmp style="line-height:1.2; font-size:12px;">'
-                    . json_encode($var, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
+                    . str_replace('</xmp', '<\/xmp', $json)
                     . '</xmp>';
             } else {
-                echo json_encode($var, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                echo $json;
             }
         } catch (\Throwable $e) {
-            echo '<pre style="color:red">Ошибка дампа: ' . '</pre>';
+            echo '<pre style="color:red">Ошибка дампа: ' . e($e->getMessage()) . '</pre>';
         }
     }
 
     /**
      * @ru
-     * Ресайз по ширине, на лету и с кешем. Возвращает массив `path`, `x`, `y`,
-     * `mime`, `size`; исходник не трогается.
+     * Ресайз по ширине, на лету и с кешем. Исходник не трогается.
      *
-     * `$file` — путь от корня сайта, `$width` — ширина в px,
-     * `$format` и `$quality` — пустые берутся из настроек.
+     * `$file` — **абсолютный путь в файловой системе**. Путь из поля картинки
+     * ленты — это url, его надо развернуть: `public_path($item->img1['path'])`.
+     * Один и тот же файл, переданный по-разному, попадёт в разные ветки кеша.
      *
-     *     $img = MproHelper::imageReduceX($item->img1['path'], 800);
+     * `$width` — ширина в px, `$format` и `$quality` без значения берутся из
+     * настроек. Шкала четвёртого аргумента зависит от формата: у webp, avif и
+     * jpg это качество 10–100, у png — сжатие 0–9.
+     *
+     * Возвращает `path`, `width`, `height`, `size`, `ms`, `rotated`,
+     * `rotateMs`, `cmd`, `errorMsg`. При ошибке `path` пустой, причина в
+     * `errorMsg`, заглушка не подставляется.
+     *
+     *     $img = MproHelper::imageReduceX(public_path($item->img1['path']), 800);
+     *
+     * Это вход в ресайзер, подробности — `docs/ru/image/use.md`.
      *
      * @en
-     * Resize by width, on the fly and cached. Returns `path`, `x`, `y`, `mime`,
-     * `size`; the original is not touched.
+     * Resize by width, on the fly and cached. The original is not touched.
      *
-     * `$file` — path from the root of the site, `$width` — width in px,
-     * `$format` and `$quality` — empty ones come from the settings.
+     * `$file` — an **absolute path in the file system**. A path from an image
+     * field of a feed is a url and has to be unfolded:
+     * `public_path($item->img1['path'])`.
      *
-     *     $img = MproHelper::imageReduceX($item->img1['path'], 800);
+     * `$width` — width in px, `$format` and `$quality` come from the settings
+     * when empty. The scale of the fourth argument depends on the format:
+     * quality 10–100 for webp, avif and jpg, compression 0–9 for png.
+     *
+     * Returns `path`, `width`, `height`, `size`, `ms`, `rotated`, `rotateMs`,
+     * `cmd`, `errorMsg`. On an error `path` is empty and the reason is in
+     * `errorMsg`; no placeholder is substituted.
+     *
+     *     $img = MproHelper::imageReduceX(public_path($item->img1['path']), 800);
      */
     public static function imageReduceX(string $file, int $width, ?string $format = null, ?int $quality = null): array
     {
@@ -396,13 +569,15 @@ class MproHelper
      * Убирает из кеша все производные одного исходника, любого размера и
      * формата. Возвращает число удалённых файлов.
      *
-     * `$file` — путь к исходнику, тот же, что даётся ресайзу.
+     * `$file` — абсолютный путь к исходнику, тот же, что даётся ресайзу. Сам
+     * файл может быть уже удалён: для поиска производных нужен только путь.
      *
      * @en
      * Removes every derivative of one source from the cache, of any size and
      * format. Returns how many files went.
      *
-     * `$file` — path of the source, the same one the resize is given.
+     * `$file` — absolute path of the source, the same one the resize is given.
+     * The file itself may be gone already: only the path is needed.
      */
     public static function imageCacheClear(string $file): int
     {
@@ -480,7 +655,8 @@ class MproHelper
     /**
      * @ru
      * Markdown в html для текста, который пишет оператор: html внутри
-     * вырезается, ссылки с javascript выбрасываются.
+     * вырезается, ссылки с javascript выбрасываются. Тем и отличается от
+     * `getDoc`: тот читает файлы самого пакета и им доверяет.
      *
      * `$md` — исходный markdown.
      *
@@ -551,16 +727,27 @@ class MproHelper
      * переводится — выбрасывается.
      *
      * `$text` — исходная строка, `$limit` — потолок длины, режется по границе
-     * слова; `0` — не резать.
+     * слова; `0` — не резать. Одно слово длиннее лимита режется по лимиту:
+     * пустой адрес хуже обрубка.
      *
      *     $slug = MproHelper::translitForUrl($item->title);
+     *
+     * Таблица закрытая: русский и сербский переводятся, пробелы, дефисы и
+     * подчёркивания сводятся к одному дефису, а всё прочее — знаки препинания,
+     * кавычки, иероглифы, эмодзи — просто выбрасывается. Из «Как выбрать
+     * ноутбук?» получится `kak-vybrat-noutbuk`, а из строки без единой знакомой
+     * буквы — пустая.
+     *
+     * Этим считается `__slug` записи ленты. К именам статей отношения не имеет:
+     * там свои правила и свой транслит в браузере.
      *
      * @en
      * A string into a piece of an address: lowercase latin, digits and a dash.
      * What does not translate is dropped.
      *
      * `$text` — the source string, `$limit` — the cap of the length, cut on a
-     * word boundary; `0` — do not cut.
+     * word boundary; `0` — do not cut. A single word longer than the limit is
+     * cut at the limit: an empty address is worse than a stump.
      *
      *     $slug = MproHelper::translitForUrl($item->title);
      */
@@ -581,12 +768,18 @@ class MproHelper
         $result = trim((string) preg_replace('/-+/', '-', $result), '-');
 
         if ($limit > 0 && mb_strlen($result) > $limit) {
+            // сразу за лимитом дефис — значит, резали ровно по границе, и
+            // последнее слово целое. Раньше отрезалось и оно
+            $onBoundary = mb_substr($result, $limit, 1) === '-';
+
             $result = mb_substr($result, 0, $limit);
 
-            // хвост до последнего дефиса — обрубок слова, он в адресе не нужен
+            // хвост до последнего дефиса — обрубок слова, он в адресе не нужен.
+            // Дефиса нет — слово одно, и оно остаётся обрубком: пустой адрес
+            // хуже
             $lastDash = mb_strrpos($result, '-');
 
-            if ($lastDash !== false) {
+            if (! $onBoundary && $lastDash !== false) {
                 $result = mb_substr($result, 0, $lastDash);
             }
 
@@ -620,16 +813,27 @@ class MproHelper
     {
         $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
         $text = strip_tags($text);
-        $text = preg_replace('/[\p{So}\p{Cn}]/u', '', $text);
+        // символы-картинки и то, что к ним лепится: модификаторы цвета кожи,
+        // селекторы начертания и склейка ZWJ. Без них от «A👍🏽B» оставался
+        // невидимый модификатор между буквами
+        $text = preg_replace('/[\p{So}\p{Cn}\x{1F3FB}-\x{1F3FF}\x{FE0E}\x{FE0F}\x{200D}\x{20E3}]/u', '', $text);
         $text = preg_replace('/\s+/u', ' ', $text); // \r \n \t и лишние пробелы
         $text = trim($text);
 
         if ($limit > 0 && mb_strlen($text) > $limit) {
-            $text = mb_substr($text, 0, $limit + 1);
-            $text = preg_replace('/\s+\S*$/u', '', $text);
+            // берём на символ больше, чтобы увидеть, попал ли разрез в середину
+            // слова, и срезаем это слово целиком
+            $cut  = mb_substr($text, 0, $limit + 1);
+            $text = (string) preg_replace('/\s+\S*$/u', '', $cut);
+
+            // слово длиннее потолка целиком: резать по границе не по чему, и
+            // тогда режем по потолку — обещание есть обещание
+            if ($text === '' || mb_strlen($text) > $limit) {
+                $text = mb_substr($cut, 0, $limit);
+            }
         }
 
-        return $text;
+        return rtrim($text);
     }
     /**
      * @ru
@@ -757,35 +961,44 @@ class MproHelper
     /**
      * @ru
      * Путь от корня до статьи — массив имён по порядку, для хлебных крошек.
-     * Оборванная цепочка отдаёт то, что успело собраться.
+     * Оборванная цепочка отдаёт то, что успело собраться. Кольцо в `parentId`
+     * тоже: обход останавливается, второй раз в ту же статью не заходит.
      *
      * `$id` — id статьи.
      *
      * @en
      * The path from the root down to an article — an array of names in order,
-     * for breadcrumbs. A broken chain gives back what was collected.
+     * for breadcrumbs. A broken chain gives back what was collected, and so
+     * does a ring in `parentId`: the walk never enters the same article twice.
      *
      * `$id` — id of the article.
      */
     public static function getPathToRootById(int $id): array
     {
         $path = [];
-        $count = 0;
-
+        $seen = [];
 
         try {
-            while (++$count < 100) {
+            // кольцо A → B → A модель разрешает: она запрещает только ссылку на
+            // самого себя. Раньше обход шёл до сотого шага и возвращал путь из
+            // повторяющихся имён; теперь на втором заходе в ту же статью он
+            // останавливается и отдаёт то, что успел собрать
+            while (! isset($seen[$id])) {
+                $seen[$id] = true;
+
                 $article = Article::findOrFail($id);
                 array_unshift($path, $article->name);
 
                 if ($article->parentId == 0) {
                     break;
                 }
+
                 $id = $article->parentId;
             }
         } catch (\Throwable) {
             return $path;
         }
+
         return $path;
     }
 }

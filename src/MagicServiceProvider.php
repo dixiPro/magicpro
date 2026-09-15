@@ -28,9 +28,11 @@ use MagicProSrc\Scheduling\MagicProSchedule;
 
 use MagicProSrc\MagicLang;
 
-use MagicProSrc\Console\AdminCommand; // команда создания админа
+use MagicProSrc\Console\AdminCommand;                            // команда создания админа
+use MagicProSrc\Console\DocsCommand;                             // сборка доки из phpdoc
 
 use MagicProSrc\Console\Aws\SetupCommand as AwsSetupCommand;     // настройка AWS
+use MagicProSrc\Console\Aws\RemoveCommand as AwsRemoveCommand;   // удаление ключа или пользователя
 use MagicProSrc\Console\Aws\StatusCommand as AwsStatusCommand;   // состояние AWS
 
 use MagicProSrc\Lenta\FeedPathGenerator; // папка картинок лент внутри диска
@@ -67,6 +69,11 @@ class MagicServiceProvider extends ServiceProvider
         // loader resolves them lazily, on first use.
         AliasLoader::getInstance()->alias('Feed', Feed::class);
         AliasLoader::getInstance()->alias('FeedItem', FeedItem::class);
+
+        // МСП: http-вход регистрируется раньше админки, потому что в конце
+        // admin/web.php стоит динамический маршрут `{any?}`, и он забирает всё,
+        // что зарегистрировано после него
+        $this->loadRoutesFrom(__DIR__ . '/Mcp/ai.php');
 
         // админка
         // Load admin routes with "web" middleware
@@ -140,14 +147,13 @@ class MagicServiceProvider extends ServiceProvider
             }
         );
 
-        // МСП сервер
-        $this->loadRoutesFrom(__DIR__ . '/Mcp/ai.php');
-
         // консольные команды пакета
         if ($this->app->runningInConsole()) {
             $this->commands([
                 AdminCommand::class,
+                DocsCommand::class,
                 AwsSetupCommand::class,
+                AwsRemoveCommand::class,
                 AwsStatusCommand::class,
             ]);
         }
@@ -156,6 +162,10 @@ class MagicServiceProvider extends ServiceProvider
     public function register(): void
     {
         MagicGlobals::register(); // Константы глобальные
+
+        // почта из .env через config(): env() вне конфига после config:cache
+        // пуст, см. src/Config/magicMail.php
+        $this->mergeConfigFrom(__DIR__ . '/Config/magicMail.php', 'magicpro_mail');
         MagicLang::loadLocale(MagicGlobals::$INI['LANGUAGE']);
     }
 }

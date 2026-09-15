@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, watch } from 'vue';
 import { apiCall } from '../apiCall.js';
 import TosatConfirm from '../CommonCom/ToastConfirm.vue';
 
@@ -11,13 +11,18 @@ const fileName = ref('');
 const text = ref('');
 
 const mode = ref('partial');
-const snapshot = ref(true);
 
 const report = ref([]);
 const ready = ref(false); // проверка прошла и она чистая
 
-const snapshots = ref([]);
-const stateName = ref('');
+// проверка относится к паре «файл + режим». Переключил режим — прежняя проверка
+// больше ничего не значит: с чистой проверкой частичного импорта можно было
+// нажать «Импорт» в полном и снести дерево, не увидев ни одного предупреждения
+watch(mode, () => {
+  ready.value = false;
+  report.value = [];
+});
+
 const apiActive = ref(false);
 
 const URL = '/a_dmin/api/import';
@@ -81,68 +86,11 @@ async function run() {
       command: 'run',
       mode: mode.value,
       text: text.value,
-      snapshot: snapshot.value,
     });
     report.value = res.report;
     ready.value = false;
     document.showToast(res.ok ? t('imp_done_all') : t('imp_report_bad'), res.ok ? 'success' : 'error');
-    await loadSnapshots();
   } catch (e) {}
-}
-
-async function loadSnapshots() {
-  try {
-    const res = await apiImport({ command: 'snapshots' });
-    snapshots.value = res.snapshots;
-  } catch (e) {}
-}
-
-// имя предлагаем датой, дальше его правят руками
-function defaultName() {
-  const d = new Date();
-  const two = (n) => String(n).padStart(2, '0');
-  return `root_${d.getFullYear()}-${two(d.getMonth() + 1)}-${two(d.getDate())}_${two(d.getHours())}-${two(d.getMinutes())}`;
-}
-
-async function saveState() {
-  const name = stateName.value.trim() || defaultName();
-
-  // имя своё, значит и совпасть может: молча затирать чужой снимок нельзя
-  const taken = snapshots.value.some((row) => row.file === name + '.json');
-  if (taken && !(await document.confirmDialog(t('imp_state_taken') + ' ' + name + '.json'))) return;
-
-  try {
-    const res = await apiImport({ command: 'save', name: name });
-    snapshots.value = res.snapshots;
-    stateName.value = defaultName();
-    document.showToast(t('imp_saved') + ': ' + res.file);
-  } catch (e) {}
-}
-
-async function removeState(row) {
-  if (!(await document.confirmDialog(t('imp_delete_ask') + ' ' + row.file))) return;
-
-  try {
-    const res = await apiImport({ command: 'delete', file: row.file });
-    snapshots.value = res.snapshots;
-    document.showToast(t('imp_deleted'));
-  } catch (e) {}
-}
-
-async function restoreState(row) {
-  if (!(await document.confirmDialog(t('imp_restore_ask') + ' ' + row.file))) return;
-
-  try {
-    const res = await apiImport({ command: 'restore', file: row.file });
-    report.value = res.report;
-    ready.value = false;
-    snapshots.value = res.snapshots;
-    document.showToast(res.ok ? t('imp_done_all') : t('imp_report_bad'), res.ok ? 'success' : 'error');
-  } catch (e) {}
-}
-
-function download(row) {
-  window.location.href = '/a_dmin/api/importSnapshot?file=' + encodeURIComponent(row.file);
 }
 
 // строку отчёта собирает словарь: с сервера едет код и его части
@@ -150,14 +98,7 @@ function line(row) {
   return t('imp_' + row.code, row.params ?? {});
 }
 
-function size(bytes) {
-  return Math.max(1, Math.round(bytes / 1024)) + ' KB';
-}
 
-onMounted(() => {
-  stateName.value = defaultName();
-  loadSnapshots();
-});
 </script>
 
 <template>
@@ -185,11 +126,6 @@ onMounted(() => {
 
         <div class="form-text">{{ t('imp_mode_hint') }}</div>
         <div v-if="mode === 'partial'" class="form-text">{{ t('imp_trees_hint') }}</div>
-      </div>
-
-      <div class="form-check mb-3">
-        <input class="form-check-input" type="checkbox" id="snapshotBefore" v-model="snapshot" />
-        <label class="form-check-label" for="snapshotBefore">{{ t('imp_snapshot_before') }}</label>
       </div>
 
       <button class="btn btn-sm btn-primary" :disabled="apiActive" @click="check">
@@ -221,59 +157,5 @@ onMounted(() => {
       </table>
     </div>
 
-    <h2 class="h5 mt-4">{{ t('imp_states') }}</h2>
-
-    <div class="my-2 d-flex align-items-center gap-2 flex-wrap">
-      <input
-        v-model="stateName"
-        type="text"
-        class="form-control form-control-sm"
-        style="max-width: 22rem"
-        :placeholder="t('imp_state_name')"
-        @keyup.enter="saveState"
-      />
-
-      <button class="btn btn-sm btn-outline-secondary text-nowrap" :disabled="apiActive" @click="saveState">
-        <i class="fas fa-save"></i>
-        {{ t('imp_save_state') }}
-      </button>
-
-      <span class="text-muted small">{{ t('imp_state_name_hint') }}</span>
-    </div>
-
-    <div class="table-responsive">
-      <table class="table table-sm align-middle small">
-        <thead>
-          <tr>
-            <th>{{ t('imp_file') }}</th>
-            <th>{{ t('imp_date') }}</th>
-            <th>{{ t('imp_size') }}</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="row in snapshots" :key="row.file">
-            <td v-text="row.file"></td>
-            <td v-text="row.date"></td>
-            <td v-text="size(row.size)"></td>
-            <td class="text-nowrap text-end">
-              <button class="btn btn-sm btn-outline-secondary" :title="t('imp_download')" @click="download(row)">
-                <i class="fas fa-download"></i>
-              </button>
-              <button class="btn btn-sm btn-outline-secondary ms-1" :title="t('imp_restore')" :disabled="apiActive" @click="restoreState(row)">
-                <i class="fas fa-undo"></i>
-              </button>
-              <button class="btn btn-sm btn-outline-danger ms-1" :title="t('imp_delete')" :disabled="apiActive" @click="removeState(row)">
-                <i class="fas fa-trash"></i>
-              </button>
-            </td>
-          </tr>
-
-          <tr v-if="!snapshots.length">
-            <td colspan="4" class="text-center text-muted">{{ t('imp_states_empty') }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
   </div>
 </template>

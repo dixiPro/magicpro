@@ -163,6 +163,12 @@ class API_Cron extends AbstractApi
             throw new \Exception($check['error']);
         }
 
+        // Задача идёт прямо в этом запросе. Оборвёт его nginx по таймауту или
+        // закроют вкладку — php доработает задачу до конца: половина рассылки
+        // хуже, чем ответ, который никто не увидел. Итог будет в логе cron.
+        ignore_user_abort(true);
+        set_time_limit(0);
+
         $res = CronTaskRunner::run($task);
 
         if ($res['error'] !== '') {
@@ -191,8 +197,13 @@ class API_Cron extends AbstractApi
 
     /**
      * Parameters arrive as a string from the form or as an array from code.
-     * Empty means an empty array; anything else must be a key-value object: it
-     * goes into the request as post, and a plain list has no shape there.
+     * Empty means an empty array; anything else must be a key-value object: the
+     * method of the task takes it as one array, and a plain list has no names.
+     *
+     * Broken json is refused and not quietly taken for emptiness. A missing
+     * quotation mark used to end like this: `json_decode()` answered `null`,
+     * `null` counted as «no parameters», the operator saw a successful save,
+     * and the task then ran without what it needed.
      */
     private static function readParams(mixed $params): array
     {
@@ -203,10 +214,20 @@ class API_Cron extends AbstractApi
                 return [];
             }
 
-            $params = json_decode($params, true);
+            $decoded = json_decode($params, true);
+
+            // broken json, a literal `null`, a number, a string — none of them
+            // is a set of parameters, and none of them is emptiness either: the
+            // form has an empty field for that
+            if (json_last_error() !== JSON_ERROR_NONE || ! is_array($decoded)) {
+                throw new \Exception(self::ERRORS['params_not_json']);
+            }
+
+            $params = $decoded;
         }
 
-        if ($params === null || $params === []) {
+        // an array from code may be empty, and that is emptiness
+        if ($params === [] || $params === null) {
             return [];
         }
 

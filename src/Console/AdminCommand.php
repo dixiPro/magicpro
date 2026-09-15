@@ -20,9 +20,6 @@ class AdminCommand extends Command
 
     protected $description = 'Creates a MagicPro admin';
 
-    /** The model validates the stored value, so the typed one is checked here. */
-    private const PASSWORD_MIN = 4;
-
     public function handle(): int
     {
         if (! $this->input->isInteractive()) {
@@ -35,10 +32,11 @@ class AdminCommand extends Command
 
         // secret() hides the input, so the password never shows up on screen
         // and there is nothing to print back afterwards.
-        $password = (string) $this->secret('Password (min ' . self::PASSWORD_MIN . ' characters)');
+        $password = (string) $this->secret('Password (min ' . MagicProUser::PASSWORD_MIN . ' characters)');
 
-        if (mb_strlen($password) < self::PASSWORD_MIN) {
-            $this->error('Password must be at least ' . self::PASSWORD_MIN . ' characters.');
+        // the model sees only the hash, so the typed password is checked here
+        if (mb_strlen($password) < MagicProUser::PASSWORD_MIN) {
+            $this->error('Password must be at least ' . MagicProUser::PASSWORD_MIN . ' characters.');
 
             return self::FAILURE;
         }

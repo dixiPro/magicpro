@@ -1,0 +1,190 @@
+{% setValue(Glob.jsCssArr, '
+<script type="text/javascript" src="/design/include/alpineAuth/alpineauth.js"></script>
+', 'alpineAuth' ) %}
+
+<div class="container-fluid mt-4">
+  <div class="row">
+    <div class="col-12">
+      <div
+        id="login-app"
+        x-data="{}"
+        data-redirect="{{ ifthen(Var.redirect, Var.redirect, '/cabinet')  }}"
+        data-recapturekey="{{ function('loginAuth@pages', {'key' : 'gCaptureSite'}) }}"
+      >
+        <!-- Экран: ввод email (аналог EmailInput.vue) -->
+        <template x-if="$store.auth.step === 'email'">
+          <div x-data="emailScreen()">
+            <div>
+              <input
+                class="form-control form-control-sm"
+                x-model="$store.auth.email"
+                type="email"
+                autocomplete="email"
+                name="email"
+                placeholder="Email"
+                id="imputemail"
+              />
+            </div>
+
+            <div class="my-2">
+              <div x-show="pageLoading" class="spinner-border spinner-border-sm" role="status">
+                <span class="sr-only">Loading...</span>
+              </div>
+              <div x-show="!pageLoading">
+                <button class="btn btn-sm btn-primary" @click="checkEmail" :disabled="pageLoading">Войти</button>
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <!-- Экран: регистрация (аналог Register.vue) -->
+        <template x-if="$store.auth.step === 'register'">
+          <div x-data="registerScreen()">
+            <h5>Регистрация</h5>
+            <form action="" autocomplete="on">
+              <div><i class="fas fa-envelope mr-2"></i><strong x-text="$store.auth.email"></strong></div>
+              <div class="d-none">
+                <input x-model="$store.auth.email" type="email" autocomplete="username" name="username" id="input" />
+              </div>
+
+              <div class="my-2" x-data="passwordField('new-password')">
+                <div class="input-group align-items-center">
+                  <input
+                    class="form-control"
+                    x-model="$store.auth.password"
+                    :type="type"
+                    :autocomplete="autocomplete"
+                    placeholder="Введите пароль"
+                    id="passwordinput"
+                  />
+                  <div class="input-group-append ml-1">
+                    <i class="fas fa-eye" :style="{ color: type === 'password' ? '#777' : '#000' }" @click.prevent="toggle()"></i>
+                  </div>
+                </div>
+              </div>
+
+              <div class="my-2">
+                <div x-show="pageLoading" class="spinner-border spinner-border-sm" role="status">
+                  <span class="sr-only">Loading...</span>
+                </div>
+                <div x-show="!pageLoading">
+                  <button class="btn btn-sm btn-primary" @click="register" :disabled="pageLoading">Зарегистрироваться→</button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </template>
+
+        <!-- Экран: ввод пароля (аналог PasswordInput.vue) -->
+        <template x-if="$store.auth.step === 'password'">
+          <div x-data="passwordScreen()">
+            <template x-if="state === 'success'">
+              <form id="formlogin" action="/loginRedirect" method="Post" autocomplete="on" x-init="$nextTick(() => $el.submit())">
+                <div class="d-none">
+                  <input type="text" name="username" autocomplete="username" id="username" x-model="$store.auth.email" />
+                  <input type="password" name="password" autocomplete="new-password" id="new-password" x-model="$store.auth.password" />
+                  <input type="text" name="redirect" x-model="$store.auth.redirect" />
+                </div>
+              </form>
+            </template>
+
+            <template x-if="state === 'start'">
+              <div>
+                <h5 class="mb-2">Введите пароль</h5>
+                <form action="" autocomplete="on">
+                  <div><i class="fas fa-envelope mr-2"></i><strong x-text="$store.auth.email"></strong></div>
+                  <div class="d-none">
+                    <input x-model="$store.auth.email" type="email" autocomplete="username" name="username" id="input" />
+                  </div>
+
+                  <div class="my-2" x-data="passwordField('current-password')">
+                    <div class="input-group align-items-center">
+                      <input
+                        class="form-control"
+                        x-model="$store.auth.password"
+                        :type="type"
+                        :autocomplete="autocomplete"
+                        placeholder="Введите пароль"
+                        id="passwordinput"
+                      />
+                      <div class="input-group-append ml-1">
+                        <i class="fas fa-eye" :style="{ color: type === 'password' ? '#777' : '#000' }" @click.prevent="toggle()"></i>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="my-2">
+                    <div x-show="pageLoading" class="spinner-border spinner-border-sm" role="status">
+                      <span class="sr-only">Loading...</span>
+                    </div>
+                    <div x-show="!pageLoading">
+                      <button class="btn btn-sm btn-primary" @click="loginToSite" :disabled="pageLoading">Войти</button>
+                    </div>
+                  </div>
+                </form>
+
+                <div class="small">
+                  <a href="#" @click.prevent="$store.auth.goTo('forgot-password')">Забыли пароль?</a>
+                </div>
+              </div>
+            </template>
+          </div>
+        </template>
+
+        <!-- Экран: забыли пароль (аналог ForgotPassword.vue) -->
+        <template x-if="$store.auth.step === 'forgot-password'">
+          <div x-data="forgotPasswordScreen()">
+            <div><i class="fas fa-envelope mr-2"></i><strong x-text="$store.auth.email"></strong></div>
+
+            <div x-show="!passwordSend">
+              <div class="my-2">
+                <div x-show="pageLoading" class="spinner-border spinner-border-sm" role="status">
+                  <span class="sr-only">Loading...</span>
+                </div>
+                <div x-show="!pageLoading">
+                  <button class="btn btn-sm btn-primary" @click="sendCode" :disabled="pageLoading">Выслать пароль</button>
+                </div>
+              </div>
+            </div>
+
+            <div x-show="passwordSend">
+              <div class="small my-2">Пароль отправлен.<br />Проверьте <strong x-text="$store.auth.email"></strong></div>
+              <div class="my-1 small">Повторная отправка возможна через <span x-text="seconds"></span> сек.</div>
+            </div>
+          </div>
+        </template>
+
+        <!-- Экран: письмо с кодом регистрации отправлено (аналог EnterRegisterCode.vue) -->
+        <template x-if="$store.auth.step === 'code'">
+          <div x-data="enterCodeScreen()">
+            <template x-if="state === 'success'">
+              <form id="formlogin" action="/loginRedirect" method="Post" autocomplete="on" x-init="$nextTick(() => $el.submit())">
+                <div class="d-none">
+                  <input type="text" name="username" autocomplete="username" id="username" x-model="$store.auth.email" />
+                  <input type="password" name="password" autocomplete="new-password" id="new-password" x-model="$store.auth.password" />
+                  <input type="text" name="redirect" x-model="$store.auth.redirect" />
+                </div>
+              </form>
+            </template>
+
+            <template x-if="state === 'start'">
+              <div>
+                <h5 class="mb-2">Отправлено письмо подтверждение</h5>
+                <div>Вам на email было отправлено письмо.</div>
+                <div>Пожалуйста, проверьте почтовый ящик <strong x-text="$store.auth.email"></strong></div>
+              </div>
+            </template>
+          </div>
+        </template>
+
+        <!-- Глобальные ошибки (аналог FatalError.vue), внутри #login-app, как и в оригинале -->
+        <template x-for="err in $store.auth.errors" :key="err.id">
+          <div class="alert alert-danger py-1 px-2">
+            <span x-text="err.text"></span>
+            <button type="button" class="close" @click="$store.auth.removeError(err.id)"><span>&times;</span></button>
+          </div>
+        </template>
+      </div>
+    </div>
+  </div>
+</div>

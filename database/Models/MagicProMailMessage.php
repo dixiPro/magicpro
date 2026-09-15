@@ -7,9 +7,17 @@ use Illuminate\Database\Eloquent\Model;
 /**
  * A single outgoing mail message.
  *
- * A letter always gets a row here, even a blocked one — see the STATUS_*
- * constants below and the mail service for the flow. The row stores both
- * the rendered html body and the full raw_message that goes to the provider.
+ * A row appears here when a letter reached the transport, or was queued for
+ * later. What did not get that far leaves no row at all: an empty or malformed
+ * address, a blocked one, and a duplicate are all refused by the api before a
+ * message is created, and the caller learns about it from the error.
+ *
+ * So `emailblocked` is not the status of a refused attempt — it is the status
+ * of a letter that had already been sent when a Bounce or a Complaint arrived
+ * from the provider and blocked the address.
+ *
+ * The row stores both the rendered html body and the full raw_message that goes
+ * to the provider.
  *
  * Retry timing is derived from `attempts` by API_Mail::nextSchedule()
  * (1 -> +5m, 2 -> +10m, 3 -> +30m, beyond that -> failed); there is no separate
@@ -26,6 +34,7 @@ class MagicProMailMessage extends Model
     // filter). delivered / open arrive later from AWS webhooks.
     // ------------------------------------------------------------------
     public const STATUS_QUEUED       = 'queued';       // ждёт отправки (sendLater / ретрай)
+    public const STATUS_SENDING      = 'sending';      // взято в отправку, транспорт ещё не ответил
     public const STATUS_SENT         = 'sent';         // транспорт принял письмо (SES вернул MessageId)
     public const STATUS_DELIVERED    = 'delivered';    // доставлено (вебхук)
     public const STATUS_OPEN         = 'open';         // открыто пользователем (вебхук)

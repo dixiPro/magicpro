@@ -19,8 +19,9 @@ use Illuminate\Database\Eloquent\Model;
  * There is no status of the last run on purpose. Cron cannot do anything with
  * it: there are no retries and a task never switches itself off. Whatever
  * happens inside the controller is the controller's own business.
- * `last_run_at` is stamped before the call and means only that the scheduler
- * reached this task.
+ * `last_run_at` is stamped before the call and means only that somebody reached
+ * this task — the scheduler by its cron expression, or a person by the «run»
+ * button, they go through the same runner.
  */
 class MagicProCronTask extends Model
 {

@@ -36,6 +36,9 @@ export const useArticleStore = defineStore('article', () => {
 
   const statusAutocompletePannel = ref(false);
 
+  // панель архива версий статьи
+  const statusArchive = ref(false);
+
   // aceTheme
   const aceTheme = ref('chrome');
   const aceThemes = ['chrome', 'monokai', 'dracula', 'twilight'];
@@ -74,6 +77,7 @@ export const useArticleStore = defineStore('article', () => {
     document.title = article.value.title;
   }
 
+  // the same defaults as Article::ROUTE_PARAMS on the server
   function updateRouteParams(art) {
     let routeParams = art.routeParams;
     if (Array.isArray(routeParams) || routeParams === null || typeof routeParams !== 'object') {
@@ -104,11 +108,22 @@ export const useArticleStore = defineStore('article', () => {
   }
 
   async function saveRec() {
-    article.value = await apiArt({
+    const saved = await apiArt({
       command: 'saveById',
       article: article.value,
     });
-    document.showToast('Сохранено');
+
+    // статья сохранена всегда, а вот файлы пишутся, только если контроллер
+    // проходит проверку синтаксиса. Не прошёл — текст в базе твой, а страница
+    // пока работает на прежнем контроллере, и об этом надо сказать вслух
+    const warning = saved.warning ?? '';
+    delete saved.warning;
+
+    article.value = saved;
+
+    warning
+      ? document.showToast('Сохранено, но контроллер не опубликован: ' + warning, 'error')
+      : document.showToast('Сохранено');
   }
 
   async function getController() {
@@ -172,31 +187,8 @@ export const useArticleStore = defineStore('article', () => {
       saveRec();
       return;
     }
-    // левое меню
-    if (event.altKey && event.code === 'Digit4') {
-      addPannel.value = !addPannel.value;
-      event.preventDefault(); // Prevent browser's default save action
-      return;
-    }
-    // блейд 99%
-    if (event.altKey && event.code === 'Digit6') {
-      splitStatusEditorObj.value.set('hideController');
-      event.preventDefault(); // Prevent browser's default save action
-      return;
-    }
-    // контроллер 99%
-    if (event.altKey && event.code === 'Digit5') {
-      splitStatusEditorObj.value.set('hideBlade');
-      event.preventDefault(); // Prevent browser's default save action
-      return;
-    }
-    // дерево 99%
-    if (event.altKey && event.code === 'Digit3') {
-      const status = splitTreeStatusObj.value.status == 'hideTree' ? 'normal' : 'hideTree';
-      splitTreeStatusObj.value.set(status);
-      event.preventDefault(); // Prevent browser's default save action
-      return;
-    }
+    // Alt+3…Alt+6 were here and pointed at panels the store no longer has:
+    // a press threw a ReferenceError. The help does not show them any more
   };
 
   function convertFromMro() {
@@ -224,6 +216,7 @@ export const useArticleStore = defineStore('article', () => {
     hasTwig,
     statusLeftPannel,
     statusAutocompletePannel,
+    statusArchive,
 
     toggleTreeSplitter,
     modeTreeSplitter,

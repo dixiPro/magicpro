@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "solnuh": {
+      "type": "http",
+      "url": "",
+      "headers": {
+        "Authorization": "Bearer ${SOLNUH_TOKEN}"
+      }
+    }
+  }
+}

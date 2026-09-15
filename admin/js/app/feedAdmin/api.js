@@ -1,4 +1,4 @@
-import { apiCall } from '../apiCall.js';
+import { apiCall, csrfToken } from '../apiCall.js';
 
 /**
  * Одна точка обращения к API лент.
@@ -48,7 +48,11 @@ export async function apiFeedFile(data, file) {
 
   try {
     // Content-Type не ставим: браузер сам допишет его вместе с boundary
-    const response = await fetch(URL, { method: 'POST', body: form });
+    const response = await fetch(URL, {
+      method: 'POST',
+      headers: { 'X-CSRF-TOKEN': csrfToken() },
+      body: form,
+    });
 
     if (!response.ok) {
       throw new Error(`${response.status} ${response.statusText}`);

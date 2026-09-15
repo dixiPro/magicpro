@@ -84,3 +84,28 @@ check.use(ToastService);
 check.use(i18n);
 
 check.mount('#articleCheck');
+
+// the third app: the archive of article versions, its block stands on the
+// same page and shares no state with the other two
+import ArticleArchive from './app/Setup/component/ArticleArchive.vue';
+
+const archive = createApp(ArticleArchive);
+
+components.forEach((component) => {
+  archive.component(component.name, component);
+});
+
+archive.use(PrimeVue, {
+  theme: {
+    preset: Aura,
+    options: {
+      cssLayer: { name: 'primevue', order: 'theme, base, primevue' },
+    },
+  },
+});
+
+archive.use(ConfirmationService);
+archive.use(ToastService);
+archive.use(i18n);
+
+archive.mount('#articleArchive');

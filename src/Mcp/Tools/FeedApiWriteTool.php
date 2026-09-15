@@ -22,12 +22,11 @@ Commands, passed in `command` with their arguments in `params`:
 - itemCreate {feedId} — a new record at the end of the feed. It takes no values:
   the record appears hidden, with the defaults of the schema, and the values go
   in with itemSave.
-- itemSave {id, fields, visible?, slug?} — writes the record whole. `fields` is
-  an object of logical field code to value, and whatever is not in it is cleared,
-  so read the record with itemGet first and send it back complete. `visible` and
-  `slug` are system columns and travel apart from the fields; visible is written
-  exactly as asked, and a feed that derives its slug from a field recomputes the
-  slug anyway.
+- itemSave {id, fields, visible?, slug?} — changes the fields that are sent.
+  `fields` is an object of logical field code to value; a field that is not in
+  it keeps its value, so send only what changes. `visible` and `slug` are system
+  columns and travel apart from the fields; visible is written exactly as asked,
+  and a feed that derives its slug from a field recomputes the slug anyway.
 - itemDelete {id, confirm?} — one record per call, no lists. Without confirm
   nothing is deleted: the answer describes what would go, including the records
   that link to it. Repeat with confirm true to actually delete. The files of the

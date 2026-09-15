@@ -150,7 +150,7 @@ Sending mail from application code is a single call:
 ```php
 MproHelper::sendMail([
     'email' => $email,
-    'subj'  => 'Order',
+    'subj'  => 'Order accepted',
     'html'  => $html,
 ]);
 ```
@@ -204,7 +204,7 @@ puts them on the screen.
 
 MagicPro can publish dynamic pages as static HTML.
 
-When a static version exists, Nginx serves it directly. Laravel handles the request only when dynamic processing is required.
+When a static version exists, Nginx serves it directly. Laravel handles the request only when dynamic processing is required. The `try_files` rules are in `docs/ru/main/install.md`; saving an article removes its baked copy, so the edit shows at once.
 
 This makes it possible to keep Laravel flexibility while serving ordinary content pages with essentially static-site performance.
 

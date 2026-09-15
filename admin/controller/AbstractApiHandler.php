@@ -41,9 +41,18 @@ abstract class AbstractApiHandler
                 'request' => $request->all(),
             ]);
         } catch (\Throwable $e) {
+            // где именно упало — в лог, а не в ответ: ответ уезжает в браузер,
+            // а через МСП — агенту, и путь с номером строки там не нужен
+            \MproHelper::addLog('api', [
+                'api'     => static::class,
+                'command' => $request->string('command')->toString(),
+                'error'   => $e->getMessage(),
+                'where'   => $e->getFile() . ' ' . $e->getLine(),
+            ]);
+
             return response()->json([
                 'status'   => false,
-                'errorMsg' => $e->getMessage() . ' ' . $e->getFile() . ' ' . $e->getLine(),
+                'errorMsg' => $e->getMessage(),
                 'data'     => [],
                 'request' => $request->all(),
             ]);

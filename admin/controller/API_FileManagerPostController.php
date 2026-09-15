@@ -76,13 +76,18 @@ class API_FileManagerPostController extends Controller
                 'request' => $request->all(),
             ]);
         } catch (\Throwable $th) {
-            $msg = $th->getMessage();
-            if ($th->getFile()) $msg .= ' in ' . $th->getFile();
-            if ($th->getLine()) $msg .= ' on line ' . $th->getLine();
+            // место ошибки — в лог, наружу только текст: ответ уходит в браузер
+            // и через МСП агенту
+            \MproHelper::addLog('api', [
+                'api'     => static::class,
+                'command' => $request->string('command')->toString(),
+                'error'   => $th->getMessage(),
+                'where'   => $th->getFile() . ' ' . $th->getLine(),
+            ]);
 
             return response()->json([
                 'status'  => false,
-                'errorMsg' => $msg,
+                'errorMsg' => $th->getMessage(),
                 'request' => $request->all(),
             ]);
         }
@@ -92,24 +97,43 @@ class API_FileManagerPostController extends Controller
     // ==================================
 
 
+    /**
+     * Файл лежит внутри разрешённого каталога — и точка.
+     *
+     * Корень здесь был чужой: `$magicStorageDir` — это `storage/app/private/magic`,
+     * а файловый менеджер работает в `public/` + `PUBLIC_UPLOAD_DIR`. Каталога
+     * `public/storage/app/private/magic` в обычной установке нет, `realpath()`
+     * возвращал `false`, сравнение превращалось в «путь начинается со слэша», и
+     * подходил любой абсолютный путь. Через `read-file` и `save-file` это
+     * открывало чтение и запись любого файла с разрешённым расширением.
+     */
     private function checkFileInPublicStorageDir(string $fileName): void
     {
-        $startPath = realpath(public_path(MagicGlobals::$magicStorageDir));
-        $fileName = realpath($fileName);
+        $root = realpath(public_path(MagicGlobals::$INI['PUBLIC_UPLOAD_DIR']));
 
-        // if the file does not exist or the path could not be resolved — throw
-        if (!$fileName) {
-            throw new \Exception("file not found: $fileName");
+        // нет каталога — не с чем сравнивать, и молча пускать нельзя
+        if ($root === false) {
+            throw new \Exception('upload directory not found: ' . MagicGlobals::$INI['PUBLIC_UPLOAD_DIR']);
         }
 
-        if (is_dir($fileName)) {
-            throw new \Exception("this is a directory " . $fileName);
+        // `..` отсекается до канонизации: realpath() развернул бы переход вверх
+        // в существующий путь, и проверять было бы уже нечего
+        if (str_contains($fileName, '..')) {
+            throw new \Exception('invalid path');
         }
 
+        $real = realpath($fileName);
 
-        // check allowed directory
-        if (!str_starts_with($fileName, $startPath . DIRECTORY_SEPARATOR)) {
-            throw new \Exception("file is outside the allowed directory");
+        if ($real === false) {
+            throw new \Exception('file not found: ' . $fileName);
+        }
+
+        if (is_dir($real)) {
+            throw new \Exception('this is a directory ' . $real);
+        }
+
+        if (! str_starts_with($real, rtrim($root, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR)) {
+            throw new \Exception('file is outside the allowed directory');
         }
     }
 

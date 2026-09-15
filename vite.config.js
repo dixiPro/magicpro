@@ -20,7 +20,7 @@ export default defineConfig({
         'admin/js/mailSystemAdmin.js',
         'admin/js/feedAdmin.js',
         'admin/js/cronAdmin.js',
-        'admin/js/mcpAdmin.js',
+        'admin/js/mcpToken.js',
         'admin/js/importAdmin.js',
       ],
       refresh: true,

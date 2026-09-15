@@ -4,7 +4,6 @@ namespace MagicProSrc\Cleanup;
 
 use Illuminate\Support\Facades\DB;
 use MagicProDatabaseModels\Article;
-use MagicProSrc\Import\Snapshots;
 
 require_once __DIR__ . '/../../admin/controller/MagicProBuilder.php';
 
@@ -54,17 +53,13 @@ class ArticleCheck
     private array $rows = [];
 
     /**
-     * The whole run. Answers with the name of the report and of the snapshot.
+     * The whole run. Answers with the name of the report.
      *
-     * @return array{report: string, snapshot: string, found: int}
+     * @return array{report: string, found: int}
      */
     public static function run(): array
     {
         $check = new self();
-
-        // Before the repair, always: it is done in silence, and there would be
-        // nothing to go back to otherwise.
-        $snapshot = Snapshots::save('cleanup_' . date('Y-m-d_H-i'));
 
         $check->orphans();      // 2
         $check->rings();        // 3
@@ -80,9 +75,8 @@ class ArticleCheck
         $check->extraControllers();    // 11
 
         return [
-            'report'   => CleanupReport::write($check->rows, $snapshot),
-            'snapshot' => $snapshot,
-            'found'    => $check->found(),
+            'report' => CleanupReport::write($check->rows),
+            'found'  => $check->found(),
         ];
     }
 
@@ -311,25 +305,24 @@ class ArticleCheck
     }
 
     /**
-     * 1. `routeParams` without `useController`.
+     * 1. `routeParams` with keys missing.
      *
-     * Nothing is broken by it — the builder reads the key as `?? false` — but
-     * the list of articles paints a red mark, and a real trouble stops being
-     * visible in that mark. That is how everything is born that was made by the
-     * «create» button and never saved from the editor.
+     * The router fills them from `Article::ROUTE_PARAMS` now, so the page
+     * works, but the list of articles paints a red mark for a missing
+     * `useController`, and a real trouble stops being visible in that mark.
+     * That is how everything is born that was made before the defaults were
+     * one set and never saved since.
      */
     private function routeParams(): void
     {
         foreach (DB::table('articles')->get(['id', 'name', 'routeParams']) as $row) {
             $params = json_decode((string) $row->routeParams, true);
 
-            if (is_array($params) && array_key_exists('useController', $params)) {
+            if (is_array($params) && array_diff_key(Article::ROUTE_PARAMS, $params) === []) {
                 continue;
             }
 
-            $was = is_array($params) ? $params : [];
-
-            $was['useController'] = false;
+            $was = Article::routeParams($params);
 
             DB::table('articles')->where('id', $row->id)->update(['routeParams' => json_encode($was)]);
 

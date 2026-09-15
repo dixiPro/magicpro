@@ -35,9 +35,17 @@ abstract class AbstractApi
                 'request'  => $params,
             ];
         } catch (\Throwable $e) {
+            // где именно упало — в лог, а не в ответ: ответ уезжает в браузер и
+            // раскрывал бы устройство файловой системы сервера
+            \MproHelper::addLog('api', [
+                'api'     => static::class,
+                'command' => $command,
+                'error'   => $e->getMessage(),
+                'where'   => $e->getFile() . ' ' . $e->getLine(),
+            ]);
+
             return [
                 'status'   => false,
-                'line'     => $e->getFile() . ' ' . $e->getLine(),
                 'errorMsg' => $e->getMessage(),
                 'data'     => [],
                 'request'  => $params,

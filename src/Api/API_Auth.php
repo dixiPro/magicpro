@@ -42,6 +42,8 @@ class API_Auth extends AbstractApi
         'user_id_required'          => 'user id required',
         'admin_access_required'     => 'Admin access required',
         'email_already_sent'        => 'registration letter has already been sent',
+        'blade_render_error'        => 'the letter blade failed to render',
+        'param_required'            => 'parameter required',
     ];
 
     protected array $map = [
@@ -56,7 +58,6 @@ class API_Auth extends AbstractApi
         'processNewUser' => 'processNewUser',
         'checkGoogleCapture' => 'checkGoogleCapture',
         'validateEmail' => 'validateEmail',
-        'blade_render_error' => 'blade_render_error',
         'sendAuthEmail'      => 'sendAuthEmail',
         'getStructure'    => 'getStructure',
         'getUserList'     => 'getUserList',
@@ -129,12 +130,15 @@ class API_Auth extends AbstractApi
 
     protected static  function sendAuthEmail(array $params): array
     {
+        // without these the letter cannot be made at all: said by name, and
+        // before the captcha and the mail, not as a warning half way through
+        foreach (['blade', 'authPage'] as $name) {
+            if (trim((string) ($params[$name] ?? '')) === '') {
+                throw new \Exception(self::ERRORS['param_required'] . ': ' . $name);
+            }
+        }
 
-        $data = [
-            'email' => $params['email'] ?? '',
-            'password' => $params['password'] ?? '',
-            'back' => $params['back'] ?? '/testSite',
-        ];
+        $back = self::localBack($params['back'] ?? '');
 
         /*      параметры
         $token - гугловый токен
@@ -146,7 +150,7 @@ class API_Auth extends AbstractApi
         $subject - заголовок
     */
         // если нет гугл выкинет исключение
-        $token = $params['token'];
+        $token = (string) ($params['token'] ?? '');
         self::runOrFail("checkGoogleCapture", [
             "token" => $token,
         ]);
@@ -171,7 +175,7 @@ class API_Auth extends AbstractApi
             ]);
             // если ошибка выкинет исключение, если нет доберется сюда
             return [
-                'back' => $data['back'] ?? '/'
+                'back' => $back,
             ];
         }
 
@@ -183,7 +187,6 @@ class API_Auth extends AbstractApi
         }
 
         // сгенерить ключ
-        $back = trim((string) ($params['back'] ?? '')) ?: '/';
         $resKey = self::runOrFail('cryptEmailPass', [
             'email' => $email,
             'password' => $password,
@@ -199,12 +202,12 @@ class API_Auth extends AbstractApi
                 'authPage' => $params['authPage']
             ])->render();
         } catch (\Throwable $e) {
-            throw new \Exception(self::ERRORS['blade_render_error' . ' ' . $e]);
+            throw new \Exception(self::ERRORS['blade_render_error'] . ': ' . $e->getMessage());
         }
 
         $email = [
             'email' => $email,
-            'subj' => $params['subject'] . 'registration letter',
+            'subj' => trim(trim((string) ($params['subject'] ?? '')) . ' registration letter'),
             'html' => $html,
         ];
         $res = \MproHelper::sendMail($email);
@@ -291,16 +294,21 @@ class API_Auth extends AbstractApi
             ]);
             // если ошибка выкинет исключение, если нет доберется сюда
             return [
-                'back' => $data['back'] ?? '/'
+                'back' => self::localBack($data['back'] ?? ''),
             ];
         }
 
         // Зарегистрировать пользователя
-        self::runOrFail('createUser', [
+        $created = self::runOrFail('createUser', [
             'email' => $data['email'],
             'password' => $data['password'],
         ]);
         // если ошибка выкинет исключение, если нет доберется сюда
+
+        // Пришёл по ссылке из письма — значит, адрес его. createUser этого не
+        // знает: он зовётся и без письма. Поле не в fillable модели хоста,
+        // поэтому пишется напрямую, мимо create()
+        User::whereKey($created['id'])->update(['email_verified_at' => now()]);
 
         // Авторизовать нового пользователя
         self::runOrFail('authEmailPassword', [
@@ -311,7 +319,7 @@ class API_Auth extends AbstractApi
 
         // если ошибка выкинет исключение, если нет доберется сюда
         return [
-            'back' => $data['back'] ?? '/'
+            'back' => self::localBack($data['back'] ?? ''),
         ];
     }
 
@@ -349,13 +357,39 @@ class API_Auth extends AbstractApi
     }
 
 
+    /**
+     * Where to send a person after the sign-in: a path on this site, or `/`.
+     *
+     * `back` travels in the letter inside the encrypted key, so it cannot be
+     * changed on the way. What can be changed is what is put in: a form that
+     * takes it from the request would take `https://evil.site` just as well,
+     * and the site would send its own user there. So only a path is accepted —
+     * it starts with `/`, and not with `//` or `/\`, which browsers read as
+     * another host.
+     */
+    protected static function localBack(mixed $back): string
+    {
+        $back = trim(is_string($back) ? $back : '');
+
+        if (
+            ! str_starts_with($back, '/')
+            || str_starts_with($back, '//')
+            || str_starts_with($back, '/\\')
+            || preg_match('/[\x00-\x1F\x7F]/', $back)
+        ) {
+            return '/';
+        }
+
+        return $back;
+    }
+
     protected static  function cryptEmailPass(array $params): array
     {
         $data = [
             'email' => self::validateEmail($params),
             'password' => self::validatePassword($params),
             'date' => now()->timestamp,
-            'back' => trim((string) ($params['back'] ?? '')) ?: '/',
+            'back' => self::localBack($params['back'] ?? ''),
         ];
 
         $encrypted = Crypt::encryptString(
@@ -517,7 +551,6 @@ class API_Auth extends AbstractApi
         $user = User::create([
             'name' => $name,
             'email' => $email,
-            'email_verified_at' => now(),
             'password' => Hash::make($password),
         ]);
 
@@ -630,8 +663,20 @@ class API_Auth extends AbstractApi
         ];
     }
 
+    /**
+     * Delete a user found by email. Only an admin of MagicPro may.
+     *
+     * Without the check any article that passed an email from the request
+     * would let anybody delete anybody.
+     */
     protected static  function deleteUser(array $params): array
     {
+        $admin = Auth::guard('magic')->user();
+
+        if (!$admin || $admin->role !== 'admin') {
+            throw new \Exception(self::ERRORS['admin_access_required']);
+        }
+
         $email = (string) ($params['email'] ?? '');
 
         $user = User::where('email', $email)->first();

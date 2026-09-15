@@ -1,0 +1,3 @@
+[mcp_servers.magicpro]
+url = "__MCP_URL__"
+bearer_token_env_var = "MAGICPRO_TOKEN"

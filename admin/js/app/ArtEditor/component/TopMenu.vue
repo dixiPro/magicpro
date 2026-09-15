@@ -80,6 +80,11 @@ const url = computed(() => {
 
       <button class="btn btn-success fas fa-folder-open" @click="store.statusFileManager = !store.statusFileManager"></button>
       <button class="ms-1 btn btn-success fas fa-lightbulb" @click="store.statusAutocompletePannel = !store.statusAutocompletePannel"></button>
+      <button
+        class="ms-1 btn btn-success fas fa-archive"
+        :title="t('archive')"
+        @click="store.statusArchive = true"
+      ></button>
       <button class="ms-1 btn btn-success fas fa-bars" @click="store.statusAddPannel = !store.statusAddPannel"></button>
     </div>
   </div>

@@ -3,6 +3,7 @@
 namespace MagicProSrc\Routing;
 
 use Illuminate\Http\Request;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Illuminate\Support\Facades\DB;
 use MagicProDatabaseModels\Article;
 use Illuminate\Support\Facades\Auth;
@@ -54,8 +55,14 @@ class DynamicRouteHandler
             $segmentParams = array_combine($keys, $values);
         }
 
-        // все параметры в  виде ключ-значение
-        $allQuery = array_merge($segmentParams, $request->query());
+        // все параметры в виде ключ-значение.
+        //
+        // Путь сильнее query string. Раньше было наоборот, и при привязанных
+        // ключах `/product/expected?slug=replaced` отдавал контроллеру
+        // `slug = replaced`: адрес говорил одно, а код получал другое, и
+        // полагаться на позиционный параметр было нельзя. Теперь ключ из пути
+        // query string не перебивает
+        $allQuery = array_merge($request->query(), $segmentParams);
         // если все проверки пройдут ок этот массив вернется в виде результата
 
         // все ключи
@@ -102,6 +109,60 @@ class DynamicRouteHandler
         throw new \Exception('Ошибка в checkRout');
     }
 
+    /**
+     * Метод запроса против того, что статья умеет.
+     *
+     * Динамический маршрут зарегистрирован через `Route::any()`, иначе адреса
+     * статей пришлось бы объявлять по одному. Плата за это — в статью приходит
+     * что угодно: `PUT`, `DELETE`, `PROPFIND`. Раньше всё это открывало
+     * страницу как обычный `GET`, а `postEnable` только выбирал, откуда читать
+     * параметры.
+     *
+     * Правило простое: страницу отдаём на `GET` и `HEAD`, `POST` принимаем
+     * только там, где он разрешён статьёй, остальное — 405.
+     */
+    private function checkMethod(Request $request, bool $postEnable): void
+    {
+        $method = $request->method();
+
+        if ($method === 'GET' || $method === 'HEAD') {
+            return;
+        }
+
+        if ($method === 'POST' && $postEnable) {
+            return;
+        }
+
+        abort(405, $method === 'POST'
+            ? 'this article does not accept POST: turn postEnable on'
+            : 'method not allowed');
+    }
+
+    /**
+     * Токен формы, если форма его прислала.
+     *
+     * Динамический маршрут выведен из-под csrf-middleware целиком: иначе любая
+     * страница сайта с формой без `@csrf` перестала бы работать после
+     * обновления пакета. Но `@csrf` в блейде до сих пор рисовал поле, которое
+     * никто не проверял, — а это хуже, чем отсутствие защиты: автор формы
+     * уверен, что защищён.
+     *
+     * Поэтому середина: прислали токен — он обязан быть верным. Форма с
+     * `@csrf` получает настоящую проверку, старые формы работают как работали.
+     */
+    private function checkToken(Request $request): void
+    {
+        $token = $request->input('_token') ?: $request->header('X-CSRF-TOKEN');
+
+        if ($token === null || $token === '') {
+            return;
+        }
+
+        if (! is_string($token) || ! hash_equals((string) $request->session()->token(), $token)) {
+            abort(419, 'csrf token mismatch');
+        }
+    }
+
     private function checkFirts(Request $request)
     {
 
@@ -140,21 +201,27 @@ class DynamicRouteHandler
             throw new \Exception('route not eneble');
         }
 
-        $routeParams = $article['routeParams'];
+        // every key in place: an article saved before the defaults were one
+        // set may lack some, and a missing key used to end in 404
+        $routeParams = Article::routeParams($article['routeParams'] ?? null);
 
         // только для админа
         if ($routeParams['adminOnly'] && ! Auth::guard('magic')->check()) {
             throw new \Exception('Только админам');
         }
 
+        $this->checkMethod($request, $routeParams['postEnable']);
+
         $postParams = [];
         $res = [];
 
         // проверка поста
-        if ($routeParams['postEnable'] ?? false) {
+        if ($routeParams['postEnable']) {
+            $this->checkToken($request);
+
             $postParams = $request->post();
         } else {
-            $res = $this->checkRout($request, $article['routeParams'], $segments);
+            $res = $this->checkRout($request, $routeParams, $segments);
         }
 
         // Тут все верно
@@ -168,8 +235,8 @@ class DynamicRouteHandler
 
         $env = compact('name', 'title', 'artId', 'parentId', 'view');
 
-        // ключ есть и равен false
-        if (array_key_exists('useController', $article['routeParams']) &&  !$article['routeParams']['useController']) {
+        // без контроллера — сразу вьюха
+        if (! $routeParams['useController']) {
             return view($view, [
                 'Env' => $env,
                 'Get' => $res,
@@ -192,6 +259,10 @@ class DynamicRouteHandler
         try {
             $controller = $this->checkFirts($request);
             return $controller;
+        } catch (HttpException $e) {
+            // 405 и 419 отвечают за себя сами: подменять их страницей «не
+            // найдено» — врать. Адрес есть, беда в методе или в токене
+            throw $e;
         } catch (\Throwable $th) {
             return response()->view('magic::' . ART_NAME_404, [
                 'message' => $th->getMessage(),

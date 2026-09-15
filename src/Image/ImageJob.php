@@ -2,6 +2,7 @@
 
 namespace MagicProSrc\Image;
 
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Support\Facades\Cache;
 use MagicProSrc\Config\MagicGlobals;
 
@@ -11,9 +12,10 @@ use MagicProSrc\Config\MagicGlobals;
  * Всё, что вычисляется, вычисляется один раз и лежит в полях. Между методами
  * ходит сам объект, а не шесть аргументов.
  *
- * Снаружи три статических входа: make() — сделать, clear() — снести кеш одного
- * исходника, clearAll() — снести весь кеш.
- * Исключений не бросает: не вышло — заглушка и текст в errorMsg.
+ * Снаружи четыре статических входа: make() — сделать, clear() — снести кеш
+ * одного исходника, clearAll() — снести весь кеш, cleanup() — убрать сироты.
+ * Исключений не бросает: не вышло — пустой path и текст в errorMsg. Заглушку
+ * ресайзер не подставляет, что показывать вместо картинки решает блейд.
  */
 class ImageJob
 {
@@ -68,25 +70,46 @@ class ImageJob
     ): array {
         $job = new self($file);
 
-        $job->init($axis, $size, $format, $quality);
+        // «исключений не бросает» — про весь путь, а не про одно ожидание
+        // замка: сбой кеша, диска или прав тоже уходит в errorMsg, картинка
+        // не роняет страницу
+        try {
+            $job->init($axis, $size, $format, $quality);
 
-        if (! $job->valid() || $job->fresh()) {
-            return $job->toArray();
+            if ($job->valid() && ! $job->fresh()) {
+                $job->run();
+            }
+        } catch (\Throwable $e) {
+            $job->errorMsg = $e->getMessage() ?: get_class($e);
         }
-
-        $job->run();
 
         return $job->toArray();
     }
 
-    /** Снести все производные исходника, любых размеров и форматов. */
+    /**
+     * Снести все производные исходника, любых размеров и форматов.
+     *
+     * Каталог читается целиком, а не через `glob()`: имя файла попадало бы в
+     * шаблон как есть, и `*`, `?` или скобки в нём превращались бы в
+     * метасимволы — свои производные не нашлись бы, чужие попали под удаление.
+     */
     public static function clear(string $file): int
     {
         $job   = new self($file);
+        $dir   = storage_path('app/public/' . $job->dir);
         $count = 0;
 
-        foreach (glob(storage_path('app/public/' . $job->dir) . '/' . $job->base . '_*.*') ?: [] as $found) {
-            $count += (int) @unlink($found);
+        foreach (@scandir($dir) ?: [] as $name) {
+            if (! str_starts_with($name, $job->base . '_')) {
+                continue;
+            }
+
+            // photo_x800.webp: за именем идёт ось, размер и расширение
+            if (! preg_match('/^_[xy]\d+\./', substr($name, strlen($job->base)))) {
+                continue;
+            }
+
+            $count += (int) @unlink($dir . '/' . $name);
         }
 
         return $count;
@@ -292,54 +315,98 @@ class ImageJob
     /** Готовый файл есть и он новее исходника. */
     public function fresh(): bool
     {
-        return is_file($this->target) && filemtime($this->target) >= filemtime($this->source);
+        // @: файл могли снести между is_file и filemtime — это «не свежий»,
+        // а не ошибка
+        return is_file($this->target) && @filemtime($this->target) >= @filemtime($this->source);
     }
 
     /**
      * Кодирование под замком: два запроса могут попросить один и тот же ещё не
      * сделанный файл. Пока ждали очереди, его мог сделать сосед.
+     *
+     * Утилита пишет во временный файл рядом с целевым, и на место он переезжает
+     * `rename()` только целым. Раньше она писала сразу в целевой: упала на
+     * середине — обрывок оставался, следующий запрос находил его свежим по
+     * времени и отдавал с нулевыми размерами. Теперь на месте либо старое, либо
+     * новое целиком: `rename()` в пределах каталога атомарен.
+     *
+     * Поэтому замок только экономит работу — два запроса не кодируют одно и то
+     * же дважды. Испортить файл друг другу они уже не могут, и кеш, который не
+     * даёт замка, ресайз не останавливает.
      */
     public function run(): void
     {
-        $lock = Cache::lock($this->lockKey, 30);
+        $lock = null;
 
         try {
+            $lock = Cache::lock($this->lockKey, 30);
             $lock->block(5);
-        } catch (\Throwable $e) {
+        } catch (LockTimeoutException) {
             $this->errorMsg = 'busy: ' . basename($this->target);
 
             return;
+        } catch (\Throwable) {
+            $lock = null;
         }
+
+        $temp = '';
 
         try {
             if ($this->fresh()) {
                 return;
             }
 
-            is_dir(dirname($this->target)) || mkdir(dirname($this->target), 0775, true);
+            $dir = dirname($this->target);
+
+            if (! is_dir($dir) && ! @mkdir($dir, 0775, true) && ! is_dir($dir)) {
+                throw new \RuntimeException('cannot create the cache folder: ' . dirname($this->path));
+            }
+
+            // имя кончается тем же расширением: vipsthumbnail выбирает формат
+            // по нему. Точка в начале прячет файл из списков, а случайная
+            // вставка разводит два параллельных запроса. Остался после
+            // убитого процесса — его уберёт cleanup(), исходника у него нет
+            $temp = $dir . '/.tmp-' . bin2hex(random_bytes(4)) . '-' . basename($this->target);
 
             $made = ImageEncoder::make(
                 $this->source,
-                $this->target,
+                $temp,
                 $this->axis,
                 $this->size,
                 $this->format,
                 $this->quality
             );
 
-            $this->cmd      = $made['cmd'];
+            // в диагностике — настоящее имя, а не временное
+            $this->cmd      = str_replace($temp, $this->target, $made['cmd']);
             $this->rotated  = $made['rotated'];
             $this->rotateMs = $made['rotateMs'];
             $this->errorMsg = $made['error'];
+
+            if ($this->errorMsg === '' && (int) @filesize($temp) === 0) {
+                $this->errorMsg = 'the encoder wrote nothing: ' . basename($this->target);
+            }
+
+            if ($this->errorMsg === '' && ! @rename($temp, $this->target)) {
+                $this->errorMsg = 'cannot put the result in place: ' . basename($this->target);
+            }
         } finally {
-            $lock->release();
+            if ($temp !== '' && is_file($temp)) {
+                @unlink($temp);
+            }
+
+            try {
+                $lock?->release();
+            } catch (\Throwable) {
+                // не отпустился — уйдёт сам через 30 секунд
+            }
         }
     }
 
     /**
      * Ответ. Размеры читаются из готового файла: вторую сторону считала утилита.
-     * При ошибке вместо картинки svg из настроек, data-uri прямо в url, — блейд
-     * не меняется.
+     * При ошибке `path` пустой, а `width`, `height` и `size` нулевые: заглушку
+     * ресайзер не подставляет, что показывать вместо картинки решает блейд.
      */
     public function toArray(): array
     {
@@ -377,27 +444,39 @@ class ImageJob
         $dir = dirname($file);
 
         foreach (['p' => public_path(), 's' => storage_path(), 'b' => base_path()] as $letter => $root) {
-            $root = rtrim($root, '/') . '/';
+            $root = rtrim($root, '/');
 
-            if (str_starts_with($dir, $root)) {
-                return trim($letter . '/' . substr($dir, strlen($root)), '/');
+            // сам корень тоже его корень: файл, лежащий прямо в public, иначе
+            // не проходил проверку на префикс `public/` и уезжал в ветку b
+            if ($dir === $root) {
+                return $letter;
+            }
+
+            if (str_starts_with($dir, $root . '/')) {
+                return trim($letter . '/' . substr($dir, strlen($root) + 1), '/');
             }
         }
 
         return 'x/' . substr(md5($dir), 0, 8);
     }
 
-    /** У каждого формата своя настройка качества и своя шкала. */
+    /**
+     * У каждого формата своя настройка качества и своя шкала.
+     *
+     * Запасное значение тоже своё: у png это уровень сжатия 0–9, и общая
+     * подстановка «82 на всех» давала бы ему число вне шкалы, стоит ключу
+     * пропасть из настроек.
+     */
     public static function defaultQuality(string $format): int
     {
-        $key = match ($format) {
-            'avif' => 'AVIF_DEF_QUALITY',
-            'jpg'  => 'JPG_DEF_QUALITY',
-            'png'  => 'PNG_COMPRESSION',
-            default => 'WEBP_DEF_QUALITY',
+        [$key, $fallback] = match ($format) {
+            'avif' => ['AVIF_DEF_QUALITY', 50],
+            'jpg'  => ['JPG_DEF_QUALITY', 70],
+            'png'  => ['PNG_COMPRESSION', 6],
+            default => ['WEBP_DEF_QUALITY', 82],
         };
 
-        return (int) self::setting($key, 82);
+        return (int) self::setting($key, $fallback);
     }
 
     /** Настройка из группы RESIZE. Ключа ещё нет в файле — берём умолчание. */
