@@ -6,7 +6,7 @@ use MagicProSrc\Lenta\FeedText;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
-use MagicProSrc\Api\API_Auth;
+use MagicProSrc\Api\API_SiteAuth;
 use MagicProSrc\Config\MagicGlobals;
 use MagicProSrc\Image\ImageJob;
 use MagicProSrc\Mail\API_Mail;
@@ -149,20 +149,20 @@ class MproHelper
      * ошибка сети даёт `false`.
      *
      * `$response` — токен из формы. Секретный ключ берётся из
-     * `RECAPTCHA_SECRET_KEY` внутри и не передаётся.
+     * `RECAPTCHA_SECRET_KEY` внутри и не передаётся. Ключ пустой — ошибка
+     * сервера 500.
      *
      * @en
      * Checks a reCAPTCHA token with Google. `true` on success only, any network
      * trouble gives `false`.
      *
      * `$response` — the token from the form. The secret key is taken from
-     * `RECAPTCHA_SECRET_KEY` inside and is never passed in.
+     * `RECAPTCHA_SECRET_KEY` inside and is never passed in. An empty key is an
+     * HTTP 500.
      */
     public static function verifyRecapture(string $response): bool
     {
-        return API_Auth::run('checkGoogleCapture', [
-            'token' => $response,
-        ])['status'];
+        return API_SiteAuth::verifyCaptcha($response);
     }
 
     /**

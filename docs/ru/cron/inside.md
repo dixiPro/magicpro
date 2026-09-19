@@ -15,7 +15,7 @@ MagicPro. Создание и эксплуатация задач описаны
 | миграция | `database/migrations/create_magicPro_cron_tasks_table.php` | структура `magicPro_cron_tasks` |
 | heartbeat | `src/Scheduling/Heartbeat.php` | файловая отметка работы Scheduler |
 | диагностика | `src/Install/Installer.php` | проверка возраста heartbeat |
-| HTTP-маршруты | `admin/web.php` | страница и `POST /a_dmin/api/cron` |
+| HTTP-маршруты | `routes/admin.php` | страница и `POST /a_dmin/api/cron` |
 | интерфейс | `admin/js/app/cronAdmin/cronAdmin.vue` | форма, список и действия оператора |
 | настройка лога | `src/Config/magicSchema.php` | `CRON_LOG_SUCCESS` |
 | подключение | `src/MagicServiceProvider.php` | вызов `MagicProSchedule::register()` |

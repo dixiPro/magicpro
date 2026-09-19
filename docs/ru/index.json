@@ -135,12 +135,12 @@
         {
           "name": "Как пользоваться",
           "link": "users/use.md",
-          "about": "админы MagicPro и пользователи сайта: роли, экраны, вход и регистрация через API_Auth"
+          "about": "админы MagicPro и пользователи сайта: роли, экраны, настройки и страницы регистрации и входа, попап и кнопка, API_SiteAuth и API_Users"
         },
         {
           "name": "Устройство",
           "link": "users/inside.md",
-          "about": "пользователи изнутри: таблицы, guard magic, middleware, API_Auth, ключ регистрации"
+          "about": "пользователи изнутри: таблицы, guard magic, middleware, API_SiteAuth, токены, API_Users"
         }
       ]
     },

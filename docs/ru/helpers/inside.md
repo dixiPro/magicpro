@@ -127,7 +127,7 @@ storage/app/private/magic/phpdoc/2/MproHelper.json
 | --- | --- |
 | `getDoc` | `MproHelper`, Laravel Cache и Markdown |
 | `getRecaptureKey` | `MproHelper` |
-| `verifyRecapture` | `API_Auth::checkGoogleCapture` |
+| `verifyRecapture` | `API_SiteAuth::verifyCaptcha` |
 | `sendMail` | wrapper + `API_Mail::sendNow` |
 | `addLog` | `MproHelper`, Monolog |
 | `telegramSend` | `MproHelper`, Laravel HTTP client |
@@ -176,20 +176,16 @@ magicDoc:<lang>:<name>:<filemtime>
 `getRecaptureKey()` напрямую читает `env('RECAPTCHA_SITE_KEY')` и приводит к
 строке.
 
-`verifyRecapture($response)` вызывает:
+`verifyRecapture($response)` вызывает `API_SiteAuth::verifyCaptcha($response)`.
 
-```php
-API_Auth::run('checkGoogleCapture', ['token' => $response])['status'];
-```
+Пустой `RECAPTCHA_SECRET_KEY` — `abort(500)`: исключение уходит наружу, ответ
+сервера 500. Пустой токен — `false` без обращения к Google. Иначе form POST в
+Google с `remoteip = request()->ip()`, connect timeout 2 секунды и общим timeout
+4 секунды; ошибка сети или ответ без `success: true` — `false`.
 
-`API_Auth` проверяет непустой токен и `RECAPTCHA_SECRET_KEY`, отправляет
-form POST в Google с `remoteip = request()->ip()`, connect timeout 2 секунды и
-общим timeout 4 секунды. Любой Throwable перехватывается `AbstractApi::run()`,
-поэтому wrapper видит `status = false`.
-
-Оба ключа читаются через `env()` во время выполнения, а не через config. Это
-нужно учитывать при Laravel config cache и способе передачи переменных
-окружения.
+Оба ключа читаются через `env()` во время выполнения, а не через config. После
+`config:cache` они пустые: перед установкой нового ключа сбросить кеш
+конфигурации (`php artisan config:clear`).
 
 ## sendMail
 
@@ -485,7 +481,7 @@ ORDER BY npp
 | Метод | Обычная ошибка преобразуется | Что всё ещё может выйти |
 | --- | --- | --- |
 | `getDoc` | плохой путь / нет файла → `''` | ошибка Cache, чтения или Markdown |
-| `verifyRecapture` | API/network Throwable → `false` | ошибка до/после envelope маловероятна |
+| `verifyRecapture` | network Throwable → `false` | пустой `RECAPTCHA_SECRET_KEY` — HTTP 500 |
 | `sendMail` | API error → отрицательный массив | нет |
 | `telegramSend` | нет | HTTP |
 | `crypt/decrypt` | OpenSSL false частично обработан | warnings, random/type errors |

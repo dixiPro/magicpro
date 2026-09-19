@@ -45,6 +45,9 @@ const blocks = computed(() => {
   const list = [];
 
   for (const [key, value] of Object.entries(paramsAttr.value)) {
+    // у параметра своя страница админки (`page` в схеме) — здесь не показываем
+    if (value.page) continue;
+
     const group = value.group ?? null;
     const last = list[list.length - 1];
 

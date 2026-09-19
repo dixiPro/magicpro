@@ -31,8 +31,8 @@ const components = [
   InputText,
 ];
 
-import EditUsers from './app/EditLaravelUsers/EditLaravelUsers.vue';
-const app = createApp(EditUsers);
+import LaravelUsersPage from './app/EditLaravelUsers/LaravelUsersPage.vue';
+const app = createApp(LaravelUsersPage);
 
 // регистрац компонентов
 components.forEach((component) => {

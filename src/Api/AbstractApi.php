@@ -4,6 +4,7 @@ namespace MagicProSrc\Api;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 
 abstract class AbstractApi
@@ -34,6 +35,18 @@ abstract class AbstractApi
                 'data'     => $data,
                 'request'  => $params,
             ];
+        } catch (HttpExceptionInterface $e) {
+            // abort() is a verdict on the whole request, not an answer of the
+            // command: a site without its reCAPTCHA key must not tell visitors
+            // they are robots. It goes on to Laravel and becomes the HTTP status
+            \MproHelper::addLog('api', [
+                'api'     => static::class,
+                'command' => $command,
+                'error'   => $e->getMessage(),
+                'where'   => $e->getFile() . ' ' . $e->getLine(),
+            ]);
+
+            throw $e;
         } catch (\Throwable $e) {
             // где именно упало — в лог, а не в ответ: ответ уезжает в браузер и
             // раскрывал бы устройство файловой системы сервера
@@ -47,7 +60,7 @@ abstract class AbstractApi
             return [
                 'status'   => false,
                 'errorMsg' => $e->getMessage(),
-                'data'     => [],
+                'data'     => $e instanceof ApiError ? ['errorCode' => $e->errorCode] : [],
                 'request'  => $params,
             ];
         }
@@ -64,6 +77,10 @@ abstract class AbstractApi
         $result = static::run($command, $params);
 
         if (!$result['status']) {
+            if (isset($result['data']['errorCode'])) {
+                throw new ApiError($result['data']['errorCode'], $result['errorMsg']);
+            }
+
             throw new \Exception($result['errorMsg']);
         }
 

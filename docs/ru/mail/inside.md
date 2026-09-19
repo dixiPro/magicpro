@@ -14,7 +14,7 @@
 | Адрес | `database/Models/MagicProEmailAddress.php` | нормализованный адрес и блокировка |
 | Короткий фасад | `src/Helpers/MproHelper.php` | `MproHelper::sendMail()` |
 | Планировщик | `src/Scheduling/MagicProSchedule.php` | ежеминутный запуск очереди |
-| Маршруты | `admin/web.php` | административный API и публичный AWS webhook |
+| Маршруты | `routes/admin.php`, `routes/site.php` | административный API; публичный AWS webhook |
 
 Почта использует базу как журнал и очередь. Сообщение хранит готовый HTML и
 сырой MIME; шаблоны, вложения и списки получателей находятся вне подсистемы.

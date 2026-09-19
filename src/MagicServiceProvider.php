@@ -70,15 +70,17 @@ class MagicServiceProvider extends ServiceProvider
         AliasLoader::getInstance()->alias('Feed', Feed::class);
         AliasLoader::getInstance()->alias('FeedItem', FeedItem::class);
 
-        // МСП: http-вход регистрируется раньше админки, потому что в конце
-        // admin/web.php стоит динамический маршрут `{any?}`, и он забирает всё,
-        // что зарегистрировано после него
-        $this->loadRoutesFrom(__DIR__ . '/Mcp/ai.php');
+        // Маршруты пакета — routes/. Порядок — часть контракта: dynamic.php
+        // последний, его `{any?}` забирает всё, что зарегистрировано после.
+        //
+        // МСП — вне группы web: агенту не нужны сессия и куки, а CSRF отбил бы
+        // его POST-запросы
+        $this->loadRoutesFrom(__DIR__ . '/../routes/mcp.php');
 
-        // админка
-        // Load admin routes with "web" middleware
         Route::middleware('web')->group(function () {
-            $this->loadRoutesFrom(__DIR__ . '/../admin/web.php');
+            $this->loadRoutesFrom(__DIR__ . '/../routes/admin.php');   // /a_dmin
+            $this->loadRoutesFrom(__DIR__ . '/../routes/site.php');    // публичные адреса пакета
+            $this->loadRoutesFrom(__DIR__ . '/../routes/dynamic.php'); // статьи сайта, последним
         });
 
         // Load admin views
@@ -133,9 +135,13 @@ class MagicServiceProvider extends ServiceProvider
         // guard: boot() может вызываться повторно (тесты PHPUnit поднимают
         // приложение заново), а class_alias на второй раз падает
         // "name already in use". Создаём алиас один раз. См. TODO в MagicGlobals.
-        class_exists('API_Auth', false) || class_alias(
-            \MagicProSrc\Api\API_Auth::class,
-            'API_Auth'
+        class_exists('API_SiteAuth', false) || class_alias(
+            \MagicProSrc\Api\API_SiteAuth::class,
+            'API_SiteAuth'
+        );
+        class_exists('API_Users', false) || class_alias(
+            \MagicProSrc\Api\API_Users::class,
+            'API_Users'
         );
 
         // шедулер

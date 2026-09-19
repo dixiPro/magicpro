@@ -1,3 +1,0 @@
-[mcp_servers.solnuh]
-url = ""
-bearer_token_env_var = "SOLNUH_TOKEN"

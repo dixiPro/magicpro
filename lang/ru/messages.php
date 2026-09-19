@@ -172,4 +172,16 @@ return [
     'feed_err_field_in_data'     => 'Поле «%s» лежит в __data: по нему нельзя искать и сортировать',
     'feed_err_field_no_schema'   => 'Поле «%s» не описано в схеме ленты',
 
+    'auth_params' => 'Регистрация и вход на сайте',
+    'auth_url' => 'Страница формы: вход, регистрация, «забыли пароль»',
+    'auth_register_url' => 'Страница подтверждения регистрации, сюда ведёт ссылка письма authLetter',
+    'auth_reset_password_url' => 'Страница смены пароля, сюда ведёт ссылка письма resetPasswordLetter',
+    'auth_post_url' => 'Куда вести после регистрации или входа, путь сайта',
+    'auth_letter' => 'Блейд письма подтверждения email',
+    'auth_post_letter' => 'Блейд письма после регистрации',
+    'auth_reset_password_letter' => 'Блейд письма смены пароля',
+    'auth_email_token_minutes' => 'Срок токена формы (emailToken), минуты',
+    'auth_register_token_minutes' => 'Срок ссылки регистрации, минуты',
+    'auth_reset_password_token_minutes' => 'Срок ссылки смены пароля, минуты',
+
 ];

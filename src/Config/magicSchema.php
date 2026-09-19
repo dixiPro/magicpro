@@ -169,4 +169,80 @@ return [
             ],
         ],
     ],
+
+    // регистрация и вход на сайте (API_SiteAuth). Правится на странице
+    // «Пользователи», а не в «Настройках»: `page` уводит группу туда
+    'AUTH' => [
+        'label'   => 'auth_params',
+        'type'    => 'group',
+        'page'    => 'users',
+        'data'    => [
+            'authUrl' => [
+                'label'   => 'auth_url',
+                'type'    => 'string',
+                'default' => '/auth2',
+                'mutable' => true,
+            ],
+            'registerUrl' => [
+                'label'   => 'auth_register_url',
+                'type'    => 'string',
+                'default' => '/auth2_register',
+                'mutable' => true,
+            ],
+            'resetPasswordUrl' => [
+                'label'   => 'auth_reset_password_url',
+                'type'    => 'string',
+                'default' => '/auth2_reset',
+                'mutable' => true,
+            ],
+            'postUrl' => [
+                'label'   => 'auth_post_url',
+                'type'    => 'string',
+                'default' => '/',
+                'mutable' => true,
+            ],
+            'authLetter' => [
+                'label'   => 'auth_letter',
+                'type'    => 'string',
+                'default' => 'magic::auth2_letter_register',
+                'mutable' => true,
+            ],
+            'postLetter' => [
+                'label'   => 'auth_post_letter',
+                'type'    => 'string',
+                'default' => 'magic::auth2_letter_post',
+                'mutable' => true,
+            ],
+            'resetPasswordLetter' => [
+                'label'   => 'auth_reset_password_letter',
+                'type'    => 'string',
+                'default' => 'magic::auth2_letter_reset',
+                'mutable' => true,
+            ],
+            'emailTokenMinutes' => [
+                'label'   => 'auth_email_token_minutes',
+                'type'    => 'integer',
+                'min'     => 1,
+                'max'     => 525600,
+                'default' => 30,
+                'mutable' => true,
+            ],
+            'registerTokenMinutes' => [
+                'label'   => 'auth_register_token_minutes',
+                'type'    => 'integer',
+                'min'     => 1,
+                'max'     => 525600,
+                'default' => 1440,
+                'mutable' => true,
+            ],
+            'resetPasswordTokenMinutes' => [
+                'label'   => 'auth_reset_password_token_minutes',
+                'type'    => 'integer',
+                'min'     => 1,
+                'max'     => 525600,
+                'default' => 120,
+                'mutable' => true,
+            ],
+        ],
+    ],
 ];

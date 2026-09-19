@@ -1,7 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { apiCall } from '../apiCall.js';
-import TosatConfirm from '../CommonCom/ToastConfirm.vue';
 
 import { useI18n } from 'vue-i18n';
 const { t } = useI18n();
@@ -107,6 +106,20 @@ async function editUser() {
   } catch (error) {}
 }
 
+// удалить пользователя; удаление без возврата, поэтому сначала подтверждение
+async function deleteUser(index) {
+  const user = allUsers.value[index];
+  if (!(await document.confirmDialog(t('delete') + ' ' + user.email + '?'))) return;
+  try {
+    await apiLaravelUsers({
+      command: 'deleteUser',
+      email: user.email,
+    });
+    allUsers.value.splice(index, 1);
+    document.showToast(t('was_deleted') + user.email);
+  } catch (error) {}
+}
+
 // войти под этим пользователем (авторизация по id)
 async function loginAsUser(index) {
   const user = allUsers.value[index];
@@ -150,14 +163,19 @@ onMounted(() => {
         <div class="col-4">
           <span v-text="user.email"></span>
         </div>
-        <div class="col-3">
+        <div class="col-2">
           <span v-text="formatDate(user.created_at)"></span>
         </div>
-        <div class="col-1">
+        <div class="col-2">
           <i
             class="fas fa-sign-in-alt pointer"
             :title="t('login_as_user')"
             @click.stop="loginAsUser(index)"
+          ></i>
+          <i
+            class="fas fa-trash pointer ms-3"
+            :title="t('delete')"
+            @click.stop="deleteUser(index)"
           ></i>
         </div>
       </div>
@@ -181,7 +199,6 @@ onMounted(() => {
     <button class="btn btn-sm btn-success" @click="editUser">{{ t('save') }}</button>
   </Dialog>
 
-  <TosatConfirm></TosatConfirm>
 </template>
 
 <style>

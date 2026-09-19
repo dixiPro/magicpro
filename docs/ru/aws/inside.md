@@ -18,7 +18,7 @@
 | `src/Mail/SnsSignature.php` | Канонизация и проверка подписи SNS |
 | `src/Mail/API_Mail.php` | Отправка через SES v2 API и передача configuration set |
 | `src/Mail/MagicMailJob.php` | Очередь отправки; текущий путь — SMTP |
-| `admin/web.php` | Регистрация публичного `POST /awsHook` без CSRF |
+| `routes/site.php` | Регистрация публичного `POST /awsHook` без CSRF |
 | `src/Install/Installer.php` | Реализация самопроверки webhook тем же MagicProPing |
 | `src/MagicServiceProvider.php` | Регистрация console commands |
 
@@ -547,7 +547,7 @@ config(services.ses.region)
 
 ## HTTP-маршрут AWS
 
-`admin/web.php` регистрирует:
+`routes/site.php` регистрирует:
 
 ```text
 POST /awsHook

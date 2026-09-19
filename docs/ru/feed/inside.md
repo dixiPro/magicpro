@@ -31,7 +31,7 @@
 | `src/Lenta/FeedText.php` | подстановки и рендер magic-компонентов в тексте |
 | `src/Lenta/FeedPathGenerator.php` | префикс `magicFeed/` для медиа записи |
 | `src/MagicServiceProvider.php` | алиасы, маршруты и model-specific path generator |
-| `admin/web.php` | страница и HTTP-маршрут Feed API |
+| `routes/admin.php` | страница и HTTP-маршрут Feed API |
 | `admin/js/app/feedAdmin/` | Vue-интерфейс лент |
 | `lang/{locale}/messages.php` | тексты `feed_*` и `feed_err_*` |
 

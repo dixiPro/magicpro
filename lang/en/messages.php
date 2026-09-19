@@ -172,4 +172,16 @@ return [
     'feed_err_field_in_data'     => 'The field «%s» lives in __data: it cannot be searched or sorted by',
     'feed_err_field_no_schema'   => 'The field «%s» is not described in the schema of the feed',
 
+    'auth_params' => 'Sign-up and sign-in on the site',
+    'auth_url' => 'Form page: sign-in, sign-up, forgotten password',
+    'auth_register_url' => 'Registration confirmation page, the authLetter link leads here',
+    'auth_reset_password_url' => 'Password change page, the resetPasswordLetter link leads here',
+    'auth_post_url' => 'Where to go after sign-up or sign-in, a path of the site',
+    'auth_letter' => 'Blade of the email confirmation letter',
+    'auth_post_letter' => 'Blade of the letter after registration',
+    'auth_reset_password_letter' => 'Blade of the password change letter',
+    'auth_email_token_minutes' => 'Lifetime of the form token (emailToken), minutes',
+    'auth_register_token_minutes' => 'Lifetime of the registration link, minutes',
+    'auth_reset_password_token_minutes' => 'Lifetime of the password change link, minutes',
+
 ];

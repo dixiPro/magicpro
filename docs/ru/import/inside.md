@@ -15,7 +15,7 @@
 | `admin/js/app/importAdmin/importAdmin.vue` | Выбор файла, mode, check/run, отчёт |
 | `admin/js/importAdmin.js` | Vue entrypoint, PrimeVue, i18n |
 | `admin/views/import_tab.blade.php` | Blade-shell страницы |
-| `admin/web.php` | Страница, import API и export route |
+| `routes/admin.php` | Страница, import API и export route |
 | `database/Models/Article.php` | Casts, defaults и model-level validation статьи |
 | `database/migrations/create_magicPro_articles_table.php` | Фактическая DB-схема |
 

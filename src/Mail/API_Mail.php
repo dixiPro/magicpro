@@ -13,7 +13,7 @@ use Symfony\Component\Mime\Address;
 use Symfony\Component\Mime\Email;
 
 /**
- * Mail API of the subsystem, by the example of MagicProSrc\Api\API_Auth.
+ * Mail API of the subsystem, by the example of MagicProSrc\Api\API_Users.
  *
  * Каждый метод работает «до первой ошибки»: как только что-то не так —
  * выбрасывает исключение. Родитель (AbstractMailApi::run) ловит его и

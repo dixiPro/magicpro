@@ -19,7 +19,7 @@ Mcp::web('/mcp/magicpro', MagicProServer::class)
 
 | Путь | Ответственность |
 | --- | --- |
-| `src/Mcp/ai.php` | регистрация local и web transport |
+| `routes/mcp.php` | регистрация local и web transport |
 | `src/Mcp/Servers/MagicProServer.php` | инструкции initialize и реестр инструментов |
 | `src/Mcp/Tools/*.php` | MCP-контракты и адаптеры к API MagicPro |
 | `src/Mcp/Token.php` | выпуск, хранение, проверка, продление и отзыв токена |
@@ -55,9 +55,9 @@ php artisan mcp:start magicpro
         └──────────────► тот же MagicProServer
 ```
 
-`MagicServiceProvider::boot()` загружает `src/Mcp/ai.php` до
-`admin/web.php`. Порядок существенен: в конце административных маршрутов есть
-динамический маршрут, который иначе перехватил бы `/mcp/magicpro`.
+`MagicServiceProvider::boot()` загружает `routes/mcp.php` раньше
+`routes/dynamic.php`. Порядок существенен: динамический маршрут статей иначе
+перехватил бы `/mcp/magicpro`.
 
 Web-маршрут не входит в группу `web`: у него нет сессии и CSRF. Встроенный
 регистратор `laravel/mcp` создаёт `POST` transport и отвечает `405` с

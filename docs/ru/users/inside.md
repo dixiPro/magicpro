@@ -9,14 +9,19 @@
 | --- | --- |
 | `database/Models/MagicProUser.php` | модель админа, проверки при сохранении |
 | `database/migrations/create_magicPro_users_table.php` | таблица админов |
-| `src/MagicServiceProvider.php` | guard `magic`, provider `magic_users`, `@mproauth`, alias `magic.auth`, alias класса `API_Auth` |
+| `src/MagicServiceProvider.php` | guard `magic`, provider `magic_users`, `@mproauth`, alias `magic.auth`, alias классов `API_SiteAuth`, `API_Users` |
 | `admin/middleware/CheckMagicAuth.php` | middleware `magic.auth[:роли]` |
 | `admin/controller/AuthController.php` | вход и выход админки |
 | `admin/controller/API_EditUsersController.php` | API экрана «Админы» |
 | `admin/controller/AdminController.php::adminList()` | страница «Админы» |
 | `admin/js/app/EditUsers/EditUsers.vue` | экран «Админы» |
 | `src/Console/AdminCommand.php` | `php artisan magicpro:admin` |
-| `src/Api/API_Auth.php` | пользователи сайта: вход, регистрация, правка, экран «Пользователи» |
+| `src/Api/API_SiteAuth.php` | публичное API регистрации и входа посетителей, `POST /api/auth` |
+| `src/Api/API_Users.php` | пользователи сайта: список, правка, «войти как», удаление; экран «Пользователи» |
+| `src/Api/SiteUserTools.php` | общее двух API: проверка email и пароля, вход с лимитом попыток |
+| `src/Api/ApiError.php` | исключение с `errorCode` для `AbstractApi` |
+| `src/Config/magicSchema.php`, группа `AUTH` | настройки регистрации и входа |
+| `admin/js/app/EditLaravelUsers/AuthSettings.vue` | блок настроек на экране «Пользователи» |
 | `admin/js/app/EditLaravelUsers/EditLaravelUsers.vue` | экран «Пользователи» |
 | `app/Models/User.php` хоста | модель пользователя сайта — берётся у приложения |
 
@@ -59,9 +64,9 @@
 | Колонка | Тип | Что хранит |
 | --- | --- | --- |
 | `id` | bigint, PK | |
-| `name` | string, not null | имя; `API_Auth` пишет `''`, если не передано |
+| `name` | string, not null | имя; `API_SiteAuth` и `API_Users::createUser` пишут `''`, если не передано |
 | `email` | string, unique | логин, в нижнем регистре |
-| `email_verified_at` | timestamp, null | ставит `processNewUser` — пользователь пришёл по ссылке из письма; прямой `createUser` оставляет `null` |
+| `email_verified_at` | timestamp, null | ставит `API_SiteAuth::registerUserByToken` — пользователь пришёл по ссылке из письма; прямой `createUser` оставляет `null` |
 | `password` | string | хеш; у модели хоста каст `hashed` |
 | `remember_token` | string, null | |
 | `created_at`, `updated_at` | timestamp | |
@@ -95,7 +100,7 @@ $router->aliasMiddleware('magic.auth', CheckMagicAuth::class);
 
 - `adminOnly` статьи — `Auth::guard('magic')->check()`, любая роль;
 - `TokenMiddleware` МСП — владелец токена существует и `role === 'admin'`;
-- `API_Auth::authById`, `checkUserAccess` — `role === 'admin'`.
+- `API_Users::authById`, `deleteUser`, `checkUserAccess` — `role === 'admin'`.
 
 ## Вход и выход админки
 
@@ -128,64 +133,95 @@ $router->aliasMiddleware('magic.auth', CheckMagicAuth::class);
 | `editUser` | `id`, `name`, `email`, `role?`, `password?` | правит; непустой пароль — от `PASSWORD_MIN`, `Hash::make` |
 | `deleteUser` | `id` | удаляет; `id = 1` — отказ |
 
-## `API_Auth` — пользователи сайта
+## Коды ошибок в `AbstractApi`
 
-Наследник `AbstractApi`: `run()` / `handle()`, ответ `status/errorMsg/data/request`,
-исключения превращаются в `errorMsg`. Глобальный alias `API_Auth` — для вызова
-из блейдов и контроллеров статей.
+Команда бросает `ApiError($errorCode, $message)` — `run()` кладёт код в
+`data.errorCode`, текст в `errorMsg`. `runOrFail()` пробрасывает `ApiError` с
+тем же кодом. Исключение HTTP (`abort()`) `run()` не глотает: пишет в лог `api`
+и отдаёт Laravel — так пустой ключ reCAPTCHA становится ответом 500.
 
-HTTP: `POST /a_dmin/api/laravelUsers`, `magic.auth` — только админ, для экрана
-«Пользователи». Публичного HTTP-входа для посетителей нет: страницы входа и
-регистрации — статьи, которые зовут `API_Auth::run()`.
+## `API_SiteAuth` — регистрация и вход посетителей
 
-Модель — `App\Models\User` хоста, guard — по умолчанию (`web`).
+HTTP: `POST /api/auth` (`routes/site.php`, группа `web`, CSRF проверяется),
+alias `API_SiteAuth`. Модель — `App\Models\User` хоста, guard — `web`.
+
+### Настройки
+
+Группа `AUTH` схемы с пометкой `'page' => 'users'`: «Настройки» (`Setup.vue`)
+параметры с `page` пропускают, их правит `AuthSettings.vue` на экране
+«Пользователи». Файл настроек пишется только целиком (`saveIniFile` возвращает
+пропущенные ключи к умолчаниям), поэтому блок читает `getIniParams`, правит
+`AUTH` и сохраняет всё через `saveIniParams`. Пока настройки не сохранены с
+новой группой, `setting()` берёт умолчание из схемы.
+
+### Токены
+
+```text
+json {type, email, postUrl, time}  →  Crypt::encryptString  →  base64url без '='
+```
+
+| `type` | Выдаёт | Срок |
+| --- | --- | --- |
+| `email` | `checkEmail` | `emailTokenMinutes` |
+| `register` | письмо `authLetter` | `registerTokenMinutes` |
+| `reset` | письмо `resetPasswordLetter` | `resetPasswordTokenMinutes` |
+
+`readToken($token, $types)`: не расшифровался, не тот `type`, нет полей —
+`token_invalid`. Срок сверяется с `time` и настройкой в момент чтения и
+возвращается флагом `expired`: протухший токен остаётся читаемым, поэтому
+`renewLink` знает email. `readLiveToken` превращает `expired` в `token_expired`.
+Пароля в токене нет. Токен не одноразовый: в пределах срока ссылка работает
+повторно.
+
+`postUrl` — `localPath()`: путь своего сайта, начинается с `/`, не с `//` и не
+с `/\`, без управляющих символов; иначе `/`. Проверяется и при выдаче, и при
+чтении токена.
+
+### Письма со ссылкой
+
+`sendLinkLetter($type, $email, $postUrl)` — общая часть `sendRegisterEmail`,
+`sendChangePasswordEmail`, `renewLink`:
+
+1. адрес страницы и блейд из настроек, пусто — `settings_missing`;
+2. `MagicProEvent::addEvent("mail_<email>_registration"` или
+   `"mail_<email>_reset_password", +10 минут)`; событие есть —
+   `letter_already_sent`;
+3. ссылка `url(<страница>/<токен>)`, рендер `view($blade, [$authLinkUrl|$authResetPasswordUrl])`;
+4. `MproHelper::sendMail`, тема — `<title>` письма или умолчание;
+5. рендер или отправка упали — событие удаляется, `letter_failed`.
+
+`postLetter` после регистрации: пустой блейд — не отправляется; ошибка — в лог
+`api`, регистрация не откатывается.
+
+### reCAPTCHA
+
+`API_SiteAuth::verifyCaptcha($token)` — публичный, его же зовёт
+`MproHelper::verifyRecapture`. `env('RECAPTCHA_SECRET_KEY')` пустой —
+`abort(500)`. Пустой токен, ошибка сети, ответ Google без `success` — `false`,
+в командах — `captcha_failed`. Капча проверяется первой, до токенов и базы.
+
+### Вход
+
+`SiteUserTools::attemptLogin`: `RateLimiter`, ключ `login:<email>|<ip>`,
+5 неудач — пауза 60 секунд (`too_many_attempts`), пустой пароль — неудача
+(`wrong_password`); после входа `session()->regenerate()`. Вход по ссылке
+(`registerUserByToken`, `changePassword`) — `Auth::login($user, remember)` и
+тот же `regenerate()`. «Запомнить» — всегда.
+
+## `API_Users` — пользователи сайта
+
+Наследник `AbstractApi`, alias `API_Users`. HTTP только для экрана:
+`POST /a_dmin/api/laravelUsers`, `magic.auth` — админ.
 
 ### Проверки
 
-- `validateEmail`: `trim`, нижний регистр, `email:rfc,dns`, до 255;
-- `validatePassword`: `trim`, 8–255;
-- `authEmailPassword`: `RateLimiter`, ключ `login:<email>|<ip>`, 5 попыток,
-  пауза 60 секунд; после входа `session()->regenerate()`.
-
-### Ключ регистрации
-
-`cryptEmailPass` → `decryptEmailPass`:
-
-```text
-json {email, password, date, back}  →  Crypt::encryptString  →  base64url без '='
-```
-
-Внутри лежит и пароль (зашифрованный ключом приложения). Срок — `hours`,
-по умолчанию 24 часа от `date`. Ключ не одноразовый: пока пароль не сменён,
-ссылка снова входит в аккаунт.
-
-### `sendAuthEmail`
-
-1. `blade` и `authPage` непустые, иначе `parameter required: <имя>`;
-2. `back` → `localBack()`;
-3. `checkGoogleCapture(token)`;
-4. email и пароль по правилам выше;
-5. пользователь есть — `authEmailPassword`, ответ `back`;
-6. нет — `MagicProEvent::addEvent("mail_<email>_registration", +10 минут)`;
-   событие уже есть — `registration letter has already been sent`;
-7. ключ, рендер `view($blade, ['key', 'back', 'authPage'])`; упал —
-   `the letter blade failed to render: <текст>`;
-8. письмо `MproHelper::sendMail`, тема — `trim($subject . ' registration letter')`.
-
-`localBack()` пропускает только путь своего сайта: начинается с `/`, не с `//`
-и не с `/\`, без управляющих символов. Остальное — `/`. Применяется при
-создании ключа, в ответе `sendAuthEmail` и в ответе `processNewUser` (в том
-числе для ключей, выпущенных до проверки).
-
-### `processNewUser`
-
-Вошёл на сайт — отказ `user auth`. Иначе расшифровать ключ; пользователь есть —
-войти его паролем; нет — `createUser`, `email_verified_at = now()` (поле не в
-`fillable` хоста, пишется `update()` по id) и войти. Ответ — `back` из ключа.
+- email: `trim`, нижний регистр, `email:rfc,dns`, до 255;
+- пароль: `trim`, 8–255;
+- `authEmailPassword` — тот же `attemptLogin`, что у `API_SiteAuth`.
 
 ### Права в командах
 
-- `editUser`, `chagePassword` — `checkUserAccess`: сам пользователь (`Auth::id()`)
+- `editUser`, `changePassword` — `checkUserAccess`: сам пользователь (`Auth::id()`)
   или админ MagicPro с ролью `admin`;
 - `authById`, `deleteUser` — только админ MagicPro;
 - `userInfo`, `createUser` — без проверки: решает вызывающий код.

@@ -8,7 +8,7 @@
 
 ## 1. Формы сайта без `@csrf` не защищены
 
-**Где:** `admin/web.php` (catch-all вне CSRF middleware),
+**Где:** `routes/dynamic.php` (catch-all вне CSRF middleware),
 `DynamicRouteHandler::checkToken()`.
 
 Сейчас токен проверяется, только если его прислали. Форма без `@csrf` проходит,

@@ -53,18 +53,46 @@
                     </div>
                 </div>
             @endif
-        @else
-            <div class="container my-5">
-                <h1>MagicPro</h1>
-                @if (session('mpro_error'))
-                    <div style="color:red">{{ session('mpro_error') }}</div>
-                @endif
-                <form method="POST" action="{{ route('magic.login') }}">@csrf <input type="text" name="email"
-                        placeholder="Email" required value=""><input type="password" name="password"
-                        placeholder="@magic_msg('password')" required value=""><label><input type="checkbox"
-                            name="remember">@magic_msg('remember_me') </label><button type="submit">@magic_msg('login')</button>
-                </form>
-        </div>@endmproauth
+        </div>
+    @else
+            {{-- вход в админку: карточка по центру экрана --}}
+            <div class="min-vh-100 d-flex align-items-center justify-content-center bg-light px-3">
+                <div class="card shadow-sm w-100" style="max-width: 380px">
+                    <div class="card-body p-4">
+                        <h1 class="h4 text-center mb-4">
+                            <i class="fas fa-magic me-2 text-primary"></i>MagicPro
+                        </h1>
+
+                        @if (session('mpro_error'))
+                            <div class="alert alert-danger py-2 small">{{ session('mpro_error') }}</div>
+                        @endif
+
+                        <form method="POST" action="{{ route('magic.login') }}">
+                            @csrf
+
+                            <div class="mb-3">
+                                <label for="mproEmail" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="mproEmail" name="email"
+                                    autocomplete="username" required autofocus>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="mproPassword" class="form-label">@magic_msg('password')</label>
+                                <input type="password" class="form-control" id="mproPassword" name="password"
+                                    autocomplete="current-password" required>
+                            </div>
+
+                            <div class="form-check mb-3">
+                                <input type="checkbox" class="form-check-input" id="mproRemember" name="remember">
+                                <label class="form-check-label" for="mproRemember">@magic_msg('remember_me')</label>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100">@magic_msg('login')</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        @endmproauth
         <script src="/vendor/dixipro/magicpro/bootstrap5/js/bootstrap.bundle.min.js"></script>
 </body>
 

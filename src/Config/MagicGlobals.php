@@ -22,6 +22,18 @@ class MagicGlobals
     public static string $dataSchema = __DIR__ . '/magicSchema.php';
     public static array $INI = [];
 
+    /**
+     * The CSRF middleware of the running Laravel: Laravel 13 names it
+     * PreventRequestForgery, Laravel 12 — VerifyCsrfToken. The route files take
+     * it from here instead of each deciding for itself.
+     */
+    public static function csrfMiddleware(): string
+    {
+        return class_exists(\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class)
+            ? \Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class
+            : \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class;
+    }
+
     public static function register(): void
     {
         // загрузить файлы из локального ини
@@ -173,8 +185,10 @@ class MagicGlobals
 
                     self::validateAgainst($schema[$key]['data'] ?? [], $value);
                     break;
+                    // пустое поле приходит null: Laravel превращает пустые
+                    // строки запроса в null (ConvertEmptyStringsToNull)
                 case 'string':
-                    if (!is_string($value)) {
+                    if (!is_string($value) && $value !== null) {
                         throw new \Exception("$key должно быть строкой");
                     }
                     break;

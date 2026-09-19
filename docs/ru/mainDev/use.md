@@ -68,7 +68,7 @@ MagicPro не реализует свой шаблонизатор, ORM, HTTP-с
 | `admin/controller/MagicProBuilder.php` | Создание и удаление рабочих Blade/PHP-файлов |
 | `src/Routing/DynamicRouteHandler.php` | Поиск статьи по URL и проверка routeParams |
 | `src/MagicController.php` | Базовый HTTP-контроллер статьи |
-| `admin/web.php` | Маршруты админки, API, webhook и catch-all сайта |
+| `routes/admin.php`, `site.php`, `mcp.php`, `dynamic.php` | Маршруты: админка и её API; публичные адреса пакета; МСП; catch-all статей |
 | `src/LivewireComponentRegistry.php` | Разрешение Livewire-имён `magic::` |
 | `src/Helpers/MproHelper.php` | Глобальные пользовательские хелперы |
 | `src/MagicLang.php` | Словарь админки и Blade-директива `@magic_msg` |
@@ -127,20 +127,25 @@ MagicPro не реализует свой шаблонизатор, ORM, HTTP-с
 2. `MAGIC_VIEW_DIR` регистрируется как пространство Blade `magic`.
 3. Через `require_once` подключаются `MproHelper` и два legacy-хелпера.
 4. Модели `Feed` и `FeedItem` получают короткие class aliases.
-5. Загружаются маршруты MCP. Они намеренно идут раньше catch-all.
-6. `admin/web.php` загружается внутри middleware-группы `web`.
+5. Загружается `routes/mcp.php` — вне группы `web`: агенту не нужны сессия и
+   CSRF.
+6. Внутри middleware-группы `web`, строго по порядку: `routes/admin.php`,
+   `routes/site.php`, `routes/dynamic.php`.
 7. Подключаются `magicAdmin::` views и миграции пакета.
 8. Динамически настраиваются guard `magic`, provider `magic_users`, middleware
    `magic.auth` и директива `@mproauth`.
 9. Настраивается Vite админки.
 10. Регистрируются анонимные, классовые и Livewire-компоненты статей.
-11. Создаётся глобальный alias `API_Auth`.
+11. Создаются глобальные alias `API_SiteAuth` и `API_Users`.
 12. После разрешения `Schedule` подключаются задачи MagicPro.
 13. В консоли регистрируются artisan-команды пакета.
 
-Catch-all находится в конце `admin/web.php`; всё, что обязано иметь собственный
-маршрут, должно быть зарегистрировано до него либо исключено его регулярным
-выражением.
+Catch-all — `routes/dynamic.php`, подключается последним. Порядок — часть
+контракта: Laravel перебирает маршруты в порядке регистрации, поэтому всё, что
+зарегистрировано раньше, побеждает catch-all без исключений. `EXCLUDED_ROUTES`
+нужен для маршрутов, которые регистрируются после пакета (чужие пакеты и
+приложение: `livewire`, `telescope`, `horizon`), — их при загрузке
+`dynamic.php` ещё нет.
 
 ## Настройки и вычисленные пути
 
@@ -552,7 +557,7 @@ Livewire нужно проверять сигнатуру `generateClassFromName
 
 ### Регистрация catch-all
 
-В конце `admin/web.php` строится отрицательное регулярное выражение из
+В `routes/dynamic.php` строится отрицательное регулярное выражение из
 `MagicGlobals::$INI['EXCLUDED_ROUTES']` и регистрируется:
 
 ```php
@@ -783,21 +788,18 @@ FeedItem → MagicProDatabaseModels\FeedItem
 Их конфигурация, права страниц и API, вход и выход описаны в
 [устройстве пользователей](../users/inside.md#guard-и-middleware).
 
-### Группы маршрутов admin/web.php
+### Файлы маршрутов
 
-До catch-all последовательно объявлены:
+| Файл | Группа | Что внутри |
+| --- | --- | --- |
+| `routes/mcp.php` | вне `web` | МСП: `Mcp::local`, `Mcp::web('/mcp/magicpro')` |
+| `routes/admin.php` | `web` | страницы `/a_dmin/*` (документация, MCP, пользователи, почта, крон, ленты, статьи, импорт, файлы, паук, админы, Setup), их API, Adminer `/a_dmin/adminer`, вход и выход, `/login` |
+| `routes/site.php` | `web` | публичные адреса пакета: `/awsHook`, `/api/auth` (регистрация и вход посетителей, с CSRF) |
+| `routes/dynamic.php` | `web`, последним | `$pattern` из `EXCLUDED_ROUTES` и catch-all статей |
 
-- страницы документации и MCP;
-- Laravel users, почта, cron и ленты;
-- список и редактор статей;
-- импорт, экспорт и cleanup;
-- файловый менеджер и crawler;
-- Adminer;
-- администраторы и Setup;
-- login/logout;
-- `/awsHook`.
-
-API маршруты админки обычно снимают CSRF и полагаются на guard. Новый endpoint,
+CSRF-middleware текущей версии Laravel файлы берут из
+`MagicGlobals::csrfMiddleware()`. API админки проходит CSRF; снят он только
+там, где токена быть не может: `/awsHook`, Adminer, catch-all. У GET-маршрутов отключать нечего: CSRF-проверка GET, HEAD и OPTIONS не касается. Новый endpoint,
 который меняет состояние, должен получить нужную роль явно.
 
 ## Vue-редактор статьи
@@ -899,7 +901,7 @@ Cleanup и regenerate не заменяют нормальный путь сох
 | Дерево статей | Операции дерева в API статей | `TreeArticle.vue`, MCP-инструменты, меню |
 | Контракт контроллера страницы | `src/MagicController.php` | Маршрутизатор, заготовки, существующие статьи |
 | Новый MCP-инструмент | `src/Mcp/Tools/`, регистрация в `src/Mcp/` | API соответствующего модуля, схема аргументов, ответы |
-| Новый механизм админки | `admin/web.php`, контроллер, `admin/js/` и views | Авторизация, сериализация данных, сборка |
+| Новый механизм админки | `routes/admin.php`, контроллер, `admin/js/` и views | Авторизация, сериализация данных, сборка |
 
 Пути здесь относительны каталогу пакета. Полная карта центрального модуля —
 в [карте файлов](#карта-файлов).
