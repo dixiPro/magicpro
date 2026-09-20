@@ -8,11 +8,34 @@ const { t } = useI18n();
 
 const newValidName = ref('');
 const swapForName = ref('');
+
+/**
+ * Livewire-компонент — не страница: его зовут тегом <livewire:magic::имя />.
+ * Галка сама ставит то, что ему нужно, — без маршрута, с контроллером, — и
+ * прячет остальные настройки. Сняли галку — настройки снова видны, значения не
+ * трогаем.
+ */
+watch(
+  () => store.article.routeParams?.livewire,
+  (on) => {
+    if (!on) return;
+    store.article.isRoute = false;
+    store.article.routeParams.useController = true;
+  },
+);
 </script>
 
 <template>
   <Drawer v-model:visible="store.statusAddPannel" :header="t('route_params')" position="right" style="width: 700px">
     <div class="">
+      <div class="my-2 d-flex">
+        <div class="nowrap">
+          <ToggleSwitch v-model="store.article.routeParams.livewire" />
+        </div>
+        <div class="ms-2">{{ t('livewire_component') }}</div>
+      </div>
+
+      <template v-if="!store.article.routeParams.livewire">
       <div class="my-2 d-flex">
         <div class="nowrap">
           <ToggleSwitch v-model="store.article.menuOn" />
@@ -148,6 +171,7 @@ const swapForName = ref('');
         </div>
         <div class="ms-2">{{ t('only_admin') }}</div>
       </div>
+      </template>
     </div>
 
     <button class="btn btn-sm btn-primary" @click="store.saveRec()">{{ t('save') }}</button>

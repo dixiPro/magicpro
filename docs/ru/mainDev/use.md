@@ -69,12 +69,13 @@ MagicPro не реализует свой шаблонизатор, ORM, HTTP-с
 | `src/Routing/DynamicRouteHandler.php` | Поиск статьи по URL и проверка routeParams |
 | `src/MagicController.php` | Базовый HTTP-контроллер статьи |
 | `routes/admin.php`, `site.php`, `mcp.php`, `dynamic.php` | Маршруты: админка и её API; публичные адреса пакета; МСП; catch-all статей |
-| `src/LivewireComponentRegistry.php` | Разрешение Livewire-имён `magic::` |
+| `src/Livewire/MagicProLivewire.php` | Базовый класс Livewire-компонентов статей: `render()` рисует `magic::<имя класса>` |
+| `src/Livewire/LivewireComponentRegistry.php` | Разрешение Livewire-имён `magic::` |
 | `src/Helpers/MproHelper.php` | Глобальные пользовательские хелперы |
 | `src/MagicLang.php` | Словарь админки и Blade-директива `@magic_msg` |
 | `src/Archive/ArticleArchive.php` | Запись, выдача, восстановление и очистка версий |
 | `admin/js/app/ArtEditor/` | Vue-редактор статьи и дерева |
-| `admin/controller/default/` | Заготовки обычного и Livewire-контроллера |
+| `admin/controller/default/` | Заготовки обычного и Livewire-контроллера, Blade Livewire-заготовки (`defaultBladeLivewire.blade`) |
 | `src/Install/Installer.php` | Стартовые статьи, каталоги и проверка генерации |
 | `src/Cleanup/ArticleCheck.php` | Проверка и ремонт нарушенных инвариантов |
 
@@ -454,7 +455,7 @@ Blade до публикации не компилируется.
 | `search` | id/title статей, где body или controller содержит текст |
 | `regenerateAll` | Пересоздание рабочих файлов всех статей |
 | `getDefaultController` | Текст обычной заготовки |
-| `getDefaultLiveWareController` | Текст Livewire-заготовки |
+| `getDefaultLivewireController` | Livewire-заготовка: `controller` и `body`; редактор ставит `body`, только если Blade статьи пуст |
 | `versions`, `versionGet`, `versionRestore` | Работа с версиями |
 | `archiveInfo`, `archivePurgeDeleted` | Состояние и ручная очистка архива |
 
@@ -541,13 +542,28 @@ Namespace `magic` отображается в `MagicProControllers`. Класс 
 ### Livewire
 
 Провайдер заменяет стандартный `Livewire\Mechanisms\ComponentRegistry` своим
-наследником. Он перехватывает только:
+наследником `MagicProSrc\Livewire\LivewireComponentRegistry`. Он переводит в обе
+стороны:
 
-- `magic::{name}` → `MagicProControllers\{name}`;
-- legacy `magic-pro-controllers.{name}` → тот же класс.
+- имя → класс: `magic::{name}` → `MagicProControllers\{name}` — для тега и для
+  каждого `/livewire/update`; сам Livewire ищет классы только в `App\Livewire`;
+- класс → имя: `MagicProControllers\{name}` → `magic::{name}`. Найдя класс,
+  Livewire заново вычисляет имя из него и кладёт в снимок, который браузер
+  присылает на каждом нажатии. Без этой стороны в снимок попало бы
+  `magic-pro-controllers.{name}`, и первое же нажатие кончилось бы «component
+  not found».
 
 Если класс не найден, управление возвращается стандартному registry, чтобы не
-сломать чужие компоненты.
+сломать чужие компоненты. Подключение компонента по классу
+(`@livewire(\MagicProControllers\x::class)`) не поддерживается: только тег.
+
+Компоненты статей наследуют `MagicProSrc\Livewire\MagicProLivewire`. Его
+`render()` возвращает `view('magic::' . class_basename(static::class))`: билдер
+называет класс именем статьи, так что компонент рисует Blade своей же статьи.
+
+Флаг `routeParams.livewire` (умолчание `false`) нужен только редактору: галка
+«Livewire-компонент» выключает `isRoute`, включает `useController` и прячет
+остальные настройки маршрута. Сервер флаг не проверяет.
 
 Глобальная подмена registry является интеграционной точкой: при обновлении
 Livewire нужно проверять сигнатуру `generateClassFromName()` и создание

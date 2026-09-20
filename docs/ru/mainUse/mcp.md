@@ -82,6 +82,12 @@ shell или возможность исправлять серверный PHP 
 Разрешены `name`, `title`, `controller`, `body`, `menuOn`, `isRoute` и
 `routeParams`. Ключи маршрута и их умолчания — в [маршруте статьи](use.md#маршрут-статьи).
 
+Livewire-компонент: `routeParams.livewire = true` вместе с `isRoute = false` и
+`routeParams.useController = true` — в админке галка ставит эти два значения
+сама, через МСП их передают явно. Контроллер наследует `MagicProLivewire`, со
+страницы компонент зовут тегом `<livewire:magic::имя />`; подробности — в
+[Livewire-компоненте](use.md#livewire-компонент).
+
 `parentId`, `npp` и `directory` намеренно игнорируются. Статья `id = 1` обязана
 сохранить имя `root`. Имя любой статьи содержит только латинские буквы, цифры,
 дефис и подчёркивание и должно быть уникальным. С `useController` имя ещё и имя

@@ -26,6 +26,7 @@ class Article extends Model
         'postEnable'      => false,
         'bindKeys'        => false,
         'keysArr'         => [],
+        'livewire'        => false,
     ];
 
     /**

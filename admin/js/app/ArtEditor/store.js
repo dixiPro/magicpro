@@ -92,6 +92,7 @@ export const useArticleStore = defineStore('article', () => {
       bindKeys = false,
       postEnable = false,
       keysArr = [],
+      livewire = false,
     } = routeParams;
 
     art.routeParams = {
@@ -102,6 +103,7 @@ export const useArticleStore = defineStore('article', () => {
       utmParamsEnable,
       bindKeys,
       keysArr,
+      livewire,
     };
 
     return art;
@@ -142,13 +144,18 @@ export const useArticleStore = defineStore('article', () => {
     } catch (e) {}
   }
 
-  async function getLiveWareController() {
+  async function getLivewireController() {
     try {
       const res = await apiArt({
-        command: 'getDefaultLiveWareController',
+        command: 'getDefaultLivewireController',
         id: 1,
       });
       article.value.controller = res.controller;
+      // the blade goes in only when it is empty: a button must not wipe
+      // markup somebody has already written
+      if (!String(article.value.body ?? '').trim()) {
+        article.value.body = res.body;
+      }
     } catch (e) {
       console.log(e);
     }
@@ -231,7 +238,7 @@ export const useArticleStore = defineStore('article', () => {
     loadRec,
     saveRec,
     getController,
-    getLiveWareController,
+    getLivewireController,
     gotoArticleByName,
     formatDocument,
     translit,

@@ -11,7 +11,7 @@
 | --- | --- | --- |
 | Маршрутизация | 1 | `toDo/risks/routing.md` — остался CSRF форм сайта |
 | Импорт | 16 | `toDo/risks/import.md` |
-| Редактор статей | 1 | `toDo/risks/editor.md` |
+| Редактор статей | 0 | `toDo/risks/editor.md` |
 | МСП | 1 | `toDo/risks/mcp.md` |
 | Админы MagicPro | 0 | `toDo/risks/users_admin.md` — закрыто |
 | Пользователи сайта | 0 | `toDo/risks/users_user.md` |

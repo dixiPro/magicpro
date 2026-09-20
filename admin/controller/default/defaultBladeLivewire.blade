@@ -1,0 +1,8 @@
+{{-- exactly one root element: Livewire puts its wire:id on it --}}
+<div>
+  {{-- calls the public method add() of the controller on the server --}}
+  <button type="button" wire:click="add">+</button>
+
+  {{-- the public property $count of the controller --}}
+  {{ $count }}
+</div>

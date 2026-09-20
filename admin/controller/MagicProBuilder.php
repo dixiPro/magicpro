@@ -12,6 +12,9 @@ define('DEFAULT_CONTROLLER', __DIR__ . '/default/defaultController.php');
 // ⚡ default livewire controller
 define('DEFAULT_LIVEWIRE_CONTROLLER', __DIR__ . '/default/defaultControllerLivewire.php');
 
+// ⚡ default livewire blade: the markup for the default livewire controller
+define('DEFAULT_LIVEWIRE_VIEW', __DIR__ . '/default/defaultBladeLivewire.blade');
+
 
 /**
  * create/update resources for an article.
@@ -26,9 +29,14 @@ function readDefaultController(): string
     return read_file_or_fail(DEFAULT_CONTROLLER);
 }
 
-function readDefaultLiveWareController(): string
+function readDefaultLivewireController(): string
 {
     return read_file_or_fail(DEFAULT_LIVEWIRE_CONTROLLER);
+}
+
+function readDefaultLivewireView(): string
+{
+    return read_file_or_fail(DEFAULT_LIVEWIRE_VIEW);
 }
 
 function createMpro(array $article): array

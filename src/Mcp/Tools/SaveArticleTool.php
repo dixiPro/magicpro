@@ -64,6 +64,9 @@ class SaveArticleTool extends Tool
                     'keysArr' => $schema->array()
                         ->items($schema->string())
                         ->description('Names of the accepted GET parameters. An empty array accepts any. utm parameters are handled separately and never listed here.'),
+
+                    'livewire' => $schema->boolean()
+                        ->description('The article is a Livewire component, not a page: its controller extends MagicProSrc\\Livewire\\MagicProLivewire and pages call it with <livewire:magic::name />. Send it together with isRoute false and useController true — the admin panel sets those two by itself, this tool does not. Defaults to false. See the Livewire section of ru/mainUse/use.md.'),
                 ])->description('Routing options, stored as JSON in the routeParams column. Taken key by key: a key that is not sent keeps its current value, keysArr is replaced whole.'),
             ])
                 ->description('Fields to write. Only id is required; every omitted field keeps its current value. The position in the tree is not editable here — use move-article for parentId and npp.')

@@ -14,7 +14,7 @@ const { t } = useI18n();
         <button class="btn btn-success btn-sm" @click="store.getController()">{{ t('autocomplete_simple_controller') }}</button>
       </div>
       <div class="my-2">
-        <button class="btn btn-success btn-sm" @click="store.getLiveWareController()">{{ t('autocomplete_liveWare_controller') }}</button>
+        <button class="btn btn-success btn-sm" @click="store.getLivewireController()">{{ t('autocomplete_livewire_controller') }}</button>
       </div>
     </div>
   </Drawer>

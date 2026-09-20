@@ -10,6 +10,7 @@ use MagicProSrc\Mcp\Tools\CreateArticleTool;
 use MagicProSrc\Mcp\Tools\DeleteArticleTool;
 use MagicProSrc\Mcp\Tools\FeedApiTool;
 use MagicProSrc\Mcp\Tools\FeedApiWriteTool;
+use MagicProSrc\Mcp\Tools\FeedApiSchemaTool;
 use MagicProSrc\Mcp\Tools\GetArticleByNameTool;
 use MagicProSrc\Mcp\Tools\GetArticleChildrenTool;
 use MagicProSrc\Mcp\Tools\GetArticleParentsTool;
@@ -51,9 +52,10 @@ class MagicProServer extends Server
         MoveArticleTool::class,
         DeleteArticleTool::class,
 
-        // ленты: чтение и запись, по инструменту на каждое
+        // ленты: чтение, запись записей и структура, по инструменту на каждое
         FeedApiTool::class,
         FeedApiWriteTool::class,
+        FeedApiSchemaTool::class,
 
         // файлы
         ReadFileTool::class,

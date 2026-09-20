@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Vite;
 use Illuminate\Http\Request;
 use Livewire\Mechanisms\ComponentRegistry;
 
-use MagicProSrc\LivewireComponentRegistry; // magicLiveWare
+use MagicProSrc\Livewire\LivewireComponentRegistry;
 
 use Illuminate\Foundation\AliasLoader;
 

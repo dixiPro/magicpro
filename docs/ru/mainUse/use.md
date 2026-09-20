@@ -175,6 +175,7 @@ MagicPro не заменяет Laravel. Он хранит обычный Blade �
 | `keysArr`         | какие ключи GET разрешены; пусто — любые                             | `[]`      |
 | `bindKeys`        | ключи из `keysArr` по позиции в адресе                               | `false`   |
 | `postEnable`      | принимать POST формы, тело — в `$Post`                               | `false`   |
+| `livewire`        | статья — Livewire-компонент, а не страница, см. [Livewire](#livewire-компонент) | `false`   |
 
 Лишний параметр, запрет `adminOnly` или неизвестная статья — страница
 `error404` с кодом 404; чужой HTTP-метод — 405.
@@ -489,19 +490,77 @@ class PriceBadge extends Component
 
 ### Livewire-компонент
 
-MagicPro умеет разрешать имя вида:
+Livewire — интерактив без JavaScript: кнопка вызывает метод PHP-класса на
+сервере, и кусок страницы перерисовывается без перезагрузки. Документация
+библиотеки — <https://livewire.laravel.com/docs>.
 
-```blade
-<livewire:magic::lvcomponent />
-```
+**Как сделать.**
 
-в класс `MagicProControllers\lvcomponent`. В статье включите контроллер,
-вставьте заготовку Livewire и убедитесь, что `render()` возвращает Blade именно
-этой статьи:
+1. Создайте статью, например `counter`.
+2. В параметрах маршрута поставьте галку «Livewire-компонент». Она сама
+   выключает маршрут и включает контроллер, остальные настройки маршрута
+   прячутся: компонент — не страница, по адресу он не открывается.
+3. В редакторе нажмите «Livewire контроллер». Подставится заготовка
+   контроллера, а если Blade статьи пуст — и его разметка. Готовый Blade
+   кнопка не трогает.
 
-```php
-return view('magic::lvcomponent');
-```
+   ```php
+   <?php
 
-Если имя статьи другое, строку `view()` тоже нужно изменить. Livewire-режим
-считается опытным; обычный анонимный компонент проще и устойчивее.
+   namespace MagicProControllers;
+
+   use MagicProSrc\Livewire\MagicProLivewire;
+
+   // the builder replaces Magic_Pro_Name_Controller with the article name,
+   // and MagicProLivewire renders the blade of this same article
+   class Magic_Pro_Name_Controller extends MagicProLivewire
+   {
+       // a public property is the state of the component: it survives every
+       // request and is visible in the blade as $count
+       public int $count = 0;
+
+       // a public method is called from the blade: wire:click="add"
+       public function add(): void
+       {
+           $this->count++;
+       }
+   }
+   ```
+
+4. Blade статьи — разметка компонента, **ровно один корневой элемент**:
+
+   ```blade
+   {{-- exactly one root element: Livewire puts its wire:id on it --}}
+   <div>
+     {{-- calls the public method add() of the controller on the server --}}
+     <button type="button" wire:click="add">+</button>
+
+     {{-- the public property $count of the controller --}}
+     {{ $count }}
+   </div>
+   ```
+
+5. На любой странице:
+
+   ```blade
+   <livewire:magic::counter />
+   ```
+
+**Как это устроено.** `MagicProLivewire` сам рисует Blade своей статьи:
+билдер называет класс именем статьи, а базовый `render()` берёт имя класса.
+Поэтому имя блейда нигде не пишется, и переименование статьи ничего не ломает —
+меняется только тег на страницах. Свой `render()` нужен, лишь когда в Blade
+надо передать вычисленные данные; публичные свойства видны в Blade сами.
+
+**Что важно помнить.**
+
+- Состояние компонента — только его публичные свойства. Не объявил свойство —
+  значение не переживёт следующий запрос.
+- Каждое действие — запрос на сервер (`/livewire/update`). Для поля поиска
+  используйте `wire:model.live.debounce.400ms`, иначе запрос уйдёт на каждую
+  букву.
+- Свойства видны в браузере: секреты и большие массивы в них не кладут.
+- Подключение только тегом `<livewire:magic::имя />`; имя статьи должно
+  годиться для PHP-класса — латиница, цифры, подчёркивание.
+- Страницу с Livewire не отдают из статических HTML-копий: запечённая копия
+  отдаст устаревшее состояние.

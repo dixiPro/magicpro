@@ -145,6 +145,7 @@ Handle `magicpro`, используемый в конфиге и `mcp:start`, н
 | `delete-article` | `DeleteArticleTool` | несколько article-команд |
 | `feed-api` | `FeedApiTool` | разрешённые команды `API_Feeds` |
 | `feed-api-write` | `FeedApiWriteTool` | разрешённые команды `API_Feeds` и safety-обвязка |
+| `feed-api-schema` | `FeedApiSchemaTool` | разрешённые команды `API_Feeds`, запрет у ленты с записями |
 | `read-file` | `ReadFileTool` | file manager `loadFile` |
 | `save-file` | `SaveFileTool` | file manager `saveFile` |
 
@@ -287,6 +288,21 @@ HTTP middleware устанавливает владельца токена че�
 
 `itemLinks` наружу отдельной MCP-командой не опубликован. Он используется только
 для понятного preview и сообщения об отказе.
+
+`feed-api-schema` разрешает только:
+
+```php
+['groupsList', 'groupCreate', 'feedCreate', 'feedSave', 'schemaGet', 'schemaSave']
+```
+
+- `feedSave` и `schemaSave` требуют id ленты (`id` / `feedId`) и отказывают,
+  если у ленты есть хоть одна запись. Проверка стоит в инструменте, а не в
+  `API_Feeds`: админка заполненную ленту менять может. id обязателен, потому что
+  API нашёл бы ленту и по коду, мимо проверки.
+- `groupCreate` в одном вызове создаёт группу и даёт ей название (`groupCreate`
+  + `groupSave` API): в API группа рождается с названием по умолчанию.
+- `feedClear`, `feedDelete`, `groupDelete`, `feedMove`, `groupMove` не
+  опубликованы.
 
 `API_Feeds::itemSave()` меняет только ключи, присутствующие в `fields`, и
 валидирует тоже только их — частичное обновление, так и задумано. Description

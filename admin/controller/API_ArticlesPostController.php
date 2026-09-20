@@ -15,7 +15,7 @@ class API_ArticlesPostController extends AbstractApiHandler
 {
     protected array $map = [
         'getDefaultController'         => 'getDefaultController',
-        'getDefaultLiveWareController' => 'getDefaultLiveWareController',
+        'getDefaultLivewireController' => 'getDefaultLivewireController',
         'getParents'                   => 'getParents',
         'getChildrens'                 => 'getChildrens',
         'getBrothers'                  => 'getBrothers',
@@ -225,9 +225,13 @@ class API_ArticlesPostController extends AbstractApiHandler
         return ['controller' => readDefaultController()];
     }
 
-    protected function getDefaultLiveWareController(): array
+    /** The controller and the blade of a new Livewire component: they only work together. */
+    protected function getDefaultLivewireController(): array
     {
-        return ['controller' => readDefaultLiveWareController()];
+        return [
+            'controller' => readDefaultLivewireController(),
+            'body'       => readDefaultLivewireView(),
+        ];
     }
 
     protected function copyRec(Request $request): array

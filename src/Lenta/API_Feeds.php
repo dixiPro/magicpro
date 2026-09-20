@@ -407,10 +407,111 @@ class API_Feeds extends AbstractFeedApi
             throw new Exception(self::err('schema_required'));
         }
 
-        $feed->schema = $this->checkSchema($schema, $feed);
-        $feed->save();
+        $checked = $this->checkSchema($schema, $feed);
+
+        // файлы медиатеки удаляются уже после записи: откатить удалённый файл
+        // транзакция не может, а схема без записи в базу не должна их терять
+        $images = DB::transaction(function () use ($feed, $checked): array {
+            $images = $this->forgetRemovedFields($feed, $feed->schema ?? [], $checked);
+
+            $feed->schema = $checked;
+            $feed->save();
+
+            return $images;
+        });
+
+        if ($images !== []) {
+            $feed->items()->chunkById(200, function ($items) use ($images): void {
+                foreach ($items as $item) {
+                    foreach ($images as $code) {
+                        $item->clearMediaCollection($code);
+                    }
+                }
+            });
+        }
 
         return $feed->schema;
+    }
+
+    /**
+     * A field that left the schema takes its values with it.
+     *
+     * A slot keeps nothing: a column freed by "colour" and taken later by
+     * "article" would show colours as articles, so the column is emptied in
+     * every record of the feed. A field of __data loses its key. An image field
+     * loses its files too — returned here and removed after the commit.
+     *
+     * The slot is emptied with one query on the physical column: nothing a
+     * model does on save (position, links, slug) depends on a field that no
+     * longer exists.
+     */
+    protected function forgetRemovedFields(Feed $feed, array $old, array $new): array
+    {
+        [$oldSlots, $oldData] = $this->fieldsByPlace($old);
+        [$newSlots, $newData] = $this->fieldsByPlace($new);
+
+        $freed = array_diff(array_keys($oldSlots), array_keys($newSlots));
+
+        if ($freed !== []) {
+            $values = [];
+
+            foreach ($freed as $column) {
+                // bool-колонки не nullable: их умолчание — false
+                $values[$column] = str_starts_with($column, '__bool_') ? false : null;
+            }
+
+            FeedItem::query()->where('feed_id', $feed->id)->update($values);
+        }
+
+        $removed = array_diff(array_keys($oldData), array_keys($newData));
+
+        if ($removed === []) {
+            return [];
+        }
+
+        $feed->items()->chunkById(200, function ($items) use ($removed): void {
+            foreach ($items as $item) {
+                $data = $item->__data ?? [];
+                $left = array_diff_key($data, array_flip($removed));
+
+                if ($left !== $data) {
+                    $item->__data = $left;
+                    $item->save();
+                }
+            }
+        });
+
+        return array_values(array_filter(
+            $removed,
+            fn (string $code) => ($oldData[$code]['type'] ?? '') === 'image'
+        ));
+    }
+
+    /** column => field for slots, code => field for __data. */
+    protected function fieldsByPlace(array $schema): array
+    {
+        $slots = [];
+        $data  = [];
+
+        foreach ($schema['fields'] ?? [] as $field) {
+            $column = (string) ($field['column'] ?? '');
+
+            if ($column === '__data') {
+                foreach ($field['data'] ?? [] as $inner) {
+                    $data[(string) ($inner['code'] ?? '')] = $inner;
+                }
+
+                continue;
+            }
+
+            if ($column !== '') {
+                $slots[$column] = $field;
+            }
+        }
+
+        unset($data['']);
+
+        return [$slots, $data];
     }
 
     /**

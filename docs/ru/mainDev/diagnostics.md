@@ -122,6 +122,9 @@ rg -n 'warning|errorResponse|catch ' packages/dixipro/magicpro/admin/controller 
 - layout и include не запускают чужой controller;
 - анонимный, классовый и Livewire-компоненты;
 - чужой Livewire-компонент проходит через parent registry.
+- Livewire-компонент на `MagicProLivewire` рисует Blade своей статьи и
+  переживает переименование статьи; нажатие в компоненте (`/livewire/update`)
+  находит класс по имени `magic::`.
 
 ### Дерево
 
