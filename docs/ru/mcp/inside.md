@@ -148,6 +148,8 @@ Handle `magicpro`, используемый в конфиге и `mcp:start`, н
 | `feed-api-schema` | `FeedApiSchemaTool` | разрешённые команды `API_Feeds`, запрет у ленты с записями |
 | `read-file` | `ReadFileTool` | file manager `loadFile` |
 | `save-file` | `SaveFileTool` | file manager `saveFile` |
+| `list-dir` | `ListDirTool` | file manager `start` (без `path`) и `dirList` |
+| `make-dir` | `MakeDirTool` | file manager `mkdir` |
 
 В сервере нет зарегистрированных MCP resources или prompts. Документация
 отдаётся именно инструментами `list-docs` и `get-doc`.

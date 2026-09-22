@@ -32,9 +32,12 @@ class API_FileManagerPostController extends Controller
         }
 
         // start directory
-        $startDir = public_path(MagicGlobals::$INI['PUBLIC_UPLOAD_DIR']);
+        $startDir = rtrim(public_path(MagicGlobals::$INI['PUBLIC_UPLOAD_DIR']), DIRECTORY_SEPARATOR);
 
-        if (!str_starts_with($name, $startDir)) {
+        // the root itself or anything under it. A bare prefix check let in the
+        // neighbours of the root too: with /design, also public/designer and
+        // public/design-old
+        if ($name !== $startDir && !str_starts_with($name, $startDir . DIRECTORY_SEPARATOR)) {
             throw new \RuntimeException("access outside $startDir is forbidden");
         }
     }

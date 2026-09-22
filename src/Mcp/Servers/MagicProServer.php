@@ -19,7 +19,9 @@ use MagicProSrc\Mcp\Tools\GetArticleTool;
 use MagicProSrc\Mcp\Tools\GetArticleTreeTool;
 use MagicProSrc\Mcp\Tools\GetDocTool;
 use MagicProSrc\Mcp\Tools\GetProjectNameTool;
+use MagicProSrc\Mcp\Tools\ListDirTool;
 use MagicProSrc\Mcp\Tools\ListDocsTool;
+use MagicProSrc\Mcp\Tools\MakeDirTool;
 use MagicProSrc\Mcp\Tools\MoveArticleTool;
 use MagicProSrc\Mcp\Tools\ReadFileTool;
 use MagicProSrc\Mcp\Tools\SaveArticleTool;
@@ -60,6 +62,8 @@ class MagicProServer extends Server
         // файлы
         ReadFileTool::class,
         SaveFileTool::class,
+        ListDirTool::class,
+        MakeDirTool::class,
     ];
 
     /**

@@ -184,4 +184,5 @@ return [
     'auth_register_token_minutes' => 'Lifetime of the registration link, minutes',
     'auth_reset_password_token_minutes' => 'Lifetime of the password change link, minutes',
 
+
 ];

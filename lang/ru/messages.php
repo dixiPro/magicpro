@@ -184,4 +184,5 @@ return [
     'auth_register_token_minutes' => 'Срок ссылки регистрации, минуты',
     'auth_reset_password_token_minutes' => 'Срок ссылки смены пароля, минуты',
 
+
 ];
