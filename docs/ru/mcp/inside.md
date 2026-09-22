@@ -116,8 +116,15 @@ Handle `magicpro`, используемый в конфиге и `mcp:start`, н
 
 ## Реестр инструментов
 
-`MagicProServer::$tools` содержит 18 классов. Порядок влияет на порядок выдачи
-в `tools/list` и сгруппирован по назначению:
+`MagicProServer::$tools` содержит 22 класса. Порядок влияет на порядок выдачи
+в `tools/list` и сгруппирован по назначению.
+
+Весь список уходит одним ответом: `$defaultPaginationLength = 50`. Библиотека по
+умолчанию режет его по 15 и прячет остаток за `nextCursor`, а не каждый клиент
+ходит за следующей страницей — Codex брал только первую и не видел инструментов
+после пятнадцатого. Перевалит список за 50 — поднять и `$maxPaginationLength`.
+
+Группы:
 
 1. сведения о проекте;
 2. документация;
@@ -130,6 +137,7 @@ Handle `magicpro`, используемый в конфиге и `mcp:start`, н
 | MCP name | Класс | Внутренний вызов |
 | --- | --- | --- |
 | `get-project-name` | `GetProjectNameTool` | `config('app.name')` |
+| `get-version` | `GetVersionTool` | `MAGIC_VERSION` — та же константа, что в заголовке админки |
 | `list-docs` | `ListDocsTool` | `DocsTree::pages()` |
 | `get-doc` | `GetDocTool` | `MproHelper::getDoc()` |
 | `get-article` | `GetArticleTool` | articles `getById` |

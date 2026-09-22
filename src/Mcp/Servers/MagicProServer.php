@@ -19,6 +19,7 @@ use MagicProSrc\Mcp\Tools\GetArticleTool;
 use MagicProSrc\Mcp\Tools\GetArticleTreeTool;
 use MagicProSrc\Mcp\Tools\GetDocTool;
 use MagicProSrc\Mcp\Tools\GetProjectNameTool;
+use MagicProSrc\Mcp\Tools\GetVersionTool;
 use MagicProSrc\Mcp\Tools\ListDirTool;
 use MagicProSrc\Mcp\Tools\ListDocsTool;
 use MagicProSrc\Mcp\Tools\MakeDirTool;
@@ -30,8 +31,20 @@ use MagicProSrc\Mcp\Tools\SearchArticlesTool;
 
 class MagicProServer extends Server
 {
+    /**
+     * The whole list of tools in one answer to tools/list.
+     *
+     * The library cuts it into pages of 15 and leaves the rest behind
+     * nextCursor. Not every client walks the pages: Codex took only the first
+     * one, and everything after the fifteenth tool — feed-api-write, read-file,
+     * save-file and the rest — was simply not there for it. 50 is the ceiling
+     * the library allows by default.
+     */
+    public int $defaultPaginationLength = 50;
+
     protected array $tools = [
         GetProjectNameTool::class,
+        GetVersionTool::class,
 
         // документация пакета: агент по http файлов не видит
         ListDocsTool::class,
