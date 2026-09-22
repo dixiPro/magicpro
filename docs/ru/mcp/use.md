@@ -251,11 +251,14 @@ groupsList → groupCreate (если нужна новая) → feedCreate → f
 | --- | --- | --- |
 | `read-file` | `fileName` | `fileData` |
 | `save-file` | `fileName`, `fileData` | `status: 1` |
+| `create-file` | `fileName`, `fileData` (необязателен) | `created`, `size` |
 | `list-dir` | `path` (необязателен) | `path`, `items` |
 | `make-dir` | `folderName` | `created` |
 
 Разрешённые расширения: `txt`, `rtf`, `csv`, `css`, `js`, `json`, `xml`, `sql`,
-`md`. `save-file` не создаёт файл и заменяет существующий целиком. Статьи через
+`md`. `save-file` не создаёт файл и заменяет существующий целиком; новый файл
+создаёт `create-file` — сразу с содержимым, а существующий считает ошибкой и не
+трогает. Расширения у него те же. Статьи через
 эти инструменты не редактируются.
 
 Файл должен находиться внутри `public/` + `PUBLIC_UPLOAD_DIR`. Например,

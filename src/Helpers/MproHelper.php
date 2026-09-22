@@ -6,6 +6,7 @@ use MagicProSrc\Lenta\FeedText;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
+use League\CommonMark\Extension\HeadingPermalink\HeadingPermalinkExtension;
 use MagicProSrc\Api\API_SiteAuth;
 use MagicProSrc\Config\MagicGlobals;
 use MagicProSrc\Image\ImageJob;
@@ -122,10 +123,12 @@ class MproHelper
             return (string) file_get_contents($file);
         }
 
-        // the markdown is converted once per file version: mtime is part of the key
+        // the markdown is converted once per file version: mtime is part of the
+        // key. So is the version of the package — a change in how markdown is
+        // rendered would otherwise never reach a file that did not change
         return Cache::rememberForever(
-            'magicDoc:' . $lang . ':' . $name . ':' . filemtime($file),
-            fn() => Str::markdown(file_get_contents($file))
+            'magicDoc:' . $lang . ':' . $name . ':' . filemtime($file) . ':' . (defined('MAGIC_VERSION') ? MAGIC_VERSION : ''),
+            fn() => self::markdownWithAnchors(file_get_contents($file))
         );
     }
 
@@ -672,10 +675,66 @@ class MproHelper
             return '';
         }
 
-        return Str::markdown($md, [
+        return self::markdownWithAnchors($md, [
             'html_input'         => 'strip',
             'allow_unsafe_links' => false,
         ]);
+    }
+
+    // the prefix GitHub puts on the ids of a rendered markdown
+    private const ANCHOR_PREFIX = 'user-content';
+
+    /**
+     * Markdown to html with ids on the headings, the way GitHub does it.
+     *
+     * A README with a table of contents links to its own headings — `#-install`
+     * for «📦 Install» — and without ids on them those links lead nowhere. The
+     * slug is the one GitHub makes: the same library rule, emoji dropped,
+     * spaces to dashes, repeats numbered.
+     *
+     * The id carries the prefix `user-content-`, as on GitHub: a heading called
+     * «App» must not turn into id="app" and take the place of the element a
+     * script mounts into. The links inside the text are rewritten to the same
+     * prefix, so a file written for GitHub works here as it is.
+     */
+    private static function markdownWithAnchors(string $md, array $options = []): string
+    {
+        $html = (string) Str::markdown($md, $options + [
+            'heading_permalink' => [
+                'apply_id_to_heading' => true,
+                'insert'              => 'none',
+                'id_prefix'           => self::ANCHOR_PREFIX,
+                'min_heading_level'   => 1,
+                'max_heading_level'   => 6,
+            ],
+        ], [new HeadingPermalinkExtension()]);
+
+        return self::prefixInnerLinks($html);
+    }
+
+    /**
+     * `#-install` becomes `#user-content--install` — only where such a heading
+     * exists, so an anchor of something else on the page is left alone. The
+     * link comes percent-encoded (Cyrillic headings), the id does not: they
+     * are compared decoded.
+     */
+    private static function prefixInnerLinks(string $html): string
+    {
+        $prefix = self::ANCHOR_PREFIX . '-';
+
+        if (! preg_match_all('/\bid="' . preg_quote($prefix, '/') . '([^"]+)"/u', $html, $found)) {
+            return $html;
+        }
+
+        $ids = array_flip($found[1]);
+
+        return preg_replace_callback(
+            '/href="#([^"]+)"/',
+            fn(array $link) => isset($ids[rawurldecode($link[1])])
+                ? 'href="#' . $prefix . $link[1] . '"'
+                : $link[0],
+            $html
+        ) ?? $html;
     }
 
     // A closed table: what is in it gets translated, the rest is dropped. So the

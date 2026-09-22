@@ -13,7 +13,7 @@ use Laravel\Mcp\Server\Tool;
 use MagicProAdminControllers\API_FileManagerPostController;
 
 #[Name('save-file')]
-#[Description('Writes one file through the MagicPro file manager api, command saveFile. The whole file is replaced by the given contents, so read it with read-file first and send it back complete. The file has to exist already, this command does not create files. Only the extensions the file manager allows for editing can be written: txt, rtf, csv, css, js, json, xml, sql and md. Article blades and controllers are not files here, write those with save-article. Errors from the api are returned as tool errors.')]
+#[Description('Writes one file through the MagicPro file manager api, command saveFile. The whole file is replaced by the given contents, so read it with read-file first and send it back complete. The file has to exist already, this command does not create files — a new one is made by create-file. Only the extensions the file manager allows for editing can be written: txt, rtf, csv, css, js, json, xml, sql and md. Article blades and controllers are not files here, write those with save-article. Errors from the api are returned as tool errors.')]
 class SaveFileTool extends Tool
 {
     public function schema(JsonSchema $schema): array

@@ -271,7 +271,7 @@ class API_FileManagerPostController extends Controller
         $this->checkPath($fileName);
 
         if (File::exists($fileName)) {
-            throw new \RuntimeException("folder '{$fileName}' already exists");
+            throw new \RuntimeException("file '{$fileName}' already exists");
         }
 
         $this->validateEditExtension($fileName);

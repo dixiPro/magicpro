@@ -7,6 +7,7 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Contracts\Transport;
 use MagicProSrc\Mcp\Tools\CreateArticleTool;
+use MagicProSrc\Mcp\Tools\CreateFileTool;
 use MagicProSrc\Mcp\Tools\DeleteArticleTool;
 use MagicProSrc\Mcp\Tools\FeedApiTool;
 use MagicProSrc\Mcp\Tools\FeedApiWriteTool;
@@ -75,6 +76,7 @@ class MagicProServer extends Server
         // файлы
         ReadFileTool::class,
         SaveFileTool::class,
+        CreateFileTool::class,
         ListDirTool::class,
         MakeDirTool::class,
     ];

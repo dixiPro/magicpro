@@ -495,6 +495,7 @@ class Installer
             $this->ok('install_ok_php_extension', $extension);
         }
 
+        $this->checkStorage();
         $this->checkCron();
         $this->checkAwsHook();
         $this->checkAiConfig();
@@ -569,6 +570,143 @@ class Installer
             . "\n\nRun: `sudo apt install tmux`";
 
         $this->writeLog('tmux not found');
+    }
+
+    /**
+     * Where uploaded files live, and whether the site can give them out.
+     *
+     * On every visit, not only at installation: the link gets lost when a site
+     * is moved or restored from a copy, and then images are either not stored
+     * or stored and never shown — with nothing on the screen to say so. Three
+     * steps, each only after the one before: the link, a real write, and the
+     * file asked for by its url. Only the last proves that the web server
+     * follows the link.
+     */
+    private function checkStorage(): void
+    {
+        $dir = storage_path('app/public');
+
+        if ($this->checkStorageLink($dir) && $this->checkStorageWrite($dir)) {
+            $this->checkStorageHttp($dir);
+        }
+    }
+
+    private function checkStorageLink(string $dir): bool
+    {
+        $link = public_path('storage');
+        $fix  = 'cd ' . base_path() . ' && sudo -u www-data php artisan storage:link';
+
+        if (! is_link($link) && ! file_exists($link)) {
+            return $this->storageFail(
+                "**No link `public/storage`.** Uploaded images are not shown.\n\nRun: `{$fix}`",
+                'no link public/storage'
+            );
+        }
+
+        // a plain folder in place of the link: files go to storage/app/public
+        // and are looked for here, and storage:link refuses — the name is taken
+        if (! is_link($link)) {
+            return $this->storageFail(
+                "**`public/storage` is a folder, not a link.** Uploaded images are stored in `{$dir}` and never shown."
+                . "\n\nMove what is inside to `{$dir}`, remove the folder, then run: `{$fix}`",
+                'public/storage is a folder'
+            );
+        }
+
+        $points = (string) readlink($link);
+        $real   = realpath($link);
+
+        if ($real === false) {
+            return $this->storageFail(
+                "**The link `public/storage` is dead:** it points to `{$points}`, which does not exist."
+                . "\n\nRun: `rm {$link} && {$fix}`",
+                'dead link to ' . $points
+            );
+        }
+
+        if ($real !== realpath($dir)) {
+            return $this->storageFail(
+                "**The link `public/storage` points to `{$points}`,** not to `{$dir}`. Uploaded images are not shown."
+                . "\n\nRun: `rm {$link} && {$fix}`",
+                'link points to ' . $points
+            );
+        }
+
+        $this->ok('install_ok_storage_link', $points);
+
+        return true;
+    }
+
+    /** Only a real write tells: the folder may exist and still be closed for php. */
+    private function checkStorageWrite(string $dir): bool
+    {
+        $probe = $dir . DIRECTORY_SEPARATOR . 'magic_write_test.tmp';
+
+        if (@file_put_contents($probe, 'test') === false) {
+            return $this->storageFail(
+                "**Cannot write to** `{$dir}`. Images cannot be uploaded."
+                . "\n\nRun: `sudo chown -R :www-data {$dir} && sudo chmod -R g+w {$dir}`",
+                'cannot write ' . $dir
+            );
+        }
+
+        @unlink($probe);
+
+        $this->ok('install_ok_storage_write', $dir);
+
+        return true;
+    }
+
+    /**
+     * A file with a random name and a random body, asked for by its url. The
+     * body is compared, not only the status: the dynamic router of the site
+     * answers 200 with a page to any address it takes.
+     */
+    private function checkStorageHttp(string $dir): void
+    {
+        $name = 'magic_probe_' . Str::random(12) . '.txt';
+        $body = Str::random(32);
+        $file = $dir . DIRECTORY_SEPARATOR . $name;
+        $url  = url('storage/' . $name);
+
+        File::put($file, $body);
+
+        try {
+            $answer = Http::timeout(self::HOOK_TIMEOUT)->withoutRedirecting()->get($url);
+
+            $note = match (true) {
+                $answer->successful() && trim($answer->body()) === $body => null,
+                $answer->successful() => 'answers, but not with the file: another handler took the address',
+                $answer->status() === 403 => 'answers 403: the web server does not follow the link (nginx disable_symlinks, Apache FollowSymLinks)',
+                $answer->status() === 404 => 'answers 404: the web server does not see the file behind the link',
+                default => 'answers ' . $answer->status(),
+            };
+        } catch (\Throwable $e) {
+            $note = 'does not answer: ' . $e->getMessage();
+        } finally {
+            @unlink($file);
+        }
+
+        if ($note === null) {
+            $this->ok('install_ok_storage_http', url('storage'));
+
+            return;
+        }
+
+        $this->storageFail(
+            "**A file in storage {$note}.** `{$url}`"
+            . "\n\nThe file is written, but the site does not give it out: uploaded images are not shown.",
+            'http ' . $note
+        );
+    }
+
+    /** One shape for every trouble of storage: a message and a line in the log. */
+    private function storageFail(string $message, string $log): bool
+    {
+        $this->msgArr[] = $message;
+        $this->writeLog('storage: ' . $log);
+
+        return false;
     }
 
     /**
