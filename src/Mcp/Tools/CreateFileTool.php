@@ -13,7 +13,7 @@ use Laravel\Mcp\Server\Tool;
 use MagicProAdminControllers\API_FileManagerPostController;
 
 #[Name('create-file')]
-#[Description('Creates a new file through the MagicPro file manager api, commands mkfile and then saveFile, and fills it with the given contents in the same call. The file has to be inside the upload directory of the file manager — the setting PUBLIC_UPLOAD_DIR, /design by default; find the place with list-dir, make the folder with make-dir. Only the extensions the file manager allows for editing: txt, rtf, csv, css, js, json, xml, sql and md. A file that already exists is an error and stays untouched — change it with save-file. Article blades and controllers are not files here, write those with save-article. Errors from the api are returned as tool errors.')]
+#[Description('Creates a new file through the MagicPro file manager api, commands mkfile and then saveFile, and fills it with the given contents in the same call. The file has to be inside the upload directory of the file manager — the setting PUBLIC_UPLOAD_DIR, /design by default; find the place with list-dir, make the folder with make-dir. Only the extensions the file manager allows for editing: txt, rtf, csv, css, js, json, xml, sql, md and webmanifest. A file that already exists is an error and stays untouched — change it with save-file. Article blades and controllers are not files here, write those with save-article. Errors from the api are returned as tool errors.')]
 class CreateFileTool extends Tool
 {
     public function schema(JsonSchema $schema): array

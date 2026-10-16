@@ -172,6 +172,9 @@ class MagicServiceProvider extends ServiceProvider
         // почта из .env через config(): env() вне конфига после config:cache
         // пуст, см. src/Config/magicMail.php
         $this->mergeConfigFrom(__DIR__ . '/Config/magicMail.php', 'magicpro_mail');
+
+        // чат и бот телеграма — тем же способом и по той же причине
+        $this->mergeConfigFrom(__DIR__ . '/Config/magicTelegram.php', 'magicpro_telegram');
         MagicLang::loadLocale(MagicGlobals::$INI['LANGUAGE']);
     }
 }

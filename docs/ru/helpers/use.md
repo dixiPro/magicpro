@@ -87,7 +87,8 @@ MproHelper::verifyRecapture(string $response): bool
 ошибка сети даёт `false`.
 
 `$response` — токен из формы. Секретный ключ берётся из
-`RECAPTCHA_SECRET_KEY` внутри и не передаётся.
+`RECAPTCHA_SECRET_KEY` внутри и не передаётся. Ключ пустой — ошибка
+сервера 500.
 
 ### sendMail
 
@@ -148,13 +149,22 @@ MproHelper::addLog(string $logName, array|string $data): void
 ### telegramSend
 
 ```php
-MproHelper::telegramSend(string $message, string $chat_id, string $botToken, string $mode = 'HTML'): array
+MproHelper::telegramSend(string $message, string $chat_id = '', string $botToken = '', string $mode = 'HTML'): array
 ```
 
 Шлёт сообщение в телеграм. Возвращает ответ телеграма как есть, запись
 уходит в лог `telegram`.
 
-`$message` — текст, `$chat_id` — чат, `$botToken` — токен бота,
+Обязателен только текст:
+
+    MproHelper::telegramSend('Заявка с сайта');
+
+`$chat_id` и `$botToken` не переданы или пусты — берутся из `.env`
+(`TELEGRAM_CHAT_ID`, `TELEGRAM_BOT_TOKEN`). Передавать их нужно только
+тогда, когда сообщение уходит не в основной чат, например у формы свой
+бот. Ни там, ни там нет — сообщение не отправляется, в ответе
+`ok: false`, причина в логе `telegram`.
+
 `$mode` — разметка текста: `HTML` или `Markdown`.
 
 ### crypt

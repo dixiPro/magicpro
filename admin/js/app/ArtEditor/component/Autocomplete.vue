@@ -3,12 +3,14 @@ import { ref, computed, onMounted, onUnmounted, watch, reactive, nextTick, toRaw
 import { useArticleStore } from '../store';
 const store = useArticleStore();
 
+import Snippets from './Snippets.vue';
+
 import { useI18n } from 'vue-i18n';
 const { t } = useI18n();
 </script>
 
 <template>
-  <Drawer v-model:visible="store.statusAutocompletePannel" :header="t('autocomplete_controller')" position="bottom" style="width: 700px; height: 50%">
+  <Drawer v-model:visible="store.statusAutocompletePannel" :header="t('autocomplete_controller')" position="right" style="width: 700px">
     <div class="">
       <div class="">
         <button class="btn btn-success btn-sm" @click="store.getController()">{{ t('autocomplete_simple_controller') }}</button>
@@ -16,6 +18,10 @@ const { t } = useI18n();
       <div class="my-2">
         <button class="btn btn-success btn-sm" @click="store.getLivewireController()">{{ t('autocomplete_livewire_controller') }}</button>
       </div>
+
+      <hr />
+
+      <Snippets :visible="store.statusAutocompletePannel" />
     </div>
   </Drawer>
 </template>

@@ -26,6 +26,7 @@ return [
     'import_tab' => 'Import',
     'cache' => 'Cache',
     'cache_clear' => 'Clear cache',
+    'config_cache_stale' => 'The settings changed after caching — clear the cache',
     'cahceDelteResult' => 'Cache clear result: 0 - success',
     'config' => 'Config',
     'routes' => 'Routes',

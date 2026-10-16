@@ -8,6 +8,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use MagicProSrc\Config\MagicGlobals; // global constants
+use MagicProSrc\Image\ImageEncoder;
+use MagicProSrc\Image\ImageJob;
 use MagicProSrc\MagicFile;
 
 
@@ -52,6 +54,7 @@ class API_FileManagerPostController extends Controller
                 'mkfile'   => ['name' => 'mkfile'],
                 'upload'  => ['name' => 'upload'],
                 'uploadBin'  => ['name' => 'uploadBin'],
+                'uploadImage'  => ['name' => 'uploadImage'],
                 'delete'  => ['name' => 'delete'],
                 'rename'  => ['name' => 'rename'],
                 'loadFile'  => ['name' => 'loadFile'],
@@ -299,13 +302,23 @@ class API_FileManagerPostController extends Controller
 
         $fullPath = rtrim($basePath, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $fileName;
 
+        $this->streamToFile($fullPath);
+
+        chmod($fullPath, 0644);
+
+        return $this->fileItem($fullPath, $fileName);
+    }
+
+    // ==================================
+    // ⬆️ the body of the request into a file, as it comes
+    private function streamToFile(string $fullPath): void
+    {
         $stream = fopen('php://input', 'rb');
         $dest   = fopen($fullPath, 'wb');
 
         if (!$stream || !$dest) {
             throw new \RuntimeException('failed to open streams');
         }
-
 
         while (!feof($stream)) {
             $chunk = fread($stream, 8192);
@@ -315,18 +328,20 @@ class API_FileManagerPostController extends Controller
 
         fclose($stream);
         fclose($dest);
+    }
 
-        chmod($fullPath, 0644);
-
-        $mime  = mime_content_type($fullPath) ?: 'application/octet-stream';
-        $size  = filesize($fullPath);
-        $mtime = date('U', filemtime($fullPath));
+    // ==================================
+    // 📄 one file as the manager shows it: name, mime, size, and for a picture
+    // its width and height
+    private function fileItem(string $fullPath, string $fileName): array
+    {
+        $mime = mime_content_type($fullPath) ?: 'application/octet-stream';
 
         $item = [
             'name'  => $fileName,
             'type'  => 'file',
             'mime'  => $mime,
-            'size'  => $size,
+            'size'  => filesize($fullPath),
             'mtime' => date('Y-m-d H:i:s', filemtime($fullPath)),
             'date'  => date('U', filemtime($fullPath)),
         ];
@@ -341,6 +356,67 @@ class API_FileManagerPostController extends Controller
         }
 
         return $item;
+    }
+
+    // ==================================
+    // 🖼 a picture: the browser sends pixels, the server encodes them
+    //
+    // A browser cannot encode avif at all and encodes webp its own way, so the
+    // crop arrives as png and the working format is made here by the tools of
+    // the resizer — the same road the feeds take with a crop of theirs.
+    private function uploadImage(Request $request): array
+    {
+        $basePath = public_path($request->string('path')->toString());
+        $this->checkPath($basePath);
+
+        if (!is_dir($basePath)) {
+            throw new \InvalidArgumentException("path '{$basePath}' does not exist");
+        }
+
+        $format = strtolower($request->string('format')->toString() ?: 'webp');
+
+        if (!in_array($format, ['webp', 'avif', 'jpg', 'png'], true)) {
+            throw new \InvalidArgumentException("unknown format '{$format}'");
+        }
+
+        // no quality of its own — the settings of the resizer decide
+        $quality = (int) ($request->input('quality') ?: ImageJob::defaultQuality($format));
+
+        // the extension is ours, whatever the name says: the file is what the
+        // encoder makes of it
+        $fileName = pathinfo($request->string('filename')->toString() ?: 'image', PATHINFO_FILENAME) . '.' . $format;
+
+        $this->validateExtension($fileName);
+
+        $fullPath = rtrim($basePath, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $fileName;
+
+        // libvips picks the encoder by the extension, so the pixels that came
+        // in wait in a png of their own
+        $source = sys_get_temp_dir() . DIRECTORY_SEPARATOR . uniqid('magicImage_', true) . '.png';
+
+        $this->streamToFile($source);
+
+        try {
+            $dim = @getimagesize($source);
+
+            if ($dim === false) {
+                throw new \RuntimeException('the uploaded data is not a picture');
+            }
+
+            // the size is the one that came: the browser has already cropped
+            // and scaled, here it is only re-encoded
+            $made = ImageEncoder::make($source, $fullPath, 'x', (int) $dim[0], $format, $quality);
+
+            if ($made['error'] !== '') {
+                throw new \RuntimeException($made['error']);
+            }
+        } finally {
+            @unlink($source);
+        }
+
+        chmod($fullPath, 0644);
+
+        return $this->fileItem($fullPath, $fileName);
     }
 
     // ==================================
@@ -458,6 +534,7 @@ class API_FileManagerPostController extends Controller
             'png',
             'gif',
             'webp',
+            'avif',
             'svg',
             'ico',
             'psd',
@@ -503,6 +580,7 @@ class API_FileManagerPostController extends Controller
             'xml',
             'sql',
             'md',
+            'webmanifest',
             // other
             'ics',
             'vcf',
@@ -517,16 +595,47 @@ class API_FileManagerPostController extends Controller
     // ⬆️ edit extension validation
     private function validateEditExtension(string $fileName): void
     {
+        // no dot in the name — no extension to check. Such a file is plain
+        // text for the web server and is never executed, and names like
+        // LICENSE or CHANGELOG have to be possible
+        if (! str_contains(basename($fileName), '.')) {
+            return;
+        }
+
         $allowed = [
+            // plain text and markup
             'txt',
             'rtf',
-            'csv',
-            'css',
-            'js',
-            'json',
-            'xml',
-            'sql',
             'md',
+            'html',
+            'htm',
+            'xhtml',
+            'xml',
+            'svg',
+            // styles
+            'css',
+            'scss',
+            'sass',
+            'less',
+            // scripts
+            'js',
+            'mjs',
+            'cjs',
+            'ts',
+            'tsx',
+            'jsx',
+            'vue',
+            'map',
+            // data
+            'json',
+            'json5',
+            'jsonld',
+            'csv',
+            'tsv',
+            'sql',
+            'webmanifest',
+            // the settings of the web server for this folder
+            'htaccess',
         ];
         $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
 

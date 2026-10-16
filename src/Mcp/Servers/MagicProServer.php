@@ -29,6 +29,7 @@ use MagicProSrc\Mcp\Tools\ReadFileTool;
 use MagicProSrc\Mcp\Tools\SaveArticleTool;
 use MagicProSrc\Mcp\Tools\SaveFileTool;
 use MagicProSrc\Mcp\Tools\SearchArticlesTool;
+use MagicProSrc\Mcp\Tools\UploadFileTool;
 
 class MagicProServer extends Server
 {
@@ -77,6 +78,7 @@ class MagicProServer extends Server
         ReadFileTool::class,
         SaveFileTool::class,
         CreateFileTool::class,
+        UploadFileTool::class,
         ListDirTool::class,
         MakeDirTool::class,
     ];

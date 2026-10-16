@@ -26,6 +26,7 @@ return [
     'import_tab' => 'Import',
     'cache' => 'кеш',
     'cache_clear' => 'Очистить кеш',
+    'config_cache_stale' => 'Настройки изменены после кеширования — сбросьте кеш',
     'cahceDelteResult' => 'Результат очистки кеша: 0 - успех',
     'config' => 'конфиг',
     'routes' => 'маршруты',

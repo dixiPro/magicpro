@@ -40,6 +40,15 @@
                     </div>
                 </div>
             </div>
+            {{-- настройки правили после того, как конфигурацию закешировали:
+                 до сброса кеша сайт живёт на старых значениях и молчит об этом --}}
+            @if (\MagicProSrc\Config\MagicGlobals::configCacheStale())
+                <div class="bg-danger text-white py-2 px-3 d-flex flex-wrap align-items-center justify-content-center gap-2">
+                    <strong>@magic_msg('config_cache_stale')</strong>
+                    <a class="btn btn-sm btn-light" href="{{ route('magic.cleatCahe') }}">@magic_msg('cache_clear')</a>
+                </div>
+            @endif
+
             @if ($GLOBALS['nolfetMenu'] ?? false == true)
                 @yield('body') @hasSection('script')
                     @yield('script')

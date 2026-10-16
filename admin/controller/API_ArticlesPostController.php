@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use MagicProDatabaseModels\Article;
 use MagicProSrc\Archive\ArticleArchive;
+use MagicProSrc\Config\MagicGlobals;
 
 require_once __DIR__ . '/MagicProBuilder.php';
 
@@ -34,6 +35,10 @@ class API_ArticlesPostController extends AbstractApiHandler
         'versionRestore'               => 'versionRestore',
         'archiveInfo'                  => 'archiveInfo',
         'archivePurgeDeleted'          => 'archivePurgeDeleted',
+        'snippetList'                  => 'snippetList',
+        'snippetGet'                   => 'snippetGet',
+        'snippetSave'                  => 'snippetSave',
+        'snippetDelete'                => 'snippetDelete',
     ];
 
 
@@ -232,6 +237,97 @@ class API_ArticlesPostController extends AbstractApiHandler
             'controller' => readDefaultLivewireController(),
             'body'       => readDefaultLivewireView(),
         ];
+    }
+
+    // ==================================================================
+    //                     snippets of the editor
+    // ==================================================================
+
+    /**
+     * Blade snippets a person writes for themselves: one file per snippet in
+     * storage/app/private/magic/snippets, the name of the file is the name of
+     * the snippet.
+     *
+     * A file and not one json on purpose: a blade is full of quotes and curly
+     * braces, here nothing has to be escaped, a snippet can be copied by hand,
+     * and a broken one does not take the others with it.
+     */
+    private function snippetDir(): string
+    {
+        $dir = base_path(MagicGlobals::$magicStorageDir) . 'snippets';
+
+        if (! is_dir($dir)) {
+            mkdir($dir, 0775, true);
+        }
+
+        return $dir;
+    }
+
+    /** Latin letters, digits, underscore and hyphen — nothing else: the name is a file name. */
+    private function snippetPath(string $name): string
+    {
+        $name = trim($name);
+
+        if (! preg_match('/^[A-Za-z0-9_-]+$/', $name)) {
+            throw new \InvalidArgumentException('invalid snippet name: ' . $name);
+        }
+
+        return $this->snippetDir() . DIRECTORY_SEPARATOR . $name . '.blade';
+    }
+
+    protected function snippetList(): array
+    {
+        $names = [];
+
+        foreach (glob($this->snippetDir() . DIRECTORY_SEPARATOR . '*.blade') ?: [] as $file) {
+            $names[] = basename($file, '.blade');
+        }
+
+        sort($names, SORT_NATURAL | SORT_FLAG_CASE);
+
+        return ['snippets' => $names];
+    }
+
+    protected function snippetGet(Request $request): array
+    {
+        $name = $request->string('name')->toString();
+        $path = $this->snippetPath($name);
+
+        if (! is_file($path)) {
+            throw new \RuntimeException('snippet not found: ' . $name);
+        }
+
+        return ['name' => $name, 'text' => (string) file_get_contents($path)];
+    }
+
+    protected function snippetSave(Request $request): array
+    {
+        $name = $request->string('name')->toString();
+        $path = $this->snippetPath($name);
+
+        // переименование — это запись под новым именем и удаление старого:
+        // старое имя приезжает отдельным полем
+        $was = $request->string('oldName')->toString();
+
+        file_put_contents($path, (string) $request->input('text', ''));
+
+        if ($was !== '' && $was !== $name) {
+            @unlink($this->snippetPath($was));
+        }
+
+        return ['name' => $name];
+    }
+
+    protected function snippetDelete(Request $request): array
+    {
+        $name = $request->string('name')->toString();
+        $path = $this->snippetPath($name);
+
+        if (is_file($path)) {
+            unlink($path);
+        }
+
+        return ['deleted' => $name];
     }
 
     protected function copyRec(Request $request): array

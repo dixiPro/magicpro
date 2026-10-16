@@ -13,7 +13,7 @@ use Laravel\Mcp\Server\Tool;
 use MagicProAdminControllers\API_FileManagerPostController;
 
 #[Name('read-file')]
-#[Description('Reads one file through the MagicPro file manager api, command loadFile. Returns the contents in the fileData field. Only the extensions the file manager allows for editing can be read: txt, rtf, csv, css, js, json, xml, sql and md. Article blades and controllers are not files here, read those with get-article. Errors from the api are returned as tool errors.')]
+#[Description('Reads one file through the MagicPro file manager api, command loadFile. Returns the contents in the fileData field. Only the extensions the file manager allows for editing can be read: txt, rtf, csv, css, js, json, xml, sql, md and webmanifest. Article blades and controllers are not files here, read those with get-article. Errors from the api are returned as tool errors.')]
 class ReadFileTool extends Tool
 {
     public function schema(JsonSchema $schema): array

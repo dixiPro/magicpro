@@ -34,6 +34,8 @@ export const TEXT = {
   required: 'Required',
   shrunk: 'Shrunk for processing',
   resize: 'Resize down',
+  ratio: 'Proportion',
+  ratioFree: 'free',
   loadFailed: 'This file could not be read as a picture',
   encodeFailed: 'The browser could not encode the picture',
   badParams: 'Invalid parameters: the component cannot work with them',

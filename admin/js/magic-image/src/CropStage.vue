@@ -10,6 +10,7 @@ import { Cropper } from 'vue-advanced-cropper';
 import 'vue-advanced-cropper/dist/style.css';
 
 import { TEXT } from './lib/text.js';
+import { parseRatio } from './lib/plan.js';
 import { shrinkTo } from './lib/pixels.js';
 import './assets/style.css';
 
@@ -36,7 +37,18 @@ const resizeSize = ref({ width: 0, height: 0 });
 // the checkbox makes no sense in fixed: the size is set by the props
 const resizeAllowed = computed(() => props.plan.mode !== 'fixed');
 
-const aspectRatio = computed(() => props.plan.ratio ?? undefined);
+/**
+ * Proportions offered when the owner named none: the stencil is free by
+ * default, and these are the shapes a person reaches for anyway. A proportion
+ * that came from the props rules alone — the list is not shown at all then.
+ */
+const RATIOS = ['1/1', '16/9', '9/16', '4/3', '3/4'];
+
+const picked = ref('');
+
+const ratioChoice = computed(() => !props.plan.ratio);
+
+const aspectRatio = computed(() => props.plan.ratio ?? parseRatio(picked.value) ?? undefined);
 
 function onCropChange({ canvas }) {
   if (!canvas) return;
@@ -142,7 +154,15 @@ defineExpose({ getCanvas });
 <template>
   <div class="magic-image__body">
     <div class="magic-image__view">
-      <Cropper ref="cropperRef" :src="src" :stencil-props="{ aspectRatio: aspectRatio }" :debounce="0" class="magic-image__cropper" @change="onCropChange" />
+      <Cropper
+        ref="cropperRef"
+        :key="aspectRatio ?? 'free'"
+        :src="src"
+        :stencil-props="{ aspectRatio: aspectRatio }"
+        :debounce="0"
+        class="magic-image__cropper"
+        @change="onCropChange"
+      />
     </div>
 
     <div class="magic-image__panel">
@@ -151,6 +171,14 @@ defineExpose({ getCanvas });
 
         <div v-if="cropWidth">{{ TEXT.crop }}: {{ cropWidth }} × {{ cropHeight }}</div>
         <div v-if="plan.width">{{ TEXT.required }}: {{ plan.width }} × {{ plan.height }}</div>
+      </div>
+
+      <div v-if="ratioChoice" class="magic-image__ratio">
+        {{ TEXT.ratio }}
+        <select class="mi-input ms-1" v-model="picked">
+          <option value="">{{ TEXT.ratioFree }}</option>
+          <option v-for="value in RATIOS" :key="value" :value="value">{{ value }}</option>
+        </select>
       </div>
 
       <div v-if="resizeAllowed" class="magic-image__resize">
@@ -191,7 +219,8 @@ defineExpose({ getCanvas });
   color: #666;
 }
 
-.magic-image__resize {
+.magic-image__resize,
+.magic-image__ratio {
   margin: 0.25rem 0;
   color: #000;
 }

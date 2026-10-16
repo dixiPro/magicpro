@@ -2,14 +2,25 @@
 
 > **Vue 3 image input, crop and adjustment component with clipboard support.**
 
+[![npm](https://img.shields.io/npm/v/@dixipro/magic-image?color=cb3837&logo=npm)](https://www.npmjs.com/package/@dixipro/magic-image)
+[![downloads](https://img.shields.io/npm/dm/@dixipro/magic-image?color=cb3837)](https://www.npmjs.com/package/@dixipro/magic-image)
+[![license](https://img.shields.io/npm/l/@dixipro/magic-image?color=3da639)](LICENSE)
+[![Live demo](https://img.shields.io/badge/demo-live-ff5a5f)](https://magicimage.dixipro.net/demo)
 ![Vue 3](https://img.shields.io/badge/Vue-3-42b883?logo=vuedotjs&logoColor=white)
 ![Client side](https://img.shields.io/badge/client--side-only-4c8bf5)
 ![No backend](https://img.shields.io/badge/backend-not%20required-6c757d)
 ![PNG](https://img.shields.io/badge/output-PNG-6f42c1)
 ![JPEG](https://img.shields.io/badge/output-JPEG-f0ad4e)
 ![WebP](https://img.shields.io/badge/output-WebP-198754)
+[![Donate](https://img.shields.io/badge/donate-%E2%9D%A4-e25555)](https://magicimage.dixipro.net/donate)
+
+[![MagicImage: upload or paste, crop and adjust, export the result](media/interface.webp)](https://magicimage.dixipro.net/demo)
 
 **Upload · Clipboard · Crop · Levels · Brightness · Contrast · Saturation · Sharpen · Resize · PNG / JPEG / WebP**
+
+### 👉 [Try the live demo](https://magicimage.dixipro.net/demo)
+
+Pick a case, load a picture, tune it, crop it and download the two files — nothing leaves the browser.
 
 ## Why MagicImage?
 
@@ -53,6 +64,7 @@ The component knows nothing about servers. The result leaves through a `save` ev
 
 ## 🧭 Contents
 
+- [Live demo ↗](https://magicimage.dixipro.net/demo)
 - [Install](#-install)
 - [Quick start](#-quick-start)
 - [How it works](#-how-it-works)
@@ -64,11 +76,13 @@ The component knows nothing about servers. The result leaves through a `save` ev
 - [Continue and status](#-continue-and-status)
 - [Events](#-events)
 - [Slots](#-slots)
+- [Text and translation](#-text-and-translation)
 - [Errors](#-errors)
 - [File names](#-file-names)
 - [Clipboard](#-clipboard)
 - [Architecture](#-architecture)
 - [Development](#-development)
+- [Donate](#-donate)
 
 ---
 
@@ -78,13 +92,7 @@ The component knows nothing about servers. The result leaves through a `save` ev
 npm i @dixipro/magic-image
 ```
 
-> ⚠️ **Not published yet.**
->
-> Until the first release, copy the `src/` folder into your project and import the component by a relative path.
-
-```js
-import MagicImage from './magic-image/src/MagicImage.vue';
-```
+[On npm](https://www.npmjs.com/package/@dixipro/magic-image).
 
 `vue` and `vue-advanced-cropper` are peer dependencies. MagicImage uses the copies already installed in the host project.
 
@@ -236,7 +244,7 @@ Until the switch is enabled, the tab affects neither preview nor output.
 
 `cropX` and `cropY` are ignored.
 
-With `cropRatio`, the stencil keeps the requested proportion. Without it, the stencil is free.
+With `cropRatio`, the stencil keeps the requested proportion. Without it, the stencil is free and the crop stage offers a list of proportions — free, `1/1`, `16/9`, `9/16`, `4/3`, `3/4` — so a person can pick one on the spot. A proportion given by the props leaves no list: it is the answer.
 
 The result leaves at the current stencil size.
 
@@ -414,6 +422,37 @@ The status line remains visible either way.
 
 ---
 
+## 🌍 Text and translation
+
+Every word the component says lives in one file:
+
+```text
+src/lib/text.js
+```
+
+It is a single object, English by default — the buttons, the tab titles, the
+labels of the sliders, the status line, the hints of the Sharpen tab and every
+error message. Nothing outside that file is shown to the user, and the component
+carries no i18n library: translating it means translating one object.
+
+```js
+export const TEXT = {
+  pick: 'Upload',
+  pasteHere: 'Click here and press Ctrl-V',
+  light: 'Light',
+  // …
+  ready: 'Ready to save',
+};
+```
+
+To translate, copy the `src/` folder into your project and change that file.
+
+> ⚠️ **Installed from npm, the file sits in `node_modules` and must not be
+> edited** — the next install wipes it. Until the component takes the words as a
+> prop, a translated copy means copying the folder.
+
+---
+
 ## ⚠️ Errors
 
 Errors are shown inside the component instead of the action buttons.
@@ -504,11 +543,17 @@ src/
 test/
   plan.test.js          crop-mode cases
 
-App.vue                 demo page
-DemoParams.vue          demo controls
-ShowResult.vue          last save result
-InstallMagicImage.vue   install/example output
-demoProps.js            demo-side prop definitions
+demo/
+  main.js               mounts the demo page
+  App.vue               the state of the page and which part is on screen
+  DemoParams.vue        cases, parameter fields and the «Go» button
+  ShowResult.vue        the two files of the last save, with downloads
+  UsageSnippet.vue      the install command and the call for the chosen case
+  demoProps.js          prop defaults, cases and mode descriptions
+
+index.html              the entry point of Vite
+media/
+  interface.webp        the cover of the README
 ```
 
 ### `MagicImage.vue`
@@ -618,26 +663,15 @@ npm run build
 npm test
 ```
 
-| Command         | Purpose                                   |
-| --------------- | ----------------------------------------- |
-| `npm run dev`   | run the demo                              |
-| `npm run build` | build the demo into `public/magic-image/` |
-| `npm test`      | run crop-mode tests in Node               |
+| Command         | Purpose                            |
+| --------------- | ---------------------------------- |
+| `npm run dev`   | run the demo                       |
+| `npm run build` | build the demo into `dist/`        |
+| `npm test`      | run crop-mode tests in Node        |
 
-`vite.config.js` exists only for the local demo.
-
-Its paths currently point into MagicPro, where this component originated:
-
-- dependencies are taken from MagicPro's `node_modules`;
-- the demo build is written into MagicPro's `public` directory.
-
-Outside MagicPro, those paths must be changed.
-
-Inside MagicPro the component is imported by relative path:
-
-```text
-admin/js/magic-image/src/MagicImage.vue
-```
+`vite.config.js` builds the demo page and nothing else: plain Vite defaults, no
+paths to set up. The component itself needs no build — it ships as source and
+is compiled by the bundler of the project that installs it.
 
 `npm publish` sends only:
 
@@ -648,6 +682,16 @@ LICENSE
 ```
 
 as defined by `files` in `package.json`.
+
+---
+
+## 🙏 Donate
+
+Saved you some time? I’d really appreciate your support.
+
+**[Donate](https://magicimage.dixipro.net/donate)**
+
+Every contribution is appreciated.
 
 ---
 

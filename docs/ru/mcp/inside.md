@@ -116,7 +116,7 @@ Handle `magicpro`, используемый в конфиге и `mcp:start`, н
 
 ## Реестр инструментов
 
-`MagicProServer::$tools` содержит 23 класса. Порядок влияет на порядок выдачи
+`MagicProServer::$tools` содержит 24 класса. Порядок влияет на порядок выдачи
 в `tools/list` и сгруппирован по назначению.
 
 Весь список уходит одним ответом: `$defaultPaginationLength = 50`. Библиотека по
@@ -157,6 +157,7 @@ Handle `magicpro`, используемый в конфиге и `mcp:start`, н
 | `read-file` | `ReadFileTool` | file manager `loadFile` |
 | `save-file` | `SaveFileTool` | file manager `saveFile` |
 | `create-file` | `CreateFileTool` | file manager `mkfile`, затем `saveFile` |
+| `upload-file` | `UploadFileTool` | file manager `upload`, содержимое в base64 |
 | `list-dir` | `ListDirTool` | file manager `start` (без `path`) и `dirList` |
 | `make-dir` | `MakeDirTool` | file manager `mkdir` |
 

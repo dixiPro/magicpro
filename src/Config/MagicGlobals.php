@@ -34,6 +34,40 @@ class MagicGlobals
             : \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class;
     }
 
+    /**
+     * The cached configuration is older than the settings it was built from.
+     *
+     * `config:cache` freezes .env and every config file into one array, and
+     * from that moment nothing else is read. So a person who edits .env — a
+     * password, a key, an address — changes nothing until the cache is
+     * dropped, and the site keeps working on the old values without a word.
+     *
+     * Time of the files answers it exactly: no cache — nothing to be stale.
+     */
+    public static function configCacheStale(): bool
+    {
+        $cache = base_path('bootstrap/cache/config.php');
+
+        if (! is_file($cache)) {
+            return false;
+        }
+
+        $cachedAt = filemtime($cache);
+
+        // .env and the config files: any of them newer means the cache is
+        // behind, and the reason is the same for all of them
+        $sources = glob(config_path('*.php')) ?: [];
+        $sources[] = base_path('.env');
+
+        foreach ($sources as $file) {
+            if (is_file($file) && filemtime($file) > $cachedAt) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public static function register(): void
     {
         // загрузить файлы из локального ини

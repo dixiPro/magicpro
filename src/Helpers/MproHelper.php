@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use League\CommonMark\Extension\HeadingPermalink\HeadingPermalinkExtension;
+use League\CommonMark\Normalizer\SlugNormalizer;
+use League\CommonMark\Normalizer\TextNormalizerInterface;
 use MagicProSrc\Api\API_SiteAuth;
 use MagicProSrc\Config\MagicGlobals;
 use MagicProSrc\Image\ImageJob;
@@ -343,18 +345,50 @@ class MproHelper
      * Шлёт сообщение в телеграм. Возвращает ответ телеграма как есть, запись
      * уходит в лог `telegram`.
      *
-     * `$message` — текст, `$chat_id` — чат, `$botToken` — токен бота,
+     * Обязателен только текст:
+     *
+     *     MproHelper::telegramSend('Заявка с сайта');
+     *
+     * `$chat_id` и `$botToken` не переданы или пусты — берутся из `.env`
+     * (`TELEGRAM_CHAT_ID`, `TELEGRAM_BOT_TOKEN`). Передавать их нужно только
+     * тогда, когда сообщение уходит не в основной чат, например у формы свой
+     * бот. Ни там, ни там нет — сообщение не отправляется, в ответе
+     * `ok: false`, причина в логе `telegram`.
+     *
      * `$mode` — разметка текста: `HTML` или `Markdown`.
      *
      * @en
      * Sends a message to telegram. Returns the answer of telegram as it is, and
      * writes a line into the `telegram` log.
      *
-     * `$message` — the text, `$chat_id` — the chat, `$botToken` — the token of
-     * the bot, `$mode` — markup of the text: `HTML` or `Markdown`.
+     * Only the text is required:
+     *
+     *     MproHelper::telegramSend('A request from the site');
+     *
+     * `$chat_id` and `$botToken` left out or empty are taken from `.env`
+     * (`TELEGRAM_CHAT_ID`, `TELEGRAM_BOT_TOKEN`); pass them only when the
+     * message goes somewhere else, say a form with a bot of its own. Missing in
+     * both places — nothing is sent, the answer is `ok: false` and the reason
+     * goes into the `telegram` log.
+     *
+     * `$mode` — markup of the text: `HTML` or `Markdown`.
      */
-    public static function telegramSend(string $message, string $chat_id, string $botToken, string $mode = 'HTML'): array
+    public static function telegramSend(string $message, string $chat_id = '', string $botToken = '', string $mode = 'HTML'): array
     {
+        $chat_id = trim($chat_id) !== '' ? trim($chat_id) : (string) config('magicpro_telegram.chat_id');
+        $botToken = trim($botToken) !== '' ? trim($botToken) : (string) config('magicpro_telegram.bot_token');
+
+        // не настроено — это не ошибка вызова: сайт просто не пользуется
+        // телеграмом, и звать api незачем
+        if ($chat_id === '' || $botToken === '') {
+            self::addLog('telegram', [
+                'status' => false,
+                'error'  => 'telegram is not configured: TELEGRAM_CHAT_ID or TELEGRAM_BOT_TOKEN is empty',
+            ]);
+
+            return ['ok' => false, 'description' => 'telegram is not configured'];
+        }
+
         $url = 'https://api.telegram.org/bot' . $botToken . '/sendMessage';
 
         try {
@@ -700,6 +734,7 @@ class MproHelper
     private static function markdownWithAnchors(string $md, array $options = []): string
     {
         $html = (string) Str::markdown($md, $options + [
+            'slug_normalizer'   => ['instance' => self::slugger()],
             'heading_permalink' => [
                 'apply_id_to_heading' => true,
                 'insert'              => 'none',
@@ -710,6 +745,35 @@ class MproHelper
         ], [new HeadingPermalinkExtension()]);
 
         return self::prefixInnerLinks($html);
+    }
+
+    /**
+     * The slug of a heading, made the way GitHub makes it.
+     *
+     * The library keeps what Unicode calls a mark, and a modern emoji carries
+     * an invisible one: `⚙️` is a gear plus U+FE0F. It stayed inside the id,
+     * GitHub drops it, and `#-props` from a table of contents written for
+     * GitHub led nowhere.
+     */
+    private static function slugger(): TextNormalizerInterface
+    {
+        return new class implements TextNormalizerInterface {
+            private SlugNormalizer $base;
+
+            public function __construct()
+            {
+                $this->base = new SlugNormalizer();
+            }
+
+            public function normalize(string $text, array $context = []): string
+            {
+                // variation selectors, the zero width joiner and the keycap
+                // mark: what holds an emoji together and nothing else
+                $text = preg_replace('/[\x{FE00}-\x{FE0F}\x{200D}\x{20E3}]/u', '', $text) ?? $text;
+
+                return $this->base->normalize($text, $context);
+            }
+        };
     }
 
     /**

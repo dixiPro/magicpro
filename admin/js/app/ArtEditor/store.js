@@ -161,6 +161,57 @@ export const useArticleStore = defineStore('article', () => {
     }
   }
 
+  // ============================
+  // Заготовки блейда
+  // ============================
+  const snippets = ref([]);
+
+  async function snippetList() {
+    try {
+      const res = await apiArt({ command: 'snippetList' });
+      snippets.value = res.snippets ?? [];
+    } catch (e) {
+      console.log(e);
+    }
+  }
+
+  async function snippetGet(name) {
+    try {
+      return await apiArt({ command: 'snippetGet', name });
+    } catch (e) {
+      return null;
+    }
+  }
+
+  async function snippetSave(name, text, oldName = '') {
+    try {
+      await apiArt({ command: 'snippetSave', name, text, oldName });
+      await snippetList();
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  async function snippetDelete(name) {
+    try {
+      await apiArt({ command: 'snippetDelete', name });
+      await snippetList();
+    } catch (e) {
+      console.log(e);
+    }
+  }
+
+  // заготовка встаёт в начало блейда: то, что там было, остаётся ниже
+  async function snippetInsert(name) {
+    const res = await snippetGet(name);
+
+    if (!res) return;
+
+    const was = String(article.value.body ?? '');
+    article.value.body = was.trim() ? res.text + '\n' + was : res.text;
+  }
+
   async function search(text) {
     try {
       const res = await apiArt({ command: 'search', text: text });
@@ -244,5 +295,12 @@ export const useArticleStore = defineStore('article', () => {
     translit,
     convertFromMro,
     search,
+
+    snippets,
+    snippetList,
+    snippetGet,
+    snippetSave,
+    snippetDelete,
+    snippetInsert,
   };
 });

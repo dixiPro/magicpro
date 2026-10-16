@@ -6,7 +6,13 @@ const props = defineProps({
   viewFull: Boolean,
   viewSize: Number,
   path: String,
+
+  // group mode of the manager: a checkbox on every item
+  groupMode: Boolean,
+  checked: Boolean,
 });
+
+const emit = defineEmits(['toggle']);
 
 const fileSize = ref('');
 
@@ -41,7 +47,11 @@ function calcImgStyle(x, y) {
 </script>
 
 <template>
-  <div v-if="!viewFull" class="d-flex my-1">
+  <div v-if="!viewFull" class="d-flex my-1 pointer">
+    <div class="me-2" v-if="groupMode">
+      <input type="checkbox" :checked="checked" @click.stop="emit('toggle')" />
+    </div>
+
     <div class="me-2 icon">
       <i
         :class="{
@@ -61,6 +71,8 @@ function calcImgStyle(x, y) {
   </div>
 
   <div v-else class="thumb" :style="`width:${viewSize}px;`">
+    <input v-if="groupMode" type="checkbox" class="thumb-check" :checked="checked" @click.stop="emit('toggle')" />
+
     <div class="thumb-pic" v-if="el.isImage">
       <img :src="path + el.name + '?' + el.date" :style="calcImgStyle(el.width, el.height)" />
       <div class="file-name">{{ el.name }}<br />({{ el.width }}x{{ el.height }})</div>
@@ -81,6 +93,13 @@ function calcImgStyle(x, y) {
   position: relative;
   cursor: pointer;
   border: 1px solid #ddd;
+}
+
+.thumb-check {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  z-index: 2;
 }
 
 .thumb-pic {

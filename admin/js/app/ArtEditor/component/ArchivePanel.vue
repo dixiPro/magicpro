@@ -65,7 +65,7 @@ watch(
 </script>
 
 <template>
-  <Dialog v-model:visible="store.statusArchive" modal :header="t('archive')" :style="{ width: '70rem' }">
+  <Drawer v-model:visible="store.statusArchive" :header="t('archive')" position="right" style="width: 700px">
     <div v-if="!opened">
       <div v-if="!versions.length" class="text-muted">{{ t('archive_empty') }}</div>
 
@@ -113,14 +113,14 @@ watch(
         {{ t('archive_back') }}
       </button>
 
-      <button v-if="opened" class="btn btn-sm btn-danger" :disabled="apiActive" @click="restore">
+      <button v-if="opened" class="btn btn-sm btn-danger ms-2" :disabled="apiActive" @click="restore">
         <i class="fas fa-archive"></i>
         {{ t('archive_restore') }}
       </button>
 
-      <button class="btn btn-sm btn-outline-secondary" @click="store.statusArchive = false">
+      <button class="btn btn-sm btn-outline-secondary ms-2" @click="store.statusArchive = false">
         {{ t('archive_exit') }}
       </button>
     </template>
-  </Dialog>
+  </Drawer>
 </template>
