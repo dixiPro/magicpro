@@ -10,12 +10,18 @@ import MoveFiles from './MoveFiles.vue';
 import { mediaKind, isEditable } from './fileKinds.js';
 import FileItem from './FileItem.vue';
 import ModalWindow from './ModalWindow.vue';
+import FullWindow from './FullWindow.vue';
 import EditFile from '../CommonCom/EditFile.vue';
 
 import { useI18n } from 'vue-i18n';
 const { t } = useI18n();
 
 const showFileManager = defineModel('visible', { type: Boolean, default: false });
+
+// bare: the page of its own (/a_dmin/fileManager) — the whole window, no modal
+const props = defineProps({
+  bare: { type: Boolean, default: false },
+});
 
 const uploadRef = ref(null);
 const uploadImageRef = ref(null);
@@ -459,7 +465,7 @@ const modalRename = reactive({
 </script>
 
 <template>
-  <ModalWindow v-model:visible="showFileManager" :zIndex="1000">
+  <component :is="props.bare ? FullWindow : ModalWindow" v-model:visible="showFileManager" :zIndex="1000">
     <template #header>
       <div class="d-flex align-items-center gap-2 p-1 rounded w-100 border">
         <button v-if="path !== startDirectory" @click="goBack" class="btn btn-success fas fa-chevron-left"></button>
@@ -546,7 +552,7 @@ const modalRename = reactive({
     <div v-else class="text-center p-3">
       <div class="spinner-border text-info"></div>
     </div>
-  </ModalWindow>
+  </component>
 
   <!-- ModalWindow create file-->
   <Dialog v-model:visible="modalAddNewFile.visible" :header="t('create_file')" modal style="width: 600px">

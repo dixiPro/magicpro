@@ -31,9 +31,6 @@ export const useArticleStore = defineStore('article', () => {
   // панель  настройки
   const statusAddPannel = ref(false);
 
-  // панель  файл менеджера
-  const statusFileManager = ref(false);
-
   const statusAutocompletePannel = ref(false);
 
   // панель архива версий статьи
@@ -266,7 +263,6 @@ export const useArticleStore = defineStore('article', () => {
     article,
     statusHelp,
     statusAddPannel,
-    statusFileManager,
     aceTheme,
     aceThemes,
     hasTwig,

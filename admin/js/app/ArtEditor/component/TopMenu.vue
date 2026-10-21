@@ -8,8 +8,15 @@ const { t } = useI18n();
 
 const gotoArticle = ref('');
 
+// one named window: a second click brings back the same one
+const openFileManager = () => {
+  window.open('/a_dmin/fileManager', 'magicFileManager', 'width=900,height=700')?.focus();
+};
+
+// `___` in the name is the dot of the address: text___txt is served at
+// /text.txt, the router turns one into the other
 const url = computed(() => {
-  return store.article.name === 'index' ? '/' : '/' + store.article.name;
+  return store.article.name === 'index' ? '/' : '/' + store.article.name.replaceAll('___', '.');
 });
 </script>
 <template>
@@ -78,7 +85,8 @@ const url = computed(() => {
     <div class="col text-end">
       <button v-if="store.hasTwig" class="btn btn-success fas fa-sync-alt btn-sm me-2" @click="store.convertFromMro()"></button>
 
-      <button class="btn btn-success fas fa-folder-open" @click="store.statusFileManager = !store.statusFileManager"></button>
+      <!-- a window of its own: it can be moved aside and copied from into the editor -->
+      <button class="btn btn-success fas fa-folder-open" @click="openFileManager"></button>
       <button class="ms-1 btn btn-success fas fa-lightbulb" @click="store.statusAutocompletePannel = !store.statusAutocompletePannel"></button>
       <button
         class="ms-1 btn btn-success fas fa-archive"

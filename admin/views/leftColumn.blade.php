@@ -4,7 +4,8 @@
         ['route' => null, 'label' => 'site', 'icon' => 'fas fa-globe', 'url' => '/'],
         ['route' => 'magic.artEditor', 'label' => 'root', 'icon' => 'fas fa-edit'],
         ['route' => 'magic.setup', 'label' => 'setup', 'icon' => 'fas fa-cog'],
-        ['route' => 'magic.fileManager', 'label' => 'file_manager', 'icon' => 'fas fa-folder-open'],
+        // a window of its own, see fileManager.blade.php
+        ['route' => 'magic.fileManager', 'label' => 'file_manager', 'icon' => 'fas fa-folder-open', 'window' => 'magicFileManager'],
         ['route' => 'magic.artList', 'label' => 'artList', 'icon' => 'fas fa-server'],
         ['route' => 'magic.import_tab', 'label' => 'import_tab', 'icon' => 'fas fa-file-import'],
         ['route' => 'magic.admin_list', 'label' => 'admins', 'icon' => 'fas fa-users-cog'],
@@ -31,6 +32,9 @@
             </li>
         @else
             <a href="{{ $item['route'] ? route($item['route']) : $item['url'] ?? '#' }}"
+                @isset($item['window'])
+                    onclick="window.open(this.href, '{{ $item['window'] }}', 'width=900,height=700')?.focus(); return false;"
+                @endisset
                 class="list-group-item list-group-item-action">
                 <i class="{{ $item['icon'] }}"></i>
                 @magic_msg($item['label'])

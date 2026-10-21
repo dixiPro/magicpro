@@ -6,7 +6,6 @@ import TopMenu from './component/TopMenu.vue';
 import RouteParam from './component/RouteParam.vue';
 import Help from './component/Help.vue';
 import EditArticle from './component/EditArticle.vue';
-import FileManager from '../CommonCom/FileManager.vue';
 import TosatConfirm from '../CommonCom/ToastConfirm.vue';
 import Autocomplete from './component/Autocomplete.vue';
 import ArchivePanel from './component/ArchivePanel.vue';
@@ -41,7 +40,6 @@ const onPopState = (event) => {
 <template>
   <TopMenu v-if="store.articleReady"></TopMenu>
   <EditArticle v-if="store.articleReady"></EditArticle>
-  <FileManager v-model:visible="store.statusFileManager"></FileManager>
   <Help></Help>
   <RouteParam v-if="store.articleReady"></RouteParam>
   <!-- тосты -->

@@ -27,6 +27,14 @@
 
 <body>
     @mproauth
+        {{-- a page opened as a window of its own (the file manager): no top bar,
+             no left menu, the page has the whole window --}}
+        @if ($GLOBALS['bare'] ?? false)
+            @yield('body')
+            @hasSection('script')
+                @yield('script')
+            @endif
+        @else
         <div class="d-flex flex-column">
             <div class="bg-primary py-2">
                 <div class="d-flex flex-wrap justify-content-center m-0 p-0">
@@ -63,6 +71,7 @@
                 </div>
             @endif
         </div>
+        @endif
     @else
             {{-- вход в админку: карточка по центру экрана --}}
             <div class="min-vh-100 d-flex align-items-center justify-content-center bg-light px-3">

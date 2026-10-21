@@ -99,7 +99,7 @@ rg -n 'warning|errorResponse|catch ' packages/dixipro/magicpro/admin/controller 
 - выключенный `isRoute` → 404;
 - `adminOnly` до и после входа;
 - пары `/key/value`;
-- нечётный список сегментов → 404;
+- нечётный список сегментов: последний ключ получает `''`;
 - query string;
 - непустой whitelist и лишний ключ;
 - bindKeys с точным и неверным числом значений;

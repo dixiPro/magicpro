@@ -48,9 +48,11 @@ class DynamicRouteHandler
             $keys = array_values(array_filter($segments, fn($v, $i) => $i % 2 == 0, ARRAY_FILTER_USE_BOTH));
             // значения в другой
             $values = array_values(array_filter($segments, fn($v, $i) => $i % 2 == 1, ARRAY_FILTER_USE_BOTH));
-            // 
-            if (count($keys) !== count($values)) {
-                throw new \Exception('параметры segment нечетные');
+
+            // A key without a pair gets an empty string, like `?param` in the
+            // query string. Throwing here made `/page/param?sort=desc` a 404.
+            if (count($keys) > count($values)) {
+                $values[] = '';
             }
             $segmentParams = array_combine($keys, $values);
         }
