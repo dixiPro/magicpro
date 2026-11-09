@@ -83,6 +83,7 @@ class API_Feeds extends AbstractFeedApi
         'imageUpload'     => 'imageUpload',
         'imageCropUpload' => 'imageCropUpload',
         'imageDelete'     => 'imageDelete',
+        'itemImage'       => 'itemImage',
 
         'mdToHtml'    => 'mdToHtml',
     ];
@@ -955,21 +956,40 @@ class API_Feeds extends AbstractFeedApi
     {
         $item = $this->item($params);
 
-        if (! isset($params['position'])) {
+        // A neighbour instead of a number: "put it right after / before that
+        // record". The admin panel sends it, because a number is a row of the
+        // screen, and on a filtered list the row of the screen is not the place
+        // in the feed — the record went into the middle of another group.
+        $anchor = (int) ($params['afterId'] ?? $params['beforeId'] ?? 0);
+        $after  = isset($params['afterId']);
+
+        if ($anchor === 0 && ! isset($params['position'])) {
             throw new Exception(self::err('position_required'));
         }
 
-        $target = max(0, (int) $params['position']);
+        $target = max(0, (int) ($params['position'] ?? 0));
         $feed   = $item->feed;
 
-        return DB::transaction(function () use ($item, $feed, $target): array {
+        return DB::transaction(function () use ($item, $feed, $target, $anchor, $after): array {
             $ids = $feed->items()
                 ->orderBy('__position')
                 ->orderBy('id')
                 ->pluck('id')
-                ->reject(fn ($id) => (int) $id === (int) $item->id)
+                ->map(fn ($id) => (int) $id)
+                ->reject(fn ($id) => $id === (int) $item->id)
                 ->values()
                 ->all();
+
+            if ($anchor !== 0) {
+                $at = array_search($anchor, $ids, true);
+
+                // not in this feed, or the record itself
+                if ($at === false) {
+                    throw new Exception(self::err('item_anchor') . ': ' . $anchor);
+                }
+
+                $target = $after ? $at + 1 : $at;
+            }
 
             array_splice($ids, min($target, count($ids)), 0, [$item->id]);
 
@@ -1122,10 +1142,151 @@ class API_Feeds extends AbstractFeedApi
             throw new Exception(self::err('file_not_image') . ': ' . $file->getMimeType());
         }
 
+        // a field with a ratio takes only a crop: the original would break the
+        // proportions every page of the site counts on
+        if ($this->imageRatio($item->feed, $code) !== null) {
+            throw new Exception(self::err('image_crop_required'));
+        }
+
         $item->clearMediaCollection($code);
 
         $media = $item->addMedia($file)->toMediaCollection($code);
 
+        return $this->storeImageData($item, $code, $media, $params);
+    }
+
+    /**
+     * An image from a file on the disk of the site, the way of МСП.
+     *
+     * The agent puts the file somewhere itself — downloads it, uploads it, finds
+     * it — and names it here; the file stays where it is. What happens to it is
+     * decided by the field, exactly as in the admin panel:
+     *
+     * - minWidth: a narrower picture is refused;
+     * - ratio: the centre is cut to the proportions and re-encoded into the
+     *   format of the resize settings, as imageCropUpload does;
+     * - no ratio: the file goes as it is, as imageUpload does.
+     *
+     * The name and the alt are required, as in the upload window: the name ends
+     * up in the path, the alt in the page.
+     */
+    protected function itemImage(array $params): array
+    {
+        $item = $this->item($params);
+        $code = $this->imageField($item->feed, (string) ($params['code'] ?? ''));
+
+        $path = trim((string) ($params['path'] ?? ''));
+
+        if ($path === '') {
+            throw new Exception(self::err('file_required'));
+        }
+
+        // relative to the project, as the agent sees its files
+        $file = str_starts_with($path, '/') ? $path : base_path($path);
+
+        if (! is_file($file)) {
+            throw new Exception(self::err('image_path') . ': ' . $path);
+        }
+
+        $info = @getimagesize($file);
+
+        if (! $info || ! str_starts_with((string) ($info['mime'] ?? ''), 'image/')) {
+            throw new Exception(self::err('file_not_image') . ': ' . $path);
+        }
+
+        $name = trim((string) ($params['name'] ?? ''));
+
+        if (! preg_match('/^[A-Za-z0-9-]{1,217}$/', $name)) {
+            throw new Exception(self::err('image_name') . ': ' . $name);
+        }
+
+        if (trim((string) ($params['alt'] ?? '')) === '') {
+            throw new Exception(self::err('image_alt_required'));
+        }
+
+        // the sides as the picture stands: exif 5–8 turns it a quarter round
+        [$width, $height] = [(int) $info[0], (int) $info[1]];
+
+        if (in_array(ImageEncoder::orientation($file), [5, 6, 7, 8], true)) {
+            [$width, $height] = [$height, $width];
+        }
+
+        $ratio    = $this->imageRatio($item->feed, $code);
+        $minWidth = (int) ($this->schemaFields($item->feed)[$code]['minWidth'] ?? 0);
+
+        if ($ratio === null) {
+            if ($width < $minWidth) {
+                throw new Exception(self::err('image_too_narrow') . ': ' . $width . ' < ' . $minWidth);
+            }
+
+            $extension = strtolower(pathinfo($file, PATHINFO_EXTENSION)) ?: 'jpg';
+
+            $item->clearMediaCollection($code);
+
+            $media = $item->addMedia($file)
+                ->preservingOriginal()
+                ->usingFileName($name . '.' . $extension)
+                ->toMediaCollection($code);
+
+            return $this->storeImageData($item, $code, $media, $params);
+        }
+
+        // the biggest box of the ratio inside the picture: one side stays whole
+        if ($width / $height > $ratio) {
+            $boxHeight = $height;
+            $boxWidth  = (int) floor($height * $ratio);
+        } else {
+            $boxWidth  = $width;
+            $boxHeight = (int) floor($width / $ratio);
+        }
+
+        if ($boxWidth < $minWidth) {
+            throw new Exception(self::err('image_too_narrow') . ': ' . $boxWidth . ' < ' . $minWidth);
+        }
+
+        $format = (string) ImageJob::setting('RESIZE_FORMAT', 'webp');
+        $cut    = sys_get_temp_dir() . '/' . uniqid('cut_', true) . '.png';
+        $target = sys_get_temp_dir() . '/' . uniqid('crop_', true) . '.' . $format;
+
+        $made = ImageEncoder::crop($file, $cut, $boxWidth, $boxHeight);
+
+        if ($made['error'] === '') {
+            $made = ImageEncoder::make($cut, $target, 'x', $boxWidth, $format, ImageJob::defaultQuality($format));
+        }
+
+        @unlink($cut);
+
+        if ($made['error'] !== '') {
+            @unlink($target);
+
+            throw new Exception(self::err('file_not_image') . ': ' . $made['error']);
+        }
+
+        $item->clearMediaCollection($code);
+
+        $media = $item->addMedia($target)->usingFileName($name . '.' . $format)->toMediaCollection($code);
+
+        return $this->storeImageData($item, $code, $media, $params);
+    }
+
+    /** The ratio of an image field as a number: `4/3` → 1.333…, none — null. */
+    protected function imageRatio(?Feed $feed, string $code): ?float
+    {
+        $ratio = $feed ? (string) ($this->schemaFields($feed)[$code]['ratio'] ?? '') : '';
+
+        [$w, $h] = array_map('floatval', array_pad(explode('/', $ratio, 2), 2, 0));
+
+        return $w > 0 && $h > 0 ? $w / $h : null;
+    }
+
+    /**
+     * The file is in the media library: its properties go into __data.
+     *
+     * One place for every way an image arrives, so that they cannot disagree on
+     * what a picture of a record looks like.
+     */
+    protected function storeImageData(FeedItem $item, string $code, $media, array $params): array
+    {
         [$width, $height] = getimagesize($media->getPath());
 
         $data = $item->__data ?? [];
@@ -1232,32 +1393,7 @@ class API_Feeds extends AbstractFeedApi
 
         $media = $item->addMedia($target)->usingFileName($name)->toMediaCollection($code);
 
-        [$width, $height] = getimagesize($media->getPath());
-
-        $data = $item->__data ?? [];
-
-        $data[$code] = array_merge($data[$code] ?? [], [
-            // Один путь на все нужды: `/storage/magicFeed/19/1.png`. Его ставят
-            // в src, и его же берут хелперы через public_path(). Хост в него не
-            // входит, поэтому переезд на другой домен ничего не ломает — по той
-            // же причине полного адреса здесь и нет.
-            'path' => parse_url($media->getUrl(), PHP_URL_PATH),
-            'size' => $media->size,
-            'mime' => $media->mime_type,
-            'x'    => $width,
-            'y'    => $height,
-            'alt'  => $this->imageAlt($params, (string) ($data[$code]['alt'] ?? '')),
-        ]);
-
-        // Ключ `url` писался здесь раньше и остался в json у старых картинок.
-        // array_merge бережёт то, что ввёл оператор, и заодно тянул бы этот
-        // остаток дальше — гасим его при каждой загрузке.
-        unset($data[$code]['url']);
-
-        $item->__data = $data;
-        $item->save();
-
-        return $data[$code];
+        return $this->storeImageData($item, $code, $media, $params);
     }
 
     /**

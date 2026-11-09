@@ -32,14 +32,22 @@ Commands, passed in `command` with their arguments in `params`:
   that link to it. Repeat with confirm true to actually delete. The files of the
   record go with it and nothing brings them back.
 
-Image fields cannot be written here. An image reaches a feed through the upload
-and the cropper of the admin panel, and MCP has no such channel; sending an image
-field is an error, not a silently skipped value.
+- itemImage {id, code, path, name, alt} — puts an image file into an image field
+  of the record. path is a file on the disk of the site, absolute or relative to
+  the project: download or upload it there first, it stays where it is. name is
+  the file name without extension (latin letters, digits, hyphen), alt the
+  caption; both are required. The field decides the rest, as in the admin panel:
+  narrower than its minWidth is refused; with a ratio the centre is cut to it
+  and saved in the working format (webp); without a ratio the file goes as it
+  is. The answer is the stored image: path, size, mime, x, y, alt.
+
+Image fields cannot be sent in itemSave fields: an image goes only through
+itemImage, and sending one in fields is an error, not a silently skipped value.
 TXT)]
 class FeedApiWriteTool extends Tool
 {
     /** Commands this tool may run. Writing only: reading is feed-api. */
-    public const COMMANDS = ['itemCreate', 'itemSave', 'itemDelete'];
+    public const COMMANDS = ['itemCreate', 'itemSave', 'itemDelete', 'itemImage'];
 
     public function schema(JsonSchema $schema): array
     {
@@ -138,7 +146,7 @@ class FeedApiWriteTool extends Tool
     }
 
     /**
-     * Картинки этим путём не пишутся. Какие поля картиночные, знает только схема
+     * Картинки через fields не пишутся, для них есть itemImage. Какие поля картиночные, знает только схема
      * ленты, поэтому её приходится спросить: запись → лента → схема.
      */
     protected function imagesRefused(array $params): Response|ResponseFactory|null
@@ -168,8 +176,8 @@ class FeedApiWriteTool extends Tool
         }
 
         return Response::error(
-            'Image fields cannot be written through MCP: ' . implode(', ', $images)
-            . '. An image gets into a feed through the upload and the cropper of the admin panel.'
+            'Image fields cannot be written in itemSave fields: ' . implode(', ', $images)
+            . '. Put the file on the disk of the site and call itemImage {id, code, path, name, alt}.'
         );
     }
 

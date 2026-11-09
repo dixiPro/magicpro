@@ -5,6 +5,7 @@ import { apiFeed } from './api.js';
 import { formatDate } from '../CommonCom/formatDate.js';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
+import DataLinkSelect from './dataLinkSelect.vue';
 
 import { useI18n } from 'vue-i18n';
 const { t } = useI18n();
@@ -331,8 +332,18 @@ const searchFields = computed(() =>
       code: field.code,
       label: field.label || field.code,
       type: (field.column.match(/^__([a-z]+)_/) ?? [])[1] ?? 'string',
+      relation: field.relation ?? null,
     })),
 );
+
+function fieldOf(code) {
+  return searchFields.value.find((field) => field.code === code);
+}
+
+// a link is picked by the title of its record: there is nothing to compare but equality
+function isLink(code) {
+  return fieldOf(code)?.type === 'link';
+}
 
 // пустое значение — условие ещё не заполнено, в запрос оно не идёт
 const activeFilters = computed(() =>
@@ -401,9 +412,11 @@ function addFilter() {
   filters.value.push({ field: field.code, op: opsOf(field.code)[0], value: '' });
 }
 
-// сравнения у типов разные, поэтому со сменой поля берём первое подходящее
+// сравнения у типов разные, поэтому со сменой поля берём первое подходящее;
+// значение тоже сбрасываем: id записи-ссылки в текстовом поле ничего не значит
 function onFilterField(filter) {
   filter.op = opsOf(filter.field)[0];
+  filter.value = '';
 }
 
 function removeFilter(index) {
@@ -490,24 +503,38 @@ async function removeMarked() {
 }
 
 /**
- * Порядок записей. dropIndex — место внутри страницы, а позиция в ленте
- * сквозная, поэтому прибавляем то, что осталось на предыдущих страницах.
+ * Порядок записей: запись ставится рядом с соседом по экрану, а не на номер.
  *
- * Список идёт от больших номеров к меньшим, а позиции нумеруются с нуля,
- * поэтому место на экране считается от конца ленты: itemMove перенумеровывает
- * её целиком, и номера всегда лежат подряд.
+ * Номер строки — это место на экране, а не в ленте: с поиском или фильтром
+ * между соседями на экране лежат чужие записи, и запись, поставленная по
+ * номеру, уезжала в другую группу. Сосед же есть всегда, на любой странице.
+ *
+ * Берём того, кто под строкой; брошенной последней — того, кто над ней. Список
+ * по убыванию: тот, кто ниже, стоит в ленте раньше, значит, ставим после него;
+ * по возрастанию — наоборот.
  */
 async function onReorder(event) {
   const item = event.value[event.dropIndex];
+  const below = event.value[event.dropIndex + 1];
+  const above = event.value[event.dropIndex - 1];
+
   items.value = event.value;
 
-  const place = (page.value - 1) * PER_PAGE + event.dropIndex;
+  const desc = direction.value === 'desc';
+
+  const anchor = below
+    ? { [desc ? 'afterId' : 'beforeId']: below.id }
+    : above
+      ? { [desc ? 'beforeId' : 'afterId']: above.id }
+      : null;
+
+  if (!anchor) return;
 
   try {
     await apiFeed({
       command: 'itemMove',
       id: item.id,
-      position: direction.value === 'desc' ? total.value - 1 - place : place,
+      ...anchor,
     });
 
     await loadItems();
@@ -602,11 +629,15 @@ onMounted(() => {
           </option>
         </select>
 
-        <select v-model="filter.op" class="form-select form-select-sm w-auto">
-          <option v-for="op in opsOf(filter.field)" :key="op" :value="op">{{ op }}</option>
-        </select>
+        <DataLinkSelect v-if="isLink(filter.field)" v-model="filter.value" :relation="fieldOf(filter.field)?.relation" />
 
-        <input v-model="filter.value" class="form-control form-control-sm w-auto" @keyup.enter="applyFilters()" />
+        <template v-else>
+          <select v-model="filter.op" class="form-select form-select-sm w-auto">
+            <option v-for="op in opsOf(filter.field)" :key="op" :value="op">{{ op }}</option>
+          </select>
+
+          <input v-model="filter.value" class="form-control form-control-sm w-auto" @keyup.enter="applyFilters()" />
+        </template>
 
         <button class="btn btn-success btn-sm py-0 px-1 lh-1" :title="t('add')" @click="addFilter()">
           <i class="fas fa-plus" style="font-size: 0.7rem"></i>

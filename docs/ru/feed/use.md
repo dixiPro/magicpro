@@ -217,6 +217,19 @@ $img  = $path ? MproHelper::imageReduceX(public_path($path), 800) : null;
 сохраняет исходный формат; кадрирование перекодирует результат в
 `RESIZE_FORMAT`. Подробнее о ресайзе — `../image/use.md`.
 
+Настройки поля в схеме:
+
+- `minWidth` — картинку уже этой ширины сохранить нельзя;
+- `ratio`, например `4/3` — пропорции. С ним картинку можно только обрезать:
+  оригинал не сохраняется ни из админки (`imageUpload` отказывает), ни через
+  МСП.
+
+МСП кладёт картинку командой `itemImage {id, code, path, name, alt}` из файла на
+диске сайта (путь абсолютный или от корня проекта), сам файл остаётся на месте.
+Без `ratio` файл идёт как есть, с `ratio` вырезается центр под пропорции и
+кодируется в `RESIZE_FORMAT`. `name` — имя файла без расширения: латиница,
+цифры, дефис. `alt` обязателен.
+
 ### Текстовые подстановки и компоненты
 
 Текст может содержать `#field#`, `#image.alt#` и одиночные теги компонентов.
@@ -316,7 +329,7 @@ HTTP-точка: `POST /a_dmin/api/feed`. Она защищена middleware `ma
 | ленты | `feedsList`, `feedGet`, `feedCreate`, `feedSave`, `feedMove`, `feedClear`, `feedDelete` |
 | схема | `schemaGet`, `schemaSave` |
 | записи | `itemsList`, `itemGet`, `itemCreate`, `itemSave`, `itemMove`, `itemDelete`, `itemsDelete`, `itemLinks`, `itemsLookup` |
-| изображения | `uploadFormat`, `imageUpload`, `imageCropUpload`, `imageDelete` |
+| изображения | `uploadFormat`, `imageUpload`, `imageCropUpload`, `itemImage`, `imageDelete` |
 | текст | `mdToHtml` |
 
 ### Список через API

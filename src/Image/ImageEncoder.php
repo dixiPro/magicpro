@@ -208,6 +208,28 @@ class ImageEncoder
         ]);
     }
 
+    /**
+     * Cut the centre of $file to exactly $width x $height, as png, not scaled.
+     *
+     * vipsthumbnail fills the box and drops what sticks out. The box is meant
+     * to be cut from the upright picture with one side equal to its own, so the
+     * fill scale is 1 and nothing is resized. Exif rotation is applied by the
+     * utility itself, the same as in the other vips paths.
+     */
+    public static function crop(string $file, string $target, int $width, int $height): array
+    {
+        return self::run([
+            'vipsthumbnail',
+            $file,
+            '--size',
+            $width . 'x' . $height,
+            '--smartcrop',
+            'centre',
+            '-o',
+            $target,
+        ]);
+    }
+
     /** Поворот из exif. 1 и отсутствие тега означают «уже правильно». */
     public static function orientation(string $file): int
     {

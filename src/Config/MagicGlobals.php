@@ -117,7 +117,34 @@ class MagicGlobals
         if (!file_exists(base_path(self::$localIniFile))) {
             self::saveDefaultIniFile();
         }
-        self::$INI = include base_path(self::$localIniFile);
+        // A file written by an older release lacks the keys added since, and the
+        // first `$INI['LANGUAGE']` of the boot fell on it. The missing ones get
+        // the default of the schema, in memory only: the file stays as it is, so
+        // no write access is needed at boot.
+        $stored = include base_path(self::$localIniFile);
+
+        self::$INI = self::withDefaults(require self::$dataSchema, is_array($stored) ? $stored : []);
+    }
+
+    /**
+     * Stored values over the defaults of the schema, key by key.
+     *
+     * Not array_replace_recursive: it merges lists by index, and an entry the
+     * admin removed from EXCLUDED_ROUTES would come back from the defaults. A
+     * stored value is taken whole; only a group goes deeper, by its own schema.
+     * Keys the schema no longer knows stay too, as they did before.
+     */
+    private static function withDefaults(array $schema, array $stored): array
+    {
+        foreach ($schema as $key => $item) {
+            if (($item['type'] ?? '') === 'group') {
+                $stored[$key] = self::withDefaults($item['data'] ?? [], is_array($stored[$key] ?? null) ? $stored[$key] : []);
+            } elseif (! array_key_exists($key, $stored)) {
+                $stored[$key] = $item['default'];
+            }
+        }
+
+        return $stored;
     }
 
     // сохранить параметры по умолчанию

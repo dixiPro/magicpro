@@ -20,7 +20,8 @@ const { t } = useI18n();
  * Ограничения поля приходят из схемы: minWidth — ниже него сохранять нечего,
  * ratio — пропорции обрезки. Нет ratio — рамка свободная.
  *
- * Обрезка необязательна. Оригинал уходит как есть, со своим форматом; вырезанный
+ * Обрезка необязательна, пока у поля нет ratio; с ratio — только обрезка, оригинал
+ * не сохранить. Оригинал уходит как есть, со своим форматом; вырезанный
  * кусок берётся с canvas, поэтому уходит png или jpeg — как задано в настройках, —
  * а в рабочий формат его кодирует сервер.
  */
@@ -80,7 +81,8 @@ const aspectRatio = computed(() => {
 // потеря для поиска и для читалки с экрана
 const canSave = computed(() => fileName.value !== '' && altText.value !== '');
 
-const canSaveImage = computed(() => imageWidth.value >= props.minWidth && canSave.value);
+// a field with a ratio takes only a crop: the server refuses the original too
+const canSaveImage = computed(() => aspectRatio.value === undefined && imageWidth.value >= props.minWidth && canSave.value);
 const canSaveCrop = computed(() => cropWidth.value >= props.minWidth && canSave.value);
 
 /**
@@ -372,7 +374,8 @@ onUnmounted(() => {
           <button v-if="canSaveCrop" class="btn btn-sm btn-primary me-1" @click="save()">
             {{ t('save') }}
           </button>
-          <button class="btn btn-sm btn-outline-secondary me-1" @click="cropperActive = false">
+          <!-- with a ratio there is nothing to go back to: the original is not saved -->
+          <button v-if="!aspectRatio" class="btn btn-sm btn-outline-secondary me-1" @click="cropperActive = false">
             {{ t('feed_image_back') }}
           </button>
         </template>

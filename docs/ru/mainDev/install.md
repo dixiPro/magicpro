@@ -9,6 +9,7 @@
 
 ```bash
 composer require dixipro/magicpro
+php artisan vendor:publish --provider="Spatie\MediaLibrary\MediaLibraryServiceProvider" --tag="medialibrary-migrations"
 php artisan migrate
 php artisan magicpro:admin
 (sudo crontab -u www-data -l 2>/dev/null; echo "* * * * * cd $(pwd) && /usr/bin/php artisan schedule:run >> /dev/null 2>&1") | sort -u | sudo crontab -u www-data -
@@ -17,6 +18,12 @@ php artisan storage:link
 
 `magicpro:admin` спросит email и пароль администратора. Крон нужен для отложенных
 писем.
+
+`vendor:publish` кладёт в `database/migrations/` миграцию таблицы `media`
+библиотеки Spatie Media Library: в ней живут картинки лент. Сама библиотека
+миграцию не запускает, только предлагает скопировать. Без этого шага записи лент
+сохраняются, а картинка падает с `no such table: media`. Повторный запуск
+безопасен: уже скопированный файл находится по имени, второго не появляется.
 
 Выполняйте команды последовательно; если один из шагов пропущен, админка
 покажет соответствующее сообщение.

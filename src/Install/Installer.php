@@ -496,10 +496,35 @@ class Installer
         }
 
         $this->checkStorage();
+        $this->checkMediaTable();
         $this->checkCron();
         $this->checkAwsHook();
         $this->checkAiConfig();
         $this->checkTmux();
+    }
+
+    /**
+     * The table of Spatie Media Library: images of feeds live in it.
+     *
+     * The library only offers its migration to be copied into the site and
+     * never runs it itself, so a plain `migrate` leaves the table out. Records
+     * of feeds are saved all the same, and the first image falls with "no such
+     * table: media". Not a reason to stop the page: the rest of the site works.
+     */
+    private function checkMediaTable(): void
+    {
+        $model = config('media-library.media_model', \Spatie\MediaLibrary\MediaCollections\Models\Media::class);
+        $table = (new $model())->getTable();
+
+        if (! Schema::hasTable($table)) {
+            $this->msgArr[] = "**No table `{$table}` of Spatie Media Library.** Images of feeds are not saved.\n\n"
+                . 'Run: `php artisan vendor:publish --provider="Spatie\\MediaLibrary\\MediaLibraryServiceProvider" --tag="medialibrary-migrations" && php artisan migrate`';
+            $this->writeLog('table ' . $table . ' is missing');
+
+            return;
+        }
+
+        $this->ok('install_ok_media', $table);
     }
 
     /**
